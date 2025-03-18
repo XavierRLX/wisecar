@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
@@ -11,29 +12,32 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        // Redireciona para a página de veículos após o login
         redirectTo: "http://localhost:3000/veiculos",
       },
     });
+
     if (error) {
       console.error("Erro no login:", error.message);
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-blue-50 p-4">
-      <h1 className="text-4xl font-bold text-blue-600 mb-4">WiseCar</h1>
-      <p className="text-gray-700 mb-8 text-center">
-        Adicione os carros dos seus sonhos, compare preços e pesquise o mercado.
-      </p>
-      <button
-        onClick={handleLogin}
-        className="w-full max-w-xs py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-        disabled={loading}
-      >
-        {loading ? "Carregando..." : "Entrar com Google"}
-      </button>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 p-4">
+      <div className="bg-white shadow-xl rounded-2xl px-8 py-10 max-w-md w-full text-center">
+        <h1 className="text-3xl font-bold text-blue-600 mb-3">WiseCar</h1>
+        <p className="text-gray-600 mb-8">
+          Adicione carros dos seus sonhos, compare preços e pesquise o mercado.
+        </p>
+        <button
+          onClick={handleLogin}
+          disabled={loading}
+          className="flex items-center justify-center gap-3 w-full py-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:pointer-events-none"
+        >
+          {loading && <Loader2 className="animate-spin w-5 h-5" />}
+          Entrar com Google
+        </button>
+      </div>
     </div>
   );
 }
