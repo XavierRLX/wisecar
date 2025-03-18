@@ -9,7 +9,6 @@ export default function ProtectedPage() {
 
   useEffect(() => {
     async function fetchAndCreateProfile() {
-      // Obtém o usuário logado
       const {
         data: { user },
       } = await supabase.auth.getUser();
