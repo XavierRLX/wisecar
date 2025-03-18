@@ -16,7 +16,6 @@ export default function FavoritosPage() {
       } = await supabase.auth.getUser();
       
       if (user) {
-        // Faz um join para obter os dados do veículo relacionado
         const { data, error } = await supabase
           .from("favorites")
           .select(`vehicle_id, vehicles(*)`)
