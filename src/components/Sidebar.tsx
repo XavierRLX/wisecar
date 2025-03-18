@@ -38,10 +38,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         isOpen ? "translate-x-0" : "-translate-x-full"
       }`}
     >
-      {/* Fundo semitransparente para fechar ao clicar fora */}
       <div className="absolute inset-0 bg-black opacity-50" onClick={onClose}></div>
-
-      {/* Conteúdo da Sidebar */}
       <div className="relative bg-white w-64 h-full shadow-xl p-4">
         <button aria-label="Fechar menu" className="absolute top-2 right-2" onClick={onClose}>
           <X className="h-6 w-6" />
@@ -64,7 +61,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           <p className="text-center mt-8">Carregando informações...</p>
         )}
 
-        {/* Aqui você pode adicionar outros itens do menu lateral futuramente */}
       </div>
     </div>
   );

@@ -11,8 +11,8 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        // Redireciona para a tela protegida após login. Ajuste conforme necessário.
-        redirectTo: "http://localhost:3000/login/protected",
+        // Redireciona para a página de veículos após o login
+        redirectTo: "http://localhost:3000/veiculos",
       },
     });
     if (error) {
@@ -22,20 +22,18 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-blue-50">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-        <h1 className="text-4xl font-bold text-blue-600 mb-4 text-center">WiseCar</h1>
-        <p className="text-gray-700 mb-8 text-center">
-          Adicione os carros dos seus sonhos, compare preços e pesquise o mercado de forma simples e moderna.
-        </p>
-        <button
-          onClick={handleLogin}
-          className="w-full py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-          disabled={loading}
-        >
-          {loading ? "Carregando..." : "Entrar com Google"}
-        </button>
-      </div>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-blue-50 p-4">
+      <h1 className="text-4xl font-bold text-blue-600 mb-4">WiseCar</h1>
+      <p className="text-gray-700 mb-8 text-center">
+        Adicione os carros dos seus sonhos, compare preços e pesquise o mercado.
+      </p>
+      <button
+        onClick={handleLogin}
+        className="w-full max-w-xs py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+        disabled={loading}
+      >
+        {loading ? "Carregando..." : "Entrar com Google"}
+      </button>
     </div>
   );
 }

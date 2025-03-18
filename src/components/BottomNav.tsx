@@ -34,7 +34,7 @@ interface BottomNavProps {
             href="/adicionar"
             className="flex flex-col items-center text-gray-700 hover:text-blue-600"
           >
-            <PlusCircle className="h-8 w-8" />
+            <PlusCircle className="h-6 w-6" />
             <span className="text-xs">Adicionar</span>
           </Link>
   
