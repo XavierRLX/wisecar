@@ -18,7 +18,7 @@ export default function VehicleCard({
   onDelete,
   onRemoveFavorite,
 }: VehicleCardProps) {
-  // Log para depuração: verifique se a propriedade vehicle_images existe e contém dados
+  // Log para depuração
   console.log("VehicleCard", vehicle);
 
   return (
@@ -43,7 +43,10 @@ export default function VehicleCard({
         </p>
         {onToggleFavorite && (
           <button
-            onClick={() => onToggleFavorite(vehicle.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavorite(vehicle.id);
+            }}
             className="p-2"
             aria-label={
               isFavorited ? "Remover dos favoritos" : "Adicionar aos favoritos"
@@ -58,7 +61,7 @@ export default function VehicleCard({
         )}
       </div>
 
-      {/* Detalhes adicionais do veículo */}
+      {/* Detalhes adicionais */}
       <div className="mt-2">
         <p className="text-sm text-gray-700">Ano: {vehicle.year}</p>
         <p className="text-sm text-gray-700">Preço: R$ {vehicle.price}</p>
@@ -71,7 +74,10 @@ export default function VehicleCard({
       <div className="flex justify-end p-4">
         {onDelete ? (
           <button
-            onClick={() => onDelete(vehicle.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(vehicle.id);
+            }}
             className="text-gray-600 hover:text-red-600 transition-colors"
             aria-label="Excluir veículo"
           >
@@ -79,7 +85,10 @@ export default function VehicleCard({
           </button>
         ) : onRemoveFavorite ? (
           <button
-            onClick={() => onRemoveFavorite(vehicle.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemoveFavorite(vehicle.id);
+            }}
             className="text-gray-600 hover:text-red-600 transition-colors"
             aria-label="Remover dos favoritos"
           >

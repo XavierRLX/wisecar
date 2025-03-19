@@ -1,9 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import AuthGuard from "@/components/AuthGuard";
 import { useVehicles } from "@/hooks/useVehicles";
 import { supabase } from "@/lib/supabase";
-import { useEffect, useState } from "react";
 import VehicleCard from "@/components/VehicleCard";
 
 export default function VeiculosPage() {
@@ -59,20 +60,20 @@ export default function VeiculosPage() {
 
   async function handleDelete(vehicleId: string) {
     if (!userId) return;
-  
+
     // Primeiro, busque as imagens associadas a esse veículo
     const { data: images, error: imagesError } = await supabase
       .from("vehicle_images")
       .select("*")
       .eq("vehicle_id", vehicleId);
-  
+
     if (imagesError) {
       console.error("Erro ao buscar imagens para exclusão:", imagesError.message);
     } else if (images && images.length > 0) {
       for (const image of images) {
         const publicUrl = image.image_url; // Ex: https://.../storage/v1/object/public/vehicle-images/vehicles/<vehicleId>/<filename>
         const bucket = "vehicle-images";
-        const marker = `/public/${bucket}/`; // "/public/vehicle-images/"
+        const marker = `/public/${bucket}/`;
         const markerIndex = publicUrl.indexOf(marker);
         if (markerIndex === -1) {
           console.error("Formato de URL inesperado:", publicUrl);
@@ -80,7 +81,6 @@ export default function VeiculosPage() {
         }
         // relativePath: tudo que vem depois de "/public/vehicle-images/"
         const relativePath = publicUrl.substring(markerIndex + marker.length);
-        // Remove o arquivo do bucket usando o caminho relativo
         const { error: removeError } = await supabase.storage
           .from(bucket)
           .remove([relativePath]);
@@ -91,8 +91,8 @@ export default function VeiculosPage() {
         }
       }
     }
-  
-    // Agora, exclua o veículo (que, em cascata, remove os registros na tabela vehicle_images)
+
+    // Exclua o veículo (a exclusão em cascata removerá os registros da tabela vehicle_images)
     const { error } = await supabase
       .from("vehicles")
       .delete()
@@ -114,25 +114,30 @@ export default function VeiculosPage() {
       <div className="p-8">
         <h1 className="text-xl font-bold mb-4">Veículos</h1>
         {vehicles.length === 0 ? (
-            <>
-                <p>Não há veículos para visualizar.</p>
-                <p>
-                <a href="/adicionar" className="text-blue-500 underline">
-                    Clique aqui
-                </a>{" "}
-                para adicionar.
-                </p>
-            </>
-            ) : (
+          <>
+            <p>Não há veículos para visualizar.</p>
+            <p>
+              <a href="/adicionar" className="text-blue-500 underline">
+                Clique aqui
+              </a>{" "}
+              para adicionar.
+            </p>
+          </>
+        ) : (
           <ul className="space-y-4">
             {vehicles.map((vehicle) => (
-              <VehicleCard
-                key={vehicle.id}
-                vehicle={vehicle}
-                isFavorited={favorites.includes(vehicle.id)}
-                onToggleFavorite={toggleFavorite}
-                onDelete={handleDelete}
-              />
+              <li key={vehicle.id}>
+                <Link href={`/veiculos/${vehicle.id}`}>
+                  <div className="cursor-pointer">
+                    <VehicleCard
+                      vehicle={vehicle}
+                      isFavorited={favorites.includes(vehicle.id)}
+                      onToggleFavorite={(vehicleId) => toggleFavorite(vehicleId)}
+                      onDelete={(vehicleId) => handleDelete(vehicleId)}
+                    />
+                  </div>
+                </Link>
+              </li>
             ))}
           </ul>
         )}
