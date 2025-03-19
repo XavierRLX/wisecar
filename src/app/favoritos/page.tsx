@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import AuthGuard from "@/components/AuthGuard";
 import VehicleCard from "@/components/VehicleCard";
@@ -17,7 +18,7 @@ export default function FavoritosPage() {
     if (user) {
       const { data, error } = await supabase
         .from("favorites")
-        .select(`vehicle_id, vehicles(*)`)
+        .select(`vehicle_id, vehicles(*, vehicle_images(*))`)
         .eq("user_id", user.id);
       if (error) {
         console.error("Erro ao buscar favoritos:", error.message);
@@ -51,17 +52,30 @@ export default function FavoritosPage() {
       <div className="p-8">
         <h1 className="text-xl font-bold mb-4">Favoritos</h1>
         {favoritesData.length === 0 ? (
-          <p>Você não tem veículos favoritados.</p>
+          <>
+            <p>Você não tem veículos favoritados.</p>
+            <p>
+              <a href="/veiculos" className="text-blue-500 underline">
+                Clique aqui
+              </a>{" "}
+              para visualizar veículos.
+            </p>
+          </>
         ) : (
           <ul className="space-y-4">
             {favoritesData.map((favorite: any) => {
               const vehicle = favorite.vehicles;
               return (
-                <VehicleCard
-                  key={favorite.vehicle_id}
-                  vehicle={vehicle}
-                  onRemoveFavorite={removeFavorite}
-                />
+                <li key={favorite.vehicle_id}>
+                  <Link href={`/veiculos/${vehicle.id}`}>
+                    <div className="cursor-pointer">
+                      <VehicleCard
+                        vehicle={vehicle}
+                        onRemoveFavorite={removeFavorite}
+                      />
+                    </div>
+                  </Link>
+                </li>
               );
             })}
           </ul>
