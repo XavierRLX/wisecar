@@ -58,7 +58,6 @@ export default function AddVehiclePage() {
       setLoading(false);
       return;
     }
-    // Após adicionar, redireciona para a página de veículos
     router.push("/veiculos");
   }
 
