@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import AuthGuard from "@/components/AuthGuard";
 import { useVehicles } from "@/hooks/useVehicles";
 import { supabase } from "@/lib/supabase";
 import VehicleCard from "@/components/VehicleCard";
 
 export default function VeiculosPage() {
+  const router = useRouter();
   const { vehicles, loading, error, refetch } = useVehicles();
   const [favorites, setFavorites] = useState<string[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
@@ -61,17 +62,16 @@ export default function VeiculosPage() {
   async function handleDelete(vehicleId: string) {
     if (!userId) return;
 
-    // Primeiro, busque as imagens associadas a esse veículo
+    // Busca e remove as imagens associadas
     const { data: images, error: imagesError } = await supabase
       .from("vehicle_images")
       .select("*")
       .eq("vehicle_id", vehicleId);
-
     if (imagesError) {
       console.error("Erro ao buscar imagens para exclusão:", imagesError.message);
     } else if (images && images.length > 0) {
       for (const image of images) {
-        const publicUrl = image.image_url; // Ex: https://.../storage/v1/object/public/vehicle-images/vehicles/<vehicleId>/<filename>
+        const publicUrl = image.image_url;
         const bucket = "vehicle-images";
         const marker = `/public/${bucket}/`;
         const markerIndex = publicUrl.indexOf(marker);
@@ -79,7 +79,6 @@ export default function VeiculosPage() {
           console.error("Formato de URL inesperado:", publicUrl);
           continue;
         }
-        // relativePath: tudo que vem depois de "/public/vehicle-images/"
         const relativePath = publicUrl.substring(markerIndex + marker.length);
         const { error: removeError } = await supabase.storage
           .from(bucket)
@@ -92,7 +91,7 @@ export default function VeiculosPage() {
       }
     }
 
-    // Exclua o veículo (a exclusão em cascata removerá os registros da tabela vehicle_images)
+    // Exclui o veículo (a exclusão em cascata removerá registros relacionados)
     const { error } = await supabase
       .from("vehicles")
       .delete()
@@ -126,17 +125,17 @@ export default function VeiculosPage() {
         ) : (
           <ul className="space-y-4">
             {vehicles.map((vehicle) => (
-              <li key={vehicle.id}>
-                <Link href={`/veiculos/${vehicle.id}`}>
-                  <div className="cursor-pointer">
-                    <VehicleCard
-                      vehicle={vehicle}
-                      isFavorited={favorites.includes(vehicle.id)}
-                      onToggleFavorite={(vehicleId) => toggleFavorite(vehicleId)}
-                      onDelete={(vehicleId) => handleDelete(vehicleId)}
-                    />
-                  </div>
-                </Link>
+              <li
+                key={vehicle.id}
+                onClick={() => router.push(`/veiculos/${vehicle.id}`)}
+                className="cursor-pointer"
+              >
+                <VehicleCard
+                  vehicle={vehicle}
+                  isFavorited={favorites.includes(vehicle.id)}
+                  onToggleFavorite={toggleFavorite}
+                  onDelete={handleDelete}
+                />
               </li>
             ))}
           </ul>

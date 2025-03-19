@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import AuthGuard from "@/components/AuthGuard";
 import VehicleCard from "@/components/VehicleCard";
 
 export default function FavoritosPage() {
+  const router = useRouter();
   const [favoritesData, setFavoritesData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -66,15 +67,18 @@ export default function FavoritosPage() {
             {favoritesData.map((favorite: any) => {
               const vehicle = favorite.vehicles;
               return (
-                <li key={favorite.vehicle_id}>
-                  <Link href={`/veiculos/${vehicle.id}`}>
-                    <div className="cursor-pointer">
-                      <VehicleCard
-                        vehicle={vehicle}
-                        onRemoveFavorite={removeFavorite}
-                      />
-                    </div>
-                  </Link>
+                <li
+                  key={favorite.vehicle_id}
+                  onClick={() => router.push(`/veiculos/${vehicle.id}`)}
+                  className="cursor-pointer"
+                >
+                  <VehicleCard
+                    vehicle={vehicle}
+                    onRemoveFavorite={(vehicleId) => {
+                      // Aqui, no VehicleCard, já chamamos e.stopPropagation()
+                      removeFavorite(vehicleId);
+                    }}
+                  />
                 </li>
               );
             })}
