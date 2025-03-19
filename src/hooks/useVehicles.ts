@@ -18,9 +18,9 @@ export function useVehicles() {
 
     if (user) {
       const { data, error } = await supabase
-        .from("vehicles")
-        .select("*")
-        .eq("user_id", user.id);
+      .from("vehicles")
+      .select("*, vehicle_images(*)")
+      .eq("user_id", user.id);
       if (error) {
         setError(error.message);
       } else {

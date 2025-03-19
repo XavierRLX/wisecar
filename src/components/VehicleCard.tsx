@@ -18,8 +18,25 @@ export default function VehicleCard({
   onDelete,
   onRemoveFavorite,
 }: VehicleCardProps) {
+  // Log para depuração: verifique se a propriedade vehicle_images existe e contém dados
+  console.log("VehicleCard", vehicle);
+
   return (
     <li className="relative p-4 bg-white shadow rounded flex flex-col">
+      {/* Exibe a imagem do veículo se houver; caso contrário, mostra um placeholder */}
+      {vehicle.vehicle_images && vehicle.vehicle_images.length > 0 ? (
+        <img
+          src={vehicle.vehicle_images[0].image_url}
+          alt={`${vehicle.brand} ${vehicle.model}`}
+          className="w-full h-48 object-cover rounded mb-4"
+        />
+      ) : (
+        <div className="w-full h-48 bg-gray-200 rounded mb-4 flex items-center justify-center">
+          <span className="text-gray-500">Sem imagem</span>
+        </div>
+      )}
+
+      {/* Cabeçalho: nome do veículo e botão de favoritar */}
       <div className="flex justify-between items-center">
         <p className="font-semibold text-lg">
           {vehicle.brand} {vehicle.model}
@@ -40,6 +57,8 @@ export default function VehicleCard({
           </button>
         )}
       </div>
+
+      {/* Detalhes adicionais do veículo */}
       <div className="mt-2">
         <p className="text-sm text-gray-700">Ano: {vehicle.year}</p>
         <p className="text-sm text-gray-700">Preço: R$ {vehicle.price}</p>
@@ -47,6 +66,8 @@ export default function VehicleCard({
           Quilometragem: {vehicle.mileage} km
         </p>
       </div>
+
+      {/* Rodapé: botão de lixeira */}
       <div className="flex justify-end p-4">
         {onDelete ? (
           <button

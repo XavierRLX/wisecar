@@ -1,14 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import AuthGuard from "@/components/AuthGuard";
+import { uploadVehicleImage } from "@/hooks/useUploadImage";
+
+interface VehicleFormData {
+  category_id: string;
+  brand: string;
+  model: string;
+  year: string;
+  price: string;
+  mileage: string;
+  color: string;
+  fuel: string;
+  notes: string;
+}
 
 export default function AddVehiclePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [formData, setFormData] = useState<VehicleFormData>({
     category_id: "",
     brand: "",
     model: "",
@@ -20,11 +35,42 @@ export default function AddVehiclePage() {
     notes: "",
   });
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
+  // Atualiza as URLs de preview sempre que os arquivos selecionados mudam
+  useEffect(() => {
+    const urls = selectedFiles.map((file) => URL.createObjectURL(file));
+    setPreviewUrls(urls);
+
+    // Revoga as URLs para evitar vazamento de memória
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [selectedFiles]);
+
+  function handleChange(
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   }
 
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      if (files.length > 5) {
+        alert("Você pode selecionar no máximo 5 imagens.");
+        setSelectedFiles(files.slice(0, 5));
+      } else {
+        setSelectedFiles(files);
+      }
+    }
+  }
+
+  function handleRemoveFile(index: number) {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+  
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
@@ -38,7 +84,7 @@ export default function AddVehiclePage() {
       return;
     }
 
-    // Prepara os dados convertendo os campos numéricos
+    // Prepara os dados do veículo
     const vehicleData = {
       user_id: user.id,
       category_id: formData.category_id ? parseInt(formData.category_id) : null,
@@ -52,20 +98,39 @@ export default function AddVehiclePage() {
       notes: formData.notes,
     };
 
-    const { error } = await supabase.from("vehicles").insert(vehicleData);
+    // Insere o veículo na tabela "vehicles"
+    const { data, error } = await supabase
+      .from("vehicles")
+      .insert(vehicleData)
+      .select();
     if (error) {
       console.error("Erro ao adicionar veículo:", error.message);
       setLoading(false);
       return;
     }
+    const insertedVehicle = data[0];
+
+    // Se houver arquivos selecionados, faça o upload de cada um
+    if (selectedFiles.length > 0) {
+      await Promise.all(
+        selectedFiles.map(async (file) => {
+          const publicUrl = await uploadVehicleImage(insertedVehicle.id, file);
+          if (!publicUrl) {
+            console.error("Erro no upload da imagem para", file.name);
+          }
+        })
+      );
+    }
+
+    setLoading(false);
     router.push("/veiculos");
   }
 
   return (
     <AuthGuard>
-      <div className="p-8 max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">Adicionar Veículo</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="p-8 max-w-2xl mx-auto bg-white shadow rounded">
+        <h1 className="text-2xl font-bold mb-6 text-center">Adicionar Veículo</h1>
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label htmlFor="category_id" className="block mb-1 font-medium">
               Categoria
@@ -93,6 +158,7 @@ export default function AddVehiclePage() {
               value={formData.brand}
               onChange={handleChange}
               className="w-full p-2 border rounded"
+              placeholder="Ex: Toyota"
             />
           </div>
           <div>
@@ -106,6 +172,7 @@ export default function AddVehiclePage() {
               value={formData.model}
               onChange={handleChange}
               className="w-full p-2 border rounded"
+              placeholder="Ex: Corolla"
             />
           </div>
           <div className="grid grid-cols-3 gap-4">
@@ -120,6 +187,7 @@ export default function AddVehiclePage() {
                 value={formData.year}
                 onChange={handleChange}
                 className="w-full p-2 border rounded"
+                placeholder="Ex: 2020"
               />
             </div>
             <div>
@@ -134,6 +202,7 @@ export default function AddVehiclePage() {
                 value={formData.price}
                 onChange={handleChange}
                 className="w-full p-2 border rounded"
+                placeholder="Ex: 50000.00"
               />
             </div>
             <div>
@@ -147,6 +216,7 @@ export default function AddVehiclePage() {
                 value={formData.mileage}
                 onChange={handleChange}
                 className="w-full p-2 border rounded"
+                placeholder="Ex: 30000"
               />
             </div>
           </div>
@@ -161,6 +231,7 @@ export default function AddVehiclePage() {
               value={formData.color}
               onChange={handleChange}
               className="w-full p-2 border rounded"
+              placeholder="Ex: Prata"
             />
           </div>
           <div>
@@ -174,6 +245,7 @@ export default function AddVehiclePage() {
               value={formData.fuel}
               onChange={handleChange}
               className="w-full p-2 border rounded"
+              placeholder="Ex: Gasolina"
             />
           </div>
           <div>
@@ -187,8 +259,44 @@ export default function AddVehiclePage() {
               onChange={handleChange}
               className="w-full p-2 border rounded"
               rows={3}
+              placeholder="Informações adicionais..."
             />
           </div>
+          <div>
+            <label htmlFor="image" className="block mb-1 font-medium">
+              Imagens do veículo (máx. 5)
+            </label>
+            <input
+              type="file"
+              id="image"
+              name="image"
+              multiple
+              onChange={handleFileChange}
+              className="w-full p-2 border rounded"
+            />
+          </div>
+          {previewUrls.length > 0 && (
+            <div className="grid grid-cols-3 gap-4">
+              {previewUrls.map((url, index) => (
+                <div key={index} className="relative">
+                  <img
+                    src={url}
+                    alt={`Preview ${index + 1}`}
+                    className="w-full h-32 object-cover rounded"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveFile(index)}
+                    className="absolute top-1 right-1 bg-black p-1 text-red-500 hover:bg-gray-200"
+                    aria-label="Remover imagem"
+                  >
+                    X
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={loading}

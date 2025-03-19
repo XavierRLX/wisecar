@@ -59,6 +59,40 @@ export default function VeiculosPage() {
 
   async function handleDelete(vehicleId: string) {
     if (!userId) return;
+  
+    // Primeiro, busque as imagens associadas a esse veículo
+    const { data: images, error: imagesError } = await supabase
+      .from("vehicle_images")
+      .select("*")
+      .eq("vehicle_id", vehicleId);
+  
+    if (imagesError) {
+      console.error("Erro ao buscar imagens para exclusão:", imagesError.message);
+    } else if (images && images.length > 0) {
+      for (const image of images) {
+        const publicUrl = image.image_url; // Ex: https://.../storage/v1/object/public/vehicle-images/vehicles/<vehicleId>/<filename>
+        const bucket = "vehicle-images";
+        const marker = `/public/${bucket}/`; // "/public/vehicle-images/"
+        const markerIndex = publicUrl.indexOf(marker);
+        if (markerIndex === -1) {
+          console.error("Formato de URL inesperado:", publicUrl);
+          continue;
+        }
+        // relativePath: tudo que vem depois de "/public/vehicle-images/"
+        const relativePath = publicUrl.substring(markerIndex + marker.length);
+        // Remove o arquivo do bucket usando o caminho relativo
+        const { error: removeError } = await supabase.storage
+          .from(bucket)
+          .remove([relativePath]);
+        if (removeError) {
+          console.error("Erro ao remover imagem do bucket:", removeError.message);
+        } else {
+          console.log("Imagem removida:", relativePath);
+        }
+      }
+    }
+  
+    // Agora, exclua o veículo (que, em cascata, remove os registros na tabela vehicle_images)
     const { error } = await supabase
       .from("vehicles")
       .delete()
