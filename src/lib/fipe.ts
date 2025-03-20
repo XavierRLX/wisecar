@@ -37,4 +37,18 @@ export async function fetchAnos(
     return await response.json();
   }
   
+  export async function fetchFipeAtualizado(
+    categoria: "carros" | "motos",
+    marcaCodigo: string,
+    modeloCodigo: string,
+    anoCodigo: string
+  ) {
+    const url = `https://parallelum.com.br/fipe/api/v1/${categoria}/marcas/${marcaCodigo}/modelos/${modeloCodigo}/anos/${anoCodigo}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error("Erro ao buscar dados FIPE atualizados");
+    }
+    return await response.json();
+  }
+  
   

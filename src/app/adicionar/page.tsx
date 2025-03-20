@@ -116,12 +116,18 @@ export default function AddVehiclePage() {
           formData.modelo,
           formData.ano
         );
-        setFipeInfo(detalhes);
-        // Atualize os campos textuais com os valores da API (supondo que a API retorne "Marca" e "Modelo")
+        const fipeData = {
+          ...detalhes,
+          codigoMarca: formData.marca,
+          codigoModelo: formData.modelo,
+          codigoAno: formData.ano,
+        };
+        setFipeInfo(fipeData);
+        // Atualize os campos usando as chaves corretas: "marca" e "modelo"
         setFormData(prev => ({
           ...prev,
-          brand: detalhes.Marca || prev.brand,
-          model: detalhes.Modelo || prev.model,
+          marca: detalhes.Marca || prev.marca,
+          modelo: detalhes.Modelo || prev.modelo,
         }));
       } catch (error) {
         console.error("Erro ao buscar detalhes FIPE", error);
@@ -129,7 +135,7 @@ export default function AddVehiclePage() {
     }
   }
   
-
+  
   function handleChange(
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -171,8 +177,8 @@ export default function AddVehiclePage() {
       user_id: user.id,
       category_id: formData.category_id === "carros" ? 1 : 2,
       fipe_info: fipeInfo ? JSON.stringify(fipeInfo) : null,
-      brand: formData.brand, 
-      model: formData.model, 
+      brand: formData.marca, 
+      model: formData.modelo,
       year: formData.ano ? parseInt(formData.ano.split("-")[0]) : null,
       price: parseFloat(formData.price),
       mileage: parseInt(formData.mileage),
@@ -180,7 +186,6 @@ export default function AddVehiclePage() {
       fuel: formData.fuel,
       notes: formData.notes,
     };
-    
 
     // Insere o veículo na tabela "vehicles"
     const { data, error } = await supabase

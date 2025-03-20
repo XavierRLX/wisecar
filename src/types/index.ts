@@ -19,4 +19,5 @@ export interface Vehicle {
   notes?: string;
   created_at?: string;
   vehicle_images?: VehicleImage[];
+  fipe_info?:JSON;
 }
