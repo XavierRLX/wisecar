@@ -2,15 +2,24 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 import AuthGuard from "@/components/AuthGuard";
+import { supabase } from "@/lib/supabase";
 import { uploadVehicleImage } from "@/hooks/useUploadImage";
+import { 
+  fetchMarcas, 
+  fetchModelos, 
+  fetchAnos, 
+  fetchDetalhesModelo 
+} from "@/lib/fipe";
 
 interface VehicleFormData {
-  category_id: string;
-  brand: string;
-  model: string;
-  year: string;
+  // Usamos os códigos FIPE para marca, modelo e ano
+  category_id: "carros" | "motos";
+  marca: string;    // Código da marca
+  modelo: string;   // Código do modelo
+  ano: string;      // Código do ano (ex: "2014-3")
+  fipe_info?: string; // Dados FIPE completos (JSON)
+  // Demais campos do veículo
   price: string;
   mileage: string;
   color: string;
@@ -24,27 +33,102 @@ export default function AddVehiclePage() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [formData, setFormData] = useState<VehicleFormData>({
-    category_id: "",
-    brand: "",
-    model: "",
-    year: "",
+    category_id: "carros",
+    marca: "",
+    modelo: "",
+    ano: "",
+    fipe_info: "",
     price: "",
     mileage: "",
     color: "",
     fuel: "",
     notes: "",
   });
+  const [marcas, setMarcas] = useState<any[]>([]);
+  const [modelos, setModelos] = useState<any[]>([]);
+  const [anos, setAnos] = useState<any[]>([]);
+  const [fipeInfo, setFipeInfo] = useState<any>(null);
 
-  // Atualiza as URLs de preview sempre que os arquivos selecionados mudam
+  // Atualiza pré-visualizações sempre que os arquivos selecionados mudam
   useEffect(() => {
-    const urls = selectedFiles.map((file) => URL.createObjectURL(file));
+    const urls = selectedFiles.map(file => URL.createObjectURL(file));
     setPreviewUrls(urls);
-
-    // Revoga as URLs para evitar vazamento de memória
     return () => {
-      urls.forEach((url) => URL.revokeObjectURL(url));
+      urls.forEach(url => URL.revokeObjectURL(url));
     };
   }, [selectedFiles]);
+
+  // Carrega as marcas da API FIPE com base na categoria selecionada
+  useEffect(() => {
+    async function loadMarcas() {
+      try {
+        const data = await fetchMarcas(formData.category_id);
+        setMarcas(data);
+      } catch (error) {
+        console.error("Erro ao carregar marcas", error);
+      }
+    }
+    loadMarcas();
+  }, [formData.category_id]);
+
+  // Carrega os modelos da API FIPE com base na marca selecionada
+  useEffect(() => {
+    async function loadModelos() {
+      if (formData.marca) {
+        try {
+          const data = await fetchModelos(formData.category_id, formData.marca);
+          // A API FIPE retorna um objeto com uma propriedade "modelos"
+          setModelos(data.modelos);
+        } catch (error) {
+          console.error("Erro ao carregar modelos", error);
+        }
+      } else {
+        setModelos([]);
+      }
+    }
+    loadModelos();
+  }, [formData.marca, formData.category_id]);
+
+  // Carrega os anos disponíveis da API FIPE com base na marca e modelo selecionados
+  useEffect(() => {
+    async function loadAnos() {
+      if (formData.marca && formData.modelo) {
+        try {
+          const data = await fetchAnos(formData.category_id, formData.marca, formData.modelo);
+          setAnos(data); // data deve ser um array com os anos disponíveis
+        } catch (error) {
+          console.error("Erro ao carregar anos", error);
+        }
+      } else {
+        setAnos([]);
+      }
+    }
+    loadAnos();
+  }, [formData.marca, formData.modelo, formData.category_id]);
+  
+  // Função para buscar detalhes FIPE para o ano selecionado
+  async function handleFetchFipe() {
+    if (formData.marca && formData.modelo && formData.ano) {
+      try {
+        const detalhes = await fetchDetalhesModelo(
+          formData.category_id,
+          formData.marca,
+          formData.modelo,
+          formData.ano
+        );
+        setFipeInfo(detalhes);
+        // Atualize os campos textuais com os valores da API (supondo que a API retorne "Marca" e "Modelo")
+        setFormData(prev => ({
+          ...prev,
+          brand: detalhes.Marca || prev.brand,
+          model: detalhes.Modelo || prev.model,
+        }));
+      } catch (error) {
+        console.error("Erro ao buscar detalhes FIPE", error);
+      }
+    }
+  }
+  
 
   function handleChange(
     e: React.ChangeEvent<
@@ -52,7 +136,7 @@ export default function AddVehiclePage() {
     >
   ) {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -68,17 +152,15 @@ export default function AddVehiclePage() {
   }
 
   function handleRemoveFile(index: number) {
-    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   }
-  
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
 
     // Obtém o usuário logado
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setLoading(false);
       return;
@@ -87,16 +169,18 @@ export default function AddVehiclePage() {
     // Prepara os dados do veículo
     const vehicleData = {
       user_id: user.id,
-      category_id: formData.category_id ? parseInt(formData.category_id) : null,
-      brand: formData.brand,
-      model: formData.model,
-      year: parseInt(formData.year),
+      category_id: formData.category_id === "carros" ? 1 : 2,
+      fipe_info: fipeInfo ? JSON.stringify(fipeInfo) : null,
+      brand: formData.brand, 
+      model: formData.model, 
+      year: formData.ano ? parseInt(formData.ano.split("-")[0]) : null,
       price: parseFloat(formData.price),
       mileage: parseInt(formData.mileage),
       color: formData.color,
       fuel: formData.fuel,
       notes: formData.notes,
     };
+    
 
     // Insere o veículo na tabela "vehicles"
     const { data, error } = await supabase
@@ -110,10 +194,10 @@ export default function AddVehiclePage() {
     }
     const insertedVehicle = data[0];
 
-    // Se houver arquivos selecionados, faça o upload de cada um
+    // Faz o upload das imagens (se houver)
     if (selectedFiles.length > 0) {
       await Promise.all(
-        selectedFiles.map(async (file) => {
+        selectedFiles.map(async file => {
           const publicUrl = await uploadVehicleImage(insertedVehicle.id, file);
           if (!publicUrl) {
             console.error("Erro no upload da imagem para", file.name);
@@ -128,105 +212,121 @@ export default function AddVehiclePage() {
 
   return (
     <AuthGuard>
-      <div className="p-8 max-w-2xl mx-auto bg-white shadow rounded">
-        <h1 className="text-2xl font-bold mb-6 text-center">Adicionar Veículo</h1>
+      <div className="p-8 max-w-3xl mx-auto bg-white shadow rounded">
+        <h1 className="text-3xl font-bold mb-6 text-center">Adicionar Veículo</h1>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Seletor de Categoria */}
           <div>
-            <label htmlFor="category_id" className="block mb-1 font-medium">
-              Categoria
-            </label>
+            <label className="block mb-1 font-medium">Categoria</label>
             <select
-              id="category_id"
               name="category_id"
               value={formData.category_id}
               onChange={handleChange}
               className="w-full p-2 border rounded"
             >
-              <option value="">Selecione a categoria</option>
-              <option value="1">Car</option>
-              <option value="2">Motorcycle</option>
+              <option value="carros">Carro</option>
+              <option value="motos">Moto</option>
             </select>
           </div>
+          {/* Seletor de Marca (FIPE) */}
           <div>
-            <label htmlFor="brand" className="block mb-1 font-medium">
-              Marca
-            </label>
-            <input
-              type="text"
-              id="brand"
-              name="brand"
-              value={formData.brand}
+            <label className="block mb-1 font-medium">Marca (FIPE)</label>
+            <select
+              name="marca"
+              value={formData.marca}
               onChange={handleChange}
               className="w-full p-2 border rounded"
-              placeholder="Ex: Toyota"
+            >
+              <option value="">Selecione a marca</option>
+              {marcas.map((marca) => (
+                <option key={marca.codigo} value={marca.codigo}>
+                  {marca.nome}
+                </option>
+              ))}
+            </select>
+          </div>
+          {/* Seletor de Modelo (FIPE) */}
+          <div>
+            <label className="block mb-1 font-medium">Modelo (FIPE)</label>
+            <select
+              name="modelo"
+              value={formData.modelo}
+              onChange={handleChange}
+              className="w-full p-2 border rounded"
+            >
+              <option value="">Selecione o modelo</option>
+              {modelos.map((modelo: any) => (
+                <option key={modelo.codigo} value={modelo.codigo}>
+                  {modelo.nome}
+                </option>
+              ))}
+            </select>
+          </div>
+          {/* Seletor de Ano (FIPE) */}
+          <div>
+            <label className="block mb-1 font-medium">Ano (FIPE)</label>
+            <select
+              name="ano"
+              value={formData.ano}
+              onChange={handleChange}
+              className="w-full p-2 border rounded"
+            >
+              <option value="">Selecione o ano</option>
+              {anos.map((item: any) => (
+                <option key={item.codigo} value={item.codigo}>
+                  {item.nome}
+                </option>
+              ))}
+            </select>
+          </div>
+          {/* Botão para buscar detalhes FIPE */}
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={handleFetchFipe}
+              className="text-sm text-blue-500 underline"
+            >
+              Buscar valor FIPE
+            </button>
+          </div>
+          {fipeInfo && (
+            <div className="p-4 bg-gray-100 rounded">
+              <p>
+                <strong>Valor FIPE:</strong> {fipeInfo.Valor}
+              </p>
+              <p>
+                <strong>Data de Referência:</strong> {fipeInfo.MesReferencia}
+              </p>
+            </div>
+          )}
+          {/* Demais campos manuais para os outros dados */}
+          <div>
+            <label className="block mb-1 font-medium">Preço</label>
+            <input
+              type="number"
+              step="0.01"
+              name="price"
+              value={formData.price}
+              onChange={handleChange}
+              className="w-full p-2 border rounded"
+              placeholder="Ex: 50000.00"
             />
           </div>
           <div>
-            <label htmlFor="model" className="block mb-1 font-medium">
-              Modelo
-            </label>
+            <label className="block mb-1 font-medium">Quilometragem</label>
             <input
-              type="text"
-              id="model"
-              name="model"
-              value={formData.model}
+              type="number"
+              name="mileage"
+              value={formData.mileage}
               onChange={handleChange}
               className="w-full p-2 border rounded"
-              placeholder="Ex: Corolla"
+              placeholder="Ex: 30000"
             />
           </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label htmlFor="year" className="block mb-1 font-medium">
-                Ano
-              </label>
-              <input
-                type="number"
-                id="year"
-                name="year"
-                value={formData.year}
-                onChange={handleChange}
-                className="w-full p-2 border rounded"
-                placeholder="Ex: 2020"
-              />
-            </div>
-            <div>
-              <label htmlFor="price" className="block mb-1 font-medium">
-                Preço
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                id="price"
-                name="price"
-                value={formData.price}
-                onChange={handleChange}
-                className="w-full p-2 border rounded"
-                placeholder="Ex: 50000.00"
-              />
-            </div>
-            <div>
-              <label htmlFor="mileage" className="block mb-1 font-medium">
-                Quilometragem
-              </label>
-              <input
-                type="number"
-                id="mileage"
-                name="mileage"
-                value={formData.mileage}
-                onChange={handleChange}
-                className="w-full p-2 border rounded"
-                placeholder="Ex: 30000"
-              />
-            </div>
-          </div>
           <div>
-            <label htmlFor="color" className="block mb-1 font-medium">
-              Cor
-            </label>
+            <label className="block mb-1 font-medium">Cor</label>
             <input
               type="text"
-              id="color"
               name="color"
               value={formData.color}
               onChange={handleChange}
@@ -235,12 +335,9 @@ export default function AddVehiclePage() {
             />
           </div>
           <div>
-            <label htmlFor="fuel" className="block mb-1 font-medium">
-              Combustível
-            </label>
+            <label className="block mb-1 font-medium">Combustível</label>
             <input
               type="text"
-              id="fuel"
               name="fuel"
               value={formData.fuel}
               onChange={handleChange}
@@ -249,11 +346,8 @@ export default function AddVehiclePage() {
             />
           </div>
           <div>
-            <label htmlFor="notes" className="block mb-1 font-medium">
-              Observações
-            </label>
+            <label className="block mb-1 font-medium">Observações</label>
             <textarea
-              id="notes"
               name="notes"
               value={formData.notes}
               onChange={handleChange}
@@ -262,13 +356,13 @@ export default function AddVehiclePage() {
               placeholder="Informações adicionais..."
             />
           </div>
+          {/* Campo para upload de imagens (máx. 5) */}
           <div>
-            <label htmlFor="image" className="block mb-1 font-medium">
+            <label className="block mb-1 font-medium">
               Imagens do veículo (máx. 5)
             </label>
             <input
               type="file"
-              id="image"
               name="image"
               multiple
               onChange={handleFileChange}
@@ -287,7 +381,7 @@ export default function AddVehiclePage() {
                   <button
                     type="button"
                     onClick={() => handleRemoveFile(index)}
-                    className="absolute top-1 right-1 bg-black p-1 text-red-500 hover:bg-gray-200"
+                    className="absolute top-1 right-1 bg-black text-white rounded-full p-1 hover:bg-gray-700"
                     aria-label="Remover imagem"
                   >
                     X
@@ -296,7 +390,6 @@ export default function AddVehiclePage() {
               ))}
             </div>
           )}
-
           <button
             type="submit"
             disabled={loading}
