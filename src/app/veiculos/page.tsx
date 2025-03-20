@@ -91,7 +91,7 @@ export default function VeiculosPage() {
       }
     }
 
-    // Exclui o veículo (a exclusão em cascata removerá registros relacionados)
+    // Exclui o veículo (a exclusão em cascata remove registros relacionados)
     const { error } = await supabase
       .from("vehicles")
       .delete()
@@ -123,9 +123,9 @@ export default function VeiculosPage() {
             </p>
           </>
         ) : (
-          <ul className="space-y-4">
+          <div className="grid grid-cols-1 gap-4">
             {vehicles.map((vehicle) => (
-              <li
+              <div
                 key={vehicle.id}
                 onClick={() => router.push(`/veiculos/${vehicle.id}`)}
                 className="cursor-pointer"
@@ -136,9 +136,9 @@ export default function VeiculosPage() {
                   onToggleFavorite={toggleFavorite}
                   onDelete={handleDelete}
                 />
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </AuthGuard>

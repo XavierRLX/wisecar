@@ -63,11 +63,11 @@ export default function FavoritosPage() {
             </p>
           </>
         ) : (
-          <ul className="space-y-4">
+          <div className="grid grid-cols-1 gap-4">
             {favoritesData.map((favorite: any) => {
               const vehicle = favorite.vehicles;
               return (
-                <li
+                <div
                   key={favorite.vehicle_id}
                   onClick={() => router.push(`/veiculos/${vehicle.id}`)}
                   className="cursor-pointer"
@@ -75,14 +75,14 @@ export default function FavoritosPage() {
                   <VehicleCard
                     vehicle={vehicle}
                     onRemoveFavorite={(vehicleId) => {
-                      // Aqui, no VehicleCard, já chamamos e.stopPropagation()
+                      // O VehicleCard já interrompe a propagação do clique
                       removeFavorite(vehicleId);
                     }}
                   />
-                </li>
+                </div>
               );
             })}
-          </ul>
+          </div>
         )}
       </div>
     </AuthGuard>
