@@ -12,23 +12,33 @@ import {
   fetchDetalhesModelo,
 } from "@/lib/fipe";
 
+// Importa os componentes modulares (crie estes arquivos conforme os exemplos fornecidos)
+import FipeSelectors from "@/components/FipeSelectors";
+import VehicleDataForm from "@/components/VehicleDataForm";
+import SellerForm from "@/components/SellerForm";
+import OptionalsSelect from "@/components/OptionalsSelect";
+import FileUpload from "@/components/FileUpload";
+
 interface VehicleFormData {
   category_id: "carros" | "motos";
-  marca: string;         // FIPE brand code
-  modelo: string;        // FIPE model code
-  ano: string;           // FIPE year code (ex: "2014-3")
-  fipe_info?: string;    // FIPE details JSON
-  price: string;
-  mileage: string;
-  color: string;
-  fuel: string;
-  notes: string;
-  seller_type: "individual" | "professional";
-  seller_name: string;
-  phone: string;
-  company: string;
-  social_media: string;
-  address: string;
+  // Campos FIPE (para o formulário em português)
+  marca: string;         // Código da marca (FIPE)
+  modelo: string;        // Código do modelo (FIPE)
+  ano: string;           // Código do ano (FIPE) – ex: "2014-3"
+  fipe_info?: string;    // Dados FIPE completos (JSON)
+  // Dados informados pelo usuário
+  preco: string;
+  quilometragem: string;
+  cor: string;
+  combustivel: string;
+  observacoes: string;
+  // Dados de contato do vendedor
+  vendedorTipo: "particular" | "profissional";
+  nome_vendedor: string;
+  telefone: string;
+  empresa: string;
+  redes_sociais: string;
+  endereco: string;
 }
 
 export default function AddVehiclePage() {
@@ -42,17 +52,17 @@ export default function AddVehiclePage() {
     modelo: "",
     ano: "",
     fipe_info: "",
-    price: "",
-    mileage: "",
-    color: "",
-    fuel: "",
-    notes: "",
-    seller_type: "individual",
-    seller_name: "",
-    phone: "",
-    company: "",
-    social_media: "",
-    address: "",
+    preco: "",
+    quilometragem: "",
+    cor: "",
+    combustivel: "",
+    observacoes: "",
+    vendedorTipo: "particular",
+    nome_vendedor: "",
+    telefone: "",
+    empresa: "",
+    redes_sociais: "",
+    endereco: "",
   });
   const [marcas, setMarcas] = useState<any[]>([]);
   const [modelos, setModelos] = useState<any[]>([]);
@@ -61,27 +71,27 @@ export default function AddVehiclePage() {
   const [optionals, setOptionals] = useState<any[]>([]);
   const [selectedOptionals, setSelectedOptionals] = useState<number[]>([]);
 
-  // Update preview URLs for file uploads
+  // Atualiza as pré-visualizações das imagens
   useEffect(() => {
     const urls = selectedFiles.map(file => URL.createObjectURL(file));
     setPreviewUrls(urls);
     return () => urls.forEach(url => URL.revokeObjectURL(url));
   }, [selectedFiles]);
 
-  // Load FIPE brands based on category
+  // Carrega as marcas via API FIPE conforme a categoria
   useEffect(() => {
     async function loadMarcas() {
       try {
         const data = await fetchMarcas(formData.category_id);
         setMarcas(data);
       } catch (error) {
-        console.error("Error loading brands", error);
+        console.error("Erro ao carregar marcas", error);
       }
     }
     loadMarcas();
   }, [formData.category_id]);
 
-  // Load FIPE models based on selected brand
+  // Carrega os modelos conforme a marca selecionada
   useEffect(() => {
     async function loadModelos() {
       if (formData.marca) {
@@ -89,7 +99,7 @@ export default function AddVehiclePage() {
           const data = await fetchModelos(formData.category_id, formData.marca);
           setModelos(data.modelos);
         } catch (error) {
-          console.error("Error loading models", error);
+          console.error("Erro ao carregar modelos", error);
         }
       } else {
         setModelos([]);
@@ -98,15 +108,15 @@ export default function AddVehiclePage() {
     loadModelos();
   }, [formData.marca, formData.category_id]);
 
-  // Load FIPE years based on selected brand and model
+  // Carrega os anos disponíveis conforme marca e modelo
   useEffect(() => {
     async function loadAnos() {
       if (formData.marca && formData.modelo) {
         try {
           const data = await fetchAnos(formData.category_id, formData.marca, formData.modelo);
-          setAnos(data); // data is an array with available years
+          setAnos(data);
         } catch (error) {
-          console.error("Error loading years", error);
+          console.error("Erro ao carregar anos", error);
         }
       } else {
         setAnos([]);
@@ -115,12 +125,12 @@ export default function AddVehiclePage() {
     loadAnos();
   }, [formData.marca, formData.modelo, formData.category_id]);
 
-  // Load optionals from the database
+  // Carrega os opcionais do banco
   useEffect(() => {
     async function loadOptionals() {
       const { data, error } = await supabase.from("optionals").select("*");
       if (error) {
-        console.error("Error loading optionals:", error.message);
+        console.error("Erro ao carregar opcionais:", error.message);
       } else {
         setOptionals(data || []);
       }
@@ -128,7 +138,7 @@ export default function AddVehiclePage() {
     loadOptionals();
   }, []);
 
-  // Fetch FIPE details for the selected year
+  // Função para buscar detalhes FIPE para o ano selecionado
   async function handleFetchFipe() {
     if (formData.marca && formData.modelo && formData.ano) {
       try {
@@ -146,7 +156,7 @@ export default function AddVehiclePage() {
         };
         setFipeInfo(fipeData);
       } catch (error) {
-        console.error("Error fetching FIPE details", error);
+        console.error("Erro ao buscar detalhes FIPE", error);
       }
     }
   }
@@ -162,7 +172,7 @@ export default function AddVehiclePage() {
     if (e.target.files) {
       const files = Array.from(e.target.files);
       if (files.length > 5) {
-        alert("You can select up to 5 images.");
+        alert("Você pode selecionar no máximo 5 imagens.");
         setSelectedFiles(files.slice(0, 5));
       } else {
         setSelectedFiles(files);
@@ -184,80 +194,76 @@ export default function AddVehiclePage() {
     e.preventDefault();
     setLoading(true);
 
-    // Get logged-in user
+    // Obtém o usuário logado
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setLoading(false);
       return;
     }
 
-    // Prepare vehicle data (without seller details, as these go to seller_details)
+    const brandName = marcas.find((m) => m.codigo === formData.marca)?.nome || formData.marca;
+    const modelName = modelos.find((mod) => mod.codigo === formData.modelo)?.nome || formData.modelo;
+
+    // Mapeia os campos do formulário para os dados a serem inseridos no banco
     const vehicleData = {
       user_id: user.id,
       category_id: formData.category_id === "carros" ? 1 : 2,
       fipe_info: fipeInfo ? JSON.stringify(fipeInfo) : null,
-      brand: formData.marca,  // You could map this code to a name if desired
-      model: formData.modelo,
+      brand: brandName,
+      model: modelName,
       year: formData.ano ? parseInt(formData.ano.split("-")[0]) : null,
-      price: parseFloat(formData.price),
-      mileage: parseInt(formData.mileage),
-      color: formData.color,
-      fuel: formData.fuel,
-      notes: formData.notes,
+      price: parseFloat(formData.preco),
+      mileage: parseInt(formData.quilometragem),
+      color: formData.cor,
+      fuel: formData.combustivel,
+      notes: formData.observacoes,
     };
 
-    // Insert vehicle record
-    const { data, error } = await supabase
-      .from("vehicles")
-      .insert(vehicleData)
-      .select();
+    // Insere o veículo na tabela "vehicles"
+    const { data, error } = await supabase.from("vehicles").insert(vehicleData).select();
     if (error) {
-      console.error("Error adding vehicle:", error.message);
+      console.error("Erro ao adicionar veículo:", error.message);
       setLoading(false);
       return;
     }
     const insertedVehicle = data[0];
 
-    // Upload images if any
+    // Faz o upload das imagens, se houver
     if (selectedFiles.length > 0) {
       await Promise.all(
         selectedFiles.map(async file => {
           const publicUrl = await uploadVehicleImage(insertedVehicle.id, file);
           if (!publicUrl) {
-            console.error("Error uploading image for", file.name);
+            console.error("Erro no upload da imagem para", file.name);
           }
         })
       );
     }
 
-    // Insert seller details into seller_details table
+    // Insere os dados do vendedor na tabela "seller_details"
     const sellerData = {
       vehicle_id: insertedVehicle.id,
-      seller_type: formData.seller_type, // Ensure your form field name is updated accordingly
-      seller_name: formData.seller_name,
-      phone: formData.phone,
-      company: formData.company,
-      social_media: formData.social_media,
-      address: formData.address,
+      seller_type: formData.vendedorTipo,
+      seller_name: formData.nome_vendedor,
+      phone: formData.telefone,
+      company: formData.empresa,
+      social_media: formData.redes_sociais,
+      address: formData.endereco,
     };
-    const { error: sellerError } = await supabase
-      .from("seller_details")
-      .insert(sellerData);
+    const { error: sellerError } = await supabase.from("seller_details").insert(sellerData);
     if (sellerError) {
-      console.error("Error inserting seller details:", sellerError.message);
+      console.error("Erro ao inserir detalhes do vendedor:", sellerError.message);
     }
 
-    // Insert selected optionals into the vehicle_optionals relation table
+    // Insere os opcionais selecionados na tabela de relação "vehicle_optionals"
     if (selectedOptionals.length > 0) {
       const rows = selectedOptionals.map(optionalId => ({
         vehicle_id: insertedVehicle.id,
         optional_id: optionalId,
       }));
-      const { error: optError } = await supabase
-        .from("vehicle_optionals")
-        .insert(rows);
+      const { error: optError } = await supabase.from("vehicle_optionals").insert(rows);
       if (optError) {
-        console.error("Error inserting optionals:", optError.message);
+        console.error("Erro ao inserir opcionais:", optError.message);
       }
     }
 
@@ -268,323 +274,73 @@ export default function AddVehiclePage() {
   return (
     <AuthGuard>
       <div className="p-8 max-w-4xl mx-auto bg-white shadow rounded">
-        <h1 className="text-3xl font-bold mb-6 text-center">Add Vehicle</h1>
+        <h1 className="text-3xl font-bold mb-6 text-center">Adicionar Veículo</h1>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Category Selector */}
-          <div>
-            <label className="block mb-1 font-medium">Category</label>
-            <select
-              name="category_id"
-              value={formData.category_id}
-              onChange={handleChange}
-              className="w-full p-2 border rounded"
-            >
-              <option value="carros">Car</option>
-              <option value="motos">Motorcycle</option>
-            </select>
-          </div>
-          {/* FIPE Brand Selector */}
-          <div>
-            <label className="block mb-1 font-medium">Brand (FIPE)</label>
-            <select
-              name="marca"
-              value={formData.marca}
-              onChange={handleChange}
-              className="w-full p-2 border rounded"
-            >
-              <option value="">Select brand</option>
-              {marcas.map((marca) => (
-                <option key={marca.codigo} value={marca.codigo}>
-                  {marca.nome}
-                </option>
-              ))}
-            </select>
-          </div>
-          {/* FIPE Model Selector */}
-          <div>
-            <label className="block mb-1 font-medium">Model (FIPE)</label>
-            <select
-              name="modelo"
-              value={formData.modelo}
-              onChange={handleChange}
-              className="w-full p-2 border rounded"
-            >
-              <option value="">Select model</option>
-              {modelos.map((modelo: any) => (
-                <option key={modelo.codigo} value={modelo.codigo}>
-                  {modelo.nome}
-                </option>
-              ))}
-            </select>
-          </div>
-          {/* FIPE Year Selector */}
-          <div>
-            <label className="block mb-1 font-medium">Year (FIPE)</label>
-            <select
-              name="ano"
-              value={formData.ano}
-              onChange={handleChange}
-              className="w-full p-2 border rounded"
-            >
-              <option value="">Select year</option>
-              {anos.map((item: any) => (
-                <option key={item.codigo} value={item.codigo}>
-                  {item.nome}
-                </option>
-              ))}
-            </select>
-          </div>
-          {/* Button to fetch FIPE details */}
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={handleFetchFipe}
-              className="text-sm text-blue-500 underline"
-            >
-              Fetch FIPE details
-            </button>
-          </div>
+          {/* FIPE Selectors */}
+          <FipeSelectors
+            category={formData.category_id}
+            marca={formData.marca}
+            modelo={formData.modelo}
+            ano={formData.ano}
+            marcas={marcas}
+            modelos={modelos}
+            anos={anos}
+            onChange={handleChange}
+            onFetchFipe={handleFetchFipe}
+          />
+
           {fipeInfo && (
             <div className="p-4 bg-gray-100 rounded">
               <p>
-                <strong>FIPE Value:</strong> {fipeInfo.Valor}
+                <strong>Valor FIPE:</strong> {fipeInfo.Valor}
               </p>
               <p>
-                <strong>Reference Date:</strong> {fipeInfo.MesReferencia}
+                <strong>Data de Referência:</strong> {fipeInfo.MesReferencia}
               </p>
             </div>
           )}
-          {/* Additional vehicle data fields */}
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block mb-1 font-medium">Price</label>
-              <input
-                type="number"
-                step="0.01"
-                name="price"
-                value={formData.price}
-                onChange={handleChange}
-                className="w-full p-2 border rounded"
-                placeholder="e.g., 50000.00"
-              />
-            </div>
-            <div>
-              <label className="block mb-1 font-medium">Mileage</label>
-              <input
-                type="number"
-                name="mileage"
-                value={formData.mileage}
-                onChange={handleChange}
-                className="w-full p-2 border rounded"
-                placeholder="e.g., 30000"
-              />
-            </div>
-            <div>
-              <label className="block mb-1 font-medium">Color</label>
-              <input
-                type="text"
-                name="color"
-                value={formData.color}
-                onChange={handleChange}
-                className="w-full p-2 border rounded"
-                placeholder="e.g., Silver"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block mb-1 font-medium">Fuel</label>
-              <input
-                type="text"
-                name="fuel"
-                value={formData.fuel}
-                onChange={handleChange}
-                className="w-full p-2 border rounded"
-                placeholder="e.g., Gasoline"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block mb-1 font-medium">Notes</label>
-            <textarea
-              name="notes"
-              value={formData.notes}
-              onChange={handleChange}
-              className="w-full p-2 border rounded"
-              rows={3}
-              placeholder="Additional info..."
-            />
-          </div>
-          {/* Seller Contact Information */}
-          <div>
-            <label className="block mb-1 font-medium">Seller Type</label>
-            <div className="flex gap-4">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="seller_type"
-                  value="individual"
-                  checked={formData.seller_type === "individual"}
-                  onChange={handleChange}
-                  className="mr-2"
-                />
-                Individual
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="seller_type"
-                  value="professional"
-                  checked={formData.seller_type === "professional"}
-                  onChange={handleChange}
-                  className="mr-2"
-                />
-                Professional
-              </label>
-            </div>
-          </div>
-          {formData.seller_type === "individual" && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block mb-1 font-medium">Name</label>
-                <input
-                  type="text"
-                  name="seller_name"
-                  value={formData.seller_name}
-                  onChange={handleChange}
-                  className="w-full p-2 border rounded"
-                  placeholder="e.g., John Doe"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Phone</label>
-                <input
-                  type="text"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="w-full p-2 border rounded"
-                  placeholder="e.g., (11) 99999-8888"
-                />
-              </div>
-            </div>
-          )}
-          {formData.seller_type === "professional" && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block mb-1 font-medium">Company</label>
-                <input
-                  type="text"
-                  name="company"
-                  value={formData.company}
-                  onChange={handleChange}
-                  className="w-full p-2 border rounded"
-                  placeholder="e.g., AutoCenter"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Seller</label>
-                <input
-                  type="text"
-                  name="seller_name"
-                  value={formData.seller_name}
-                  onChange={handleChange}
-                  className="w-full p-2 border rounded"
-                  placeholder="e.g., John Smith"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Phone</label>
-                <input
-                  type="text"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="w-full p-2 border rounded"
-                  placeholder="e.g., (11) 99999-8888"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Social Media</label>
-                <input
-                  type="text"
-                  name="social_media"
-                  value={formData.social_media}
-                  onChange={handleChange}
-                  className="w-full p-2 border rounded"
-                  placeholder="e.g., @autocenter"
-                />
-              </div>
-              <div className="col-span-2">
-                <label className="block mb-1 font-medium">Address</label>
-                <input
-                  type="text"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  className="w-full p-2 border rounded"
-                  placeholder="e.g., 123 Main St, City, Country"
-                />
-              </div>
-            </div>
-          )}
-          {/* Optionals Section */}
-          <div>
-            <label className="block mb-1 font-medium">Optionals</label>
-            <div className="flex flex-wrap gap-4">
-              {optionals.map((opcional: any) => (
-                <label key={opcional.id} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    value={opcional.id}
-                    checked={selectedOptionals.includes(opcional.id)}
-                    onChange={() => handleToggleOptional(opcional.id)}
-                  />
-                  <span className="text-sm">{opcional.nome}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-          {/* Image Upload */}
-          <div>
-            <label className="block mb-1 font-medium">
-              Vehicle Images (max. 5)
-            </label>
-            <input
-              type="file"
-              name="image"
-              multiple
-              onChange={handleFileChange}
-              className="w-full p-2 border rounded"
-            />
-          </div>
-          {previewUrls.length > 0 && (
-            <div className="grid grid-cols-3 gap-4">
-              {previewUrls.map((url, index) => (
-                <div key={index} className="relative">
-                  <img
-                    src={url}
-                    alt={`Preview ${index + 1}`}
-                    className="w-full h-32 object-cover rounded"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveFile(index)}
-                    className="absolute top-1 right-1 bg-black text-white rounded-full p-1 hover:bg-gray-700"
-                    aria-label="Remove image"
-                  >
-                    X
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+
+          {/* Vehicle Data */}
+          <VehicleDataForm
+            preco={formData.preco}
+            quilometragem={formData.quilometragem}
+            cor={formData.cor}
+            combustivel={formData.combustivel}
+            observacoes={formData.observacoes}
+            onChange={handleChange}
+          />
+
+          {/* Seller Details */}
+          <SellerForm
+            sellerType={formData.vendedorTipo}
+            sellerName={formData.nome_vendedor}
+            phone={formData.telefone}
+            company={formData.empresa}
+            socialMedia={formData.redes_sociais}
+            address={formData.endereco}
+            onChange={handleChange}
+          />
+
+          {/* Optionals */}
+          <OptionalsSelect
+            optionals={optionals}
+            selectedOptionals={selectedOptionals}
+            onToggleOptional={handleToggleOptional}
+          />
+
+          {/* File Upload */}
+          <FileUpload
+            previewUrls={previewUrls}
+            onFileChange={handleFileChange}
+            onRemoveFile={handleRemoveFile}
+          />
+
           <button
             type="submit"
             disabled={loading}
             className="w-full py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
           >
-            {loading ? "Saving..." : "Add Vehicle"}
+            {loading ? "Salvando..." : "Adicionar Veículo"}
           </button>
         </form>
       </div>
