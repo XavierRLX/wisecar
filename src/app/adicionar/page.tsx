@@ -193,24 +193,24 @@ export default function AddVehiclePage() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-
+  
     // Obtém o usuário logado
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setLoading(false);
       return;
     }
-
+  
+    // Mapeia o código da marca e do modelo para os respectivos nomes
     const brandName = marcas.find((m) => m.codigo === formData.marca)?.nome || formData.marca;
-    const modelName = modelos.find((mod) => mod.codigo === formData.modelo)?.nome || formData.modelo;
-
-    // Mapeia os campos do formulário para os dados a serem inseridos no banco
+    const modelName = modelos.find(mod => String(mod.codigo) === formData.modelo)?.nome || formData.modelo;
+  
     const vehicleData = {
       user_id: user.id,
       category_id: formData.category_id === "carros" ? 1 : 2,
       fipe_info: fipeInfo ? JSON.stringify(fipeInfo) : null,
       brand: brandName,
-      model: modelName,
+      model: modelName, 
       year: formData.ano ? parseInt(formData.ano.split("-")[0]) : null,
       price: parseFloat(formData.preco),
       mileage: parseInt(formData.quilometragem),
