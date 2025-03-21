@@ -75,7 +75,6 @@ export default function FavoritosPage() {
                   <VehicleCard
                     vehicle={vehicle}
                     onRemoveFavorite={(vehicleId) => {
-                      // O VehicleCard já interrompe a propagação do clique
                       removeFavorite(vehicleId);
                     }}
                   />

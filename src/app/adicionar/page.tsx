@@ -273,7 +273,7 @@ export default function AddVehiclePage() {
 
   return (
     <AuthGuard>
-      <div className="p-8 max-w-4xl mx-auto bg-white shadow rounded">
+      <div className="p-8 max-w-4xl m-4 mx-auto bg-white shadow rounded">
         <h1 className="text-3xl font-bold mb-6 text-center">Adicionar Veículo</h1>
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* FIPE Selectors */}
@@ -343,6 +343,7 @@ export default function AddVehiclePage() {
             {loading ? "Salvando..." : "Adicionar Veículo"}
           </button>
         </form>
+        <div className="mb-4"></div>
       </div>
     </AuthGuard>
   );
