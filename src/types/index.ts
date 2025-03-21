@@ -5,6 +5,11 @@ export interface VehicleImage {
   created_at?: string;
 }
 
+export interface Optional {
+  id: number;
+  nome: string; 
+}
+
 export interface Vehicle {
   id: string;
   user_id: string;
@@ -19,5 +24,11 @@ export interface Vehicle {
   notes?: string;
   created_at?: string;
   vehicle_images?: VehicleImage[];
-  fipe_info?:JSON;
+  fipe_info?: any; 
+  seller_type?: string;
+  seller_name?: string;
+  phone?: string;
+  company?: string;
+  social_media?: string;
+  optionals?: Optional[];
 }
