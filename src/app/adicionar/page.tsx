@@ -5,11 +5,11 @@ import { useRouter } from "next/navigation";
 import AuthGuard from "@/components/AuthGuard";
 import { supabase } from "@/lib/supabase";
 import { uploadVehicleImage } from "@/hooks/useUploadImage";
-import { 
-  fetchMarcas, 
-  fetchModelos, 
-  fetchAnos, 
-  fetchDetalhesModelo 
+import {
+  fetchMarcas,
+  fetchModelos,
+  fetchAnos,
+  fetchDetalhesModelo,
 } from "@/lib/fipe";
 
 interface VehicleFormData {
@@ -23,11 +23,12 @@ interface VehicleFormData {
   color: string;
   fuel: string;
   notes: string;
-  vendedorTipo: "particular" | "profissional";
-  nome_vendedor: string;
-  telefone: string;
-  empresa: string;
-  redes_sociais: string;
+  seller_type: "individual" | "professional";
+  seller_name: string;
+  phone: string;
+  company: string;
+  social_media: string;
+  address: string;
 }
 
 export default function AddVehiclePage() {
@@ -46,11 +47,12 @@ export default function AddVehiclePage() {
     color: "",
     fuel: "",
     notes: "",
-    vendedorTipo: "particular",
-    nome_vendedor: "",
-    telefone: "",
-    empresa: "",
-    redes_sociais: "",
+    seller_type: "individual",
+    seller_name: "",
+    phone: "",
+    company: "",
+    social_media: "",
+    address: "",
   });
   const [marcas, setMarcas] = useState<any[]>([]);
   const [modelos, setModelos] = useState<any[]>([]);
@@ -102,7 +104,7 @@ export default function AddVehiclePage() {
       if (formData.marca && formData.modelo) {
         try {
           const data = await fetchAnos(formData.category_id, formData.marca, formData.modelo);
-          setAnos(data);
+          setAnos(data); // data is an array with available years
         } catch (error) {
           console.error("Error loading years", error);
         }
@@ -189,12 +191,12 @@ export default function AddVehiclePage() {
       return;
     }
 
-    // Prepare vehicle data object (map field names to the English version from the DB)
+    // Prepare vehicle data (without seller details, as these go to seller_details)
     const vehicleData = {
       user_id: user.id,
       category_id: formData.category_id === "carros" ? 1 : 2,
       fipe_info: fipeInfo ? JSON.stringify(fipeInfo) : null,
-      brand: formData.marca, // could map to the actual brand name if desired
+      brand: formData.marca,  // You could map this code to a name if desired
       model: formData.modelo,
       year: formData.ano ? parseInt(formData.ano.split("-")[0]) : null,
       price: parseFloat(formData.price),
@@ -202,11 +204,6 @@ export default function AddVehiclePage() {
       color: formData.color,
       fuel: formData.fuel,
       notes: formData.notes,
-      seller_type: formData.vendedorTipo,
-      seller_name: formData.nome_vendedor,
-      phone: formData.telefone,
-      company: formData.empresa,
-      social_media: formData.redes_sociais,
     };
 
     // Insert vehicle record
@@ -231,6 +228,23 @@ export default function AddVehiclePage() {
           }
         })
       );
+    }
+
+    // Insert seller details into seller_details table
+    const sellerData = {
+      vehicle_id: insertedVehicle.id,
+      seller_type: formData.seller_type, // Ensure your form field name is updated accordingly
+      seller_name: formData.seller_name,
+      phone: formData.phone,
+      company: formData.company,
+      social_media: formData.social_media,
+      address: formData.address,
+    };
+    const { error: sellerError } = await supabase
+      .from("seller_details")
+      .insert(sellerData);
+    if (sellerError) {
+      console.error("Error inserting seller details:", sellerError.message);
     }
 
     // Insert selected optionals into the vehicle_optionals relation table
@@ -340,7 +354,7 @@ export default function AddVehiclePage() {
               </p>
             </div>
           )}
-          {/* Additional fields for vehicle data */}
+          {/* Additional vehicle data fields */}
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block mb-1 font-medium">Price</label>
@@ -408,9 +422,9 @@ export default function AddVehiclePage() {
               <label className="flex items-center">
                 <input
                   type="radio"
-                  name="vendedorTipo"
-                  value="particular"
-                  checked={formData.vendedorTipo === "particular"}
+                  name="seller_type"
+                  value="individual"
+                  checked={formData.seller_type === "individual"}
                   onChange={handleChange}
                   className="mr-2"
                 />
@@ -419,9 +433,9 @@ export default function AddVehiclePage() {
               <label className="flex items-center">
                 <input
                   type="radio"
-                  name="vendedorTipo"
-                  value="profissional"
-                  checked={formData.vendedorTipo === "profissional"}
+                  name="seller_type"
+                  value="professional"
+                  checked={formData.seller_type === "professional"}
                   onChange={handleChange}
                   className="mr-2"
                 />
@@ -429,14 +443,14 @@ export default function AddVehiclePage() {
               </label>
             </div>
           </div>
-          {formData.vendedorTipo === "particular" && (
+          {formData.seller_type === "individual" && (
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block mb-1 font-medium">Name</label>
                 <input
                   type="text"
-                  name="nome_vendedor"
-                  value={formData.nome_vendedor}
+                  name="seller_name"
+                  value={formData.seller_name}
                   onChange={handleChange}
                   className="w-full p-2 border rounded"
                   placeholder="e.g., John Doe"
@@ -446,8 +460,8 @@ export default function AddVehiclePage() {
                 <label className="block mb-1 font-medium">Phone</label>
                 <input
                   type="text"
-                  name="telefone"
-                  value={formData.telefone}
+                  name="phone"
+                  value={formData.phone}
                   onChange={handleChange}
                   className="w-full p-2 border rounded"
                   placeholder="e.g., (11) 99999-8888"
@@ -455,14 +469,14 @@ export default function AddVehiclePage() {
               </div>
             </div>
           )}
-          {formData.vendedorTipo === "profissional" && (
+          {formData.seller_type === "professional" && (
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block mb-1 font-medium">Company</label>
                 <input
                   type="text"
-                  name="empresa"
-                  value={formData.empresa}
+                  name="company"
+                  value={formData.company}
                   onChange={handleChange}
                   className="w-full p-2 border rounded"
                   placeholder="e.g., AutoCenter"
@@ -472,8 +486,8 @@ export default function AddVehiclePage() {
                 <label className="block mb-1 font-medium">Seller</label>
                 <input
                   type="text"
-                  name="nome_vendedor"
-                  value={formData.nome_vendedor}
+                  name="seller_name"
+                  value={formData.seller_name}
                   onChange={handleChange}
                   className="w-full p-2 border rounded"
                   placeholder="e.g., John Smith"
@@ -483,8 +497,8 @@ export default function AddVehiclePage() {
                 <label className="block mb-1 font-medium">Phone</label>
                 <input
                   type="text"
-                  name="telefone"
-                  value={formData.telefone}
+                  name="phone"
+                  value={formData.phone}
                   onChange={handleChange}
                   className="w-full p-2 border rounded"
                   placeholder="e.g., (11) 99999-8888"
@@ -494,11 +508,22 @@ export default function AddVehiclePage() {
                 <label className="block mb-1 font-medium">Social Media</label>
                 <input
                   type="text"
-                  name="redes_sociais"
-                  value={formData.redes_sociais}
+                  name="social_media"
+                  value={formData.social_media}
                   onChange={handleChange}
                   className="w-full p-2 border rounded"
                   placeholder="e.g., @autocenter"
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="block mb-1 font-medium">Address</label>
+                <input
+                  type="text"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  className="w-full p-2 border rounded"
+                  placeholder="e.g., 123 Main St, City, Country"
                 />
               </div>
             </div>
@@ -510,11 +535,11 @@ export default function AddVehiclePage() {
               {optionals.map((opcional: any) => (
                 <label key={opcional.id} className="flex items-center gap-2">
                   <input
-                      type="checkbox"
-                      value={opcional.id}
-                      checked={selectedOptionals.includes(opcional.id)}
-                      onChange={() => handleToggleOptional(opcional.id)}
-                    />
+                    type="checkbox"
+                    value={opcional.id}
+                    checked={selectedOptionals.includes(opcional.id)}
+                    onChange={() => handleToggleOptional(opcional.id)}
+                  />
                   <span className="text-sm">{opcional.nome}</span>
                 </label>
               ))}

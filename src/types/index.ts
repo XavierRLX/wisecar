@@ -7,7 +7,7 @@ export interface VehicleImage {
 
 export interface Optional {
   id: number;
-  nome: string; 
+  name: string; 
 }
 
 export interface Vehicle {
@@ -24,7 +24,7 @@ export interface Vehicle {
   notes?: string;
   created_at?: string;
   vehicle_images?: VehicleImage[];
-  fipe_info?: any; 
+  fipe_info?: any;
   seller_type?: string;
   seller_name?: string;
   phone?: string;
