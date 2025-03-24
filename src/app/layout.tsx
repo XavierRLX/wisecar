@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "@/app/globals.css";
 import ClientOnly from "@/components/ClientOnly";
 import ClientNav from "@/components/ClientNav";
+import Providers from "./providers"; // importe o Providers
 
 const geistSans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
@@ -19,10 +20,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-100 text-gray-900`}
       >
-        {children}
-        <ClientOnly>
-          <ClientNav />
-        </ClientOnly>
+        <Providers>
+          {children}
+          <ClientOnly>
+            <ClientNav />
+          </ClientOnly>
+        </Providers>
       </body>
     </html>
   );
