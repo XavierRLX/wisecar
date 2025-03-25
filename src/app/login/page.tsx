@@ -23,11 +23,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-sky-600 p-4">
       <div className="bg-white shadow-xl rounded-2xl px-8 py-10 max-w-md w-full text-center">
         <h1 className="text-3xl font-bold text-blue-600 mb-3">WiseCar</h1>
         <p className="text-gray-600 mb-8">
-          Adicione carros dos seus sonhos, compare preços e pesquise o mercado.
+          Adicione carros dos seus sonhos, compare preços.
         </p>
         <button
           onClick={handleLogin}
