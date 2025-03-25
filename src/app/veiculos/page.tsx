@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AuthGuard from "@/components/AuthGuard";
+import EnsureProfile from "@/components/EnsureProfile";
 import { useVehicles } from "@/hooks/useVehicles";
 import { supabase } from "@/lib/supabase";
 import VehicleCard from "@/components/VehicleCard";
@@ -110,6 +111,7 @@ export default function VeiculosPage() {
 
   return (
     <AuthGuard>
+      <EnsureProfile />
       <div className="p-8">
         <h1 className="text-xl font-bold mb-4">Veículos</h1>
         {vehicles.length === 0 ? (
