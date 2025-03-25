@@ -11,6 +11,8 @@ import { Calendar, DollarSign, Activity, Palette, Droplet, Check } from "lucide-
 import SellerDetails from "@/components/SellerDetails";
 import OptionalList from "@/components/OptionalList";
 import Gallery from "@/components/Gallery";
+import Link from "next/link";
+import { type } from "os";
 
 export default function VehicleDetailsPage() {
   const { id } = useParams();
@@ -82,6 +84,9 @@ export default function VehicleDetailsPage() {
         {/* Seção de Informações do Veículo */}
         <section className="bg-white p-6 rounded-lg shadow-md space-y-4">
           <header>
+          <Link href={`/veiculos/${vehicle.id}/editar`} className="px-4 py-2 bg-yellow-500 text-white rounded">
+                      Editar Veículo
+                    </Link>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               {vehicle.brand} {vehicle.model}
             </h1>
