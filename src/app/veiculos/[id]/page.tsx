@@ -27,9 +27,15 @@ export default function VehicleDetailsPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from("vehicles")
-      .select("*, vehicle_images(*)")
+      .select(`
+        *,
+        vehicle_images(*),
+        seller_details(*),
+        vehicle_optionals!inner(optional:optionals(*))
+      `)
       .eq("id", id)
       .single();
+  
     if (error) {
       setError(error.message);
     } else {
@@ -45,12 +51,10 @@ export default function VehicleDetailsPage() {
   async function handleCompararFipe() {
     if (!vehicle || !vehicle.fipe_info) return;
     try {
-      // Parse o fipe_info se for string
       const fipeData =
         typeof vehicle.fipe_info === "string"
           ? JSON.parse(vehicle.fipe_info)
           : vehicle.fipe_info;
-      // Utilize os códigos salvos (certifique-se de que eles foram armazenados ao adicionar o veículo)
       const marcaCodigo = fipeData.codigoMarca;
       const modeloCodigo = fipeData.codigoModelo;
       const anoCodigo = fipeData.codigoAno; // ex: "2014-3"
@@ -89,7 +93,7 @@ export default function VehicleDetailsPage() {
           )}
         </div>
 
-        {/* Card de Detalhes */}
+        {/* Card de Detalhes do Veículo */}
         <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
           <h1 className="text-3xl font-bold flex items-center gap-2">
             {vehicle.brand} {vehicle.model}
@@ -128,7 +132,8 @@ export default function VehicleDetailsPage() {
           </div>
           <div>
             <p className="text-gray-700">
-              <strong>Observações:</strong> {vehicle.notes || "Sem observações"}
+              <strong>Observações:</strong>{" "}
+              {vehicle.notes || "Sem observações"}
             </p>
           </div>
           <div>
@@ -156,6 +161,50 @@ export default function VehicleDetailsPage() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Seção de Detalhes do Vendedor */}
+        <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
+          <h2 className="text-2xl font-bold">Detalhes do Vendedor</h2>
+          {vehicle.seller_details ? (
+            <div>
+              <p>
+                <strong>Tipo:</strong> {vehicle.seller_details.seller_type}
+              </p>
+              <p>
+                <strong>Nome:</strong> {vehicle.seller_details.seller_name}
+              </p>
+              <p>
+                <strong>Telefone:</strong> {vehicle.seller_details.phone}
+              </p>
+              <p>
+                <strong>Empresa:</strong> {vehicle.seller_details.company}
+              </p>
+              <p>
+                <strong>Redes Sociais:</strong>{" "}
+                {vehicle.seller_details.social_media}
+              </p>
+              <p>
+                <strong>Endereço:</strong> {vehicle.seller_details.address}
+              </p>
+            </div>
+          ) : (
+            <p>Sem detalhes do vendedor.</p>
+          )}
+        </div>
+
+        {/* Seção de Opcionais */}
+        <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
+          <h2 className="text-2xl font-bold">Opcionais</h2>
+          {vehicle.vehicle_optionals && vehicle.vehicle_optionals.length > 0 ? (
+              <ul className="list-disc pl-5">
+                {vehicle.vehicle_optionals.map((vo) => (
+                  <li key={vo.optional.id}>{vo.optional.name}</li>
+                ))}
+              </ul>
+            ) : (
+              <p>Sem opcionais.</p>
+            )}
         </div>
 
         {/* Galeria de Imagens (se houver mais de uma) */}

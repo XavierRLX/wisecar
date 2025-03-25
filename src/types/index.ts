@@ -10,12 +10,16 @@ export interface Optional {
   name: string; // Nome do opcional (ex: "Sunroof", "Electric Windows", etc.)
 }
 
+export interface VehicleOptional {
+  optional: Optional;
+}
+
 export interface Vehicle {
   id: string;
   user_id: string;
-  category_id: number | null; // 1 para Car, 2 para Motorcycle
-  brand: string;            // Código ou nome da marca (FIPE)
-  model: string;            // Código ou nome do modelo (FIPE)
+  category_id: number | null;
+  brand: string;
+  model: string;
   year: number;
   price: number;
   mileage: number;
@@ -24,8 +28,10 @@ export interface Vehicle {
   notes?: string;
   created_at?: string;
   vehicle_images?: VehicleImage[];
-  fipe_info?: any;          // Dados FIPE completos (pode ser refinado com uma interface específica)
-  optionals?: Optional[];
+  fipe_info?: any;
+  optionals?: Optional[]; // Caso use essa propriedade separadamente
+  seller_details?: SellerDetails;
+  vehicle_optionals?: VehicleOptional[]; // Relacionamento N:N
 }
 
 export interface SellerDetails {
