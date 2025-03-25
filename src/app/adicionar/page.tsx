@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import AuthGuard from "@/components/AuthGuard";
 import { supabase } from "@/lib/supabase";
-import { uploadVehicleImage } from "@/hooks/useUploadImage";
 import {
   fetchMarcas,
   fetchModelos,
@@ -12,27 +11,27 @@ import {
   fetchDetalhesModelo,
 } from "@/lib/fipe";
 
-// Importa os componentes modulares (crie estes arquivos conforme os exemplos fornecidos)
+// Componentes modulares
 import FipeSelectors from "@/components/FipeSelectors";
 import VehicleDataForm from "@/components/VehicleDataForm";
 import SellerForm from "@/components/SellerForm";
 import OptionalsSelect from "@/components/OptionalsSelect";
 import FileUpload from "@/components/FileUpload";
 
+// Importa a função do serviço
+import { submitVehicleData } from "@/lib/vehicleService";
+
 interface VehicleFormData {
   category_id: "carros" | "motos";
-  // Campos FIPE (para o formulário em português)
-  marca: string;         // Código da marca (FIPE)
-  modelo: string;        // Código do modelo (FIPE)
-  ano: string;           // Código do ano (FIPE) – ex: "2014-3"
-  fipe_info?: string;    // Dados FIPE completos (JSON)
-  // Dados informados pelo usuário
+  marca: string;
+  modelo: string;
+  ano: string;
+  fipe_info?: string;
   preco: string;
   quilometragem: string;
   cor: string;
   combustivel: string;
   observacoes: string;
-  // Dados de contato do vendedor
   vendedorTipo: "particular" | "profissional";
   nome_vendedor: string;
   telefone: string;
@@ -73,9 +72,9 @@ export default function AddVehiclePage() {
 
   // Atualiza as pré-visualizações das imagens
   useEffect(() => {
-    const urls = selectedFiles.map(file => URL.createObjectURL(file));
+    const urls = selectedFiles.map((file) => URL.createObjectURL(file));
     setPreviewUrls(urls);
-    return () => urls.forEach(url => URL.revokeObjectURL(url));
+    return () => urls.forEach((url) => URL.revokeObjectURL(url));
   }, [selectedFiles]);
 
   // Carrega as marcas via API FIPE conforme a categoria
@@ -165,7 +164,7 @@ export default function AddVehiclePage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -181,94 +180,45 @@ export default function AddVehiclePage() {
   }
 
   function handleRemoveFile(index: number) {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
   }
 
   function handleToggleOptional(id: number) {
-    setSelectedOptionals(prev =>
-      prev.includes(id) ? prev.filter(opt => opt !== id) : [...prev, id]
+    setSelectedOptionals((prev) =>
+      prev.includes(id) ? prev.filter((opt) => opt !== id) : [...prev, id]
     );
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-  
+
     // Obtém o usuário logado
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       setLoading(false);
       return;
     }
-  
-    // Mapeia o código da marca e do modelo para os respectivos nomes
-    const brandName = marcas.find((m) => m.codigo === formData.marca)?.nome || formData.marca;
-    const modelName = modelos.find(mod => String(mod.codigo) === formData.modelo)?.nome || formData.modelo;
-  
-    const vehicleData = {
-      user_id: user.id,
-      category_id: formData.category_id === "carros" ? 1 : 2,
-      fipe_info: fipeInfo ? JSON.stringify(fipeInfo) : null,
-      brand: brandName,
-      model: modelName, 
-      year: formData.ano ? parseInt(formData.ano.split("-")[0]) : null,
-      price: parseFloat(formData.preco),
-      mileage: parseInt(formData.quilometragem),
-      color: formData.cor,
-      fuel: formData.combustivel,
-      notes: formData.observacoes,
-    };
 
-    // Insere o veículo na tabela "vehicles"
-    const { data, error } = await supabase.from("vehicles").insert(vehicleData).select();
-    if (error) {
-      console.error("Erro ao adicionar veículo:", error.message);
-      setLoading(false);
-      return;
-    }
-    const insertedVehicle = data[0];
-
-    // Faz o upload das imagens, se houver
-    if (selectedFiles.length > 0) {
-      await Promise.all(
-        selectedFiles.map(async file => {
-          const publicUrl = await uploadVehicleImage(insertedVehicle.id, file);
-          if (!publicUrl) {
-            console.error("Erro no upload da imagem para", file.name);
-          }
-        })
+    try {
+      // Chama a função do serviço para inserir os dados
+      await submitVehicleData(
+        user,
+        formData,
+        fipeInfo,
+        marcas,
+        modelos,
+        selectedFiles,
+        selectedOptionals
       );
+      router.push("/veiculos");
+    } catch (error: any) {
+      console.error("Erro:", error.message);
+    } finally {
+      setLoading(false);
     }
-
-    // Insere os dados do vendedor na tabela "seller_details"
-    const sellerData = {
-      vehicle_id: insertedVehicle.id,
-      seller_type: formData.vendedorTipo,
-      seller_name: formData.nome_vendedor,
-      phone: formData.telefone,
-      company: formData.empresa,
-      social_media: formData.redes_sociais,
-      address: formData.endereco,
-    };
-    const { error: sellerError } = await supabase.from("seller_details").insert(sellerData);
-    if (sellerError) {
-      console.error("Erro ao inserir detalhes do vendedor:", sellerError.message);
-    }
-
-    // Insere os opcionais selecionados na tabela de relação "vehicle_optionals"
-    if (selectedOptionals.length > 0) {
-      const rows = selectedOptionals.map(optionalId => ({
-        vehicle_id: insertedVehicle.id,
-        optional_id: optionalId,
-      }));
-      const { error: optError } = await supabase.from("vehicle_optionals").insert(rows);
-      if (optError) {
-        console.error("Erro ao inserir opcionais:", optError.message);
-      }
-    }
-
-    setLoading(false);
-    router.push("/veiculos");
   }
 
   return (
