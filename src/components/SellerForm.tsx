@@ -7,7 +7,9 @@ interface SellerFormProps {
   company: string;
   socialMedia: string;
   address: string;
-  onChange: React.ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>;
+  onChange: React.ChangeEventHandler<
+    HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+  >;
 }
 
 export default function SellerForm({
@@ -20,12 +22,14 @@ export default function SellerForm({
   onChange,
 }: SellerFormProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Tipo de Vendedor */}
       <div>
-        <label className="block mb-1 font-medium">Tipo de Vendedor</label>
-        <div className="flex gap-4">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Tipo de Vendedor
+        </label>
+        <div className="flex items-center space-x-6">
           <label className="flex items-center">
-            {/* Use "vendedorTipo" em vez de "seller_type" */}
             <input
               type="radio"
               name="vendedorTipo"
@@ -49,86 +53,116 @@ export default function SellerForm({
           </label>
         </div>
       </div>
+
+      {/* Campos específicos */}
       {sellerType === "particular" ? (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block mb-1 font-medium">Nome</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nome
+            </label>
             <input
               type="text"
               name="nome_vendedor"
               value={sellerName}
               onChange={onChange}
-              className="w-full p-2 border rounded"
               placeholder="Ex: João da Silva"
+              className="block w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
-            <label className="block mb-1 font-medium">Telefone</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Telefone
+            </label>
             <input
               type="text"
               name="telefone"
               value={phone}
               onChange={onChange}
-              className="w-full p-2 border rounded"
               placeholder="Ex: (11) 99999-8888"
+              className="block w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block mb-1 font-medium">Empresa</label>
-            <input
-              type="text"
-              name="empresa"
-              value={company}
-              onChange={onChange}
-              className="w-full p-2 border rounded"
-              placeholder="Ex: AutoCenter"
-            />
-          </div>
-          <div>
-            <label className="block mb-1 font-medium">Vendedor</label>
-            <input
-              type="text"
-              name="nome_vendedor"
-              value={sellerName}
-              onChange={onChange}
-              className="w-full p-2 border rounded"
-              placeholder="Ex: João da Silva"
-            />
-          </div>
-          <div>
-            <label className="block mb-1 font-medium">Telefone</label>
-            <input
-              type="text"
-              name="telefone"
-              value={phone}
-              onChange={onChange}
-              className="w-full p-2 border rounded"
-              placeholder="Ex: (11) 99999-8888"
-            />
-          </div>
-          <div>
-            <label className="block mb-1 font-medium">Redes Sociais</label>
-            <input
-              type="text"
-              name="redes_sociais"
-              value={socialMedia}
-              onChange={onChange}
-              className="w-full p-2 border rounded"
-              placeholder="Ex: @autocenter"
-            />
-          </div>
-          <div className="col-span-2">
-            <label className="block mb-1 font-medium">Endereço</label>
+          {/* Endereço também para vendedores individuais */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Endereço
+            </label>
             <input
               type="text"
               name="endereco"
               value={address}
               onChange={onChange}
-              className="w-full p-2 border rounded"
               placeholder="Ex: Rua Principal, 123, Cidade, País"
+              className="block w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Empresa
+            </label>
+            <input
+              type="text"
+              name="empresa"
+              value={company}
+              onChange={onChange}
+              placeholder="Ex: AutoCenter"
+              className="block w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Vendedor
+            </label>
+            <input
+              type="text"
+              name="nome_vendedor"
+              value={sellerName}
+              onChange={onChange}
+              placeholder="Ex: João da Silva"
+              className="block w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Telefone
+            </label>
+            <input
+              type="text"
+              name="telefone"
+              value={phone}
+              onChange={onChange}
+              placeholder="Ex: (11) 99999-8888"
+              className="block w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Redes Sociais
+            </label>
+            <input
+              type="text"
+              name="redes_sociais"
+              value={socialMedia}
+              onChange={onChange}
+              placeholder="Ex: @autocenter"
+              className="block w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Endereço
+            </label>
+            <input
+              type="text"
+              name="endereco"
+              value={address}
+              onChange={onChange}
+              placeholder="Ex: Rua Principal, 123, Cidade, País"
+              className="block w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         </div>

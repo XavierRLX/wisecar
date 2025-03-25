@@ -6,35 +6,95 @@ interface VehicleDataFormProps {
   cor: string;
   combustivel: string;
   observacoes: string;
-  onChange: React.ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>;
+  onChange: React.ChangeEventHandler<
+    HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+  >;
 }
 
-export default function VehicleDataForm({ preco, quilometragem, cor, combustivel, observacoes, onChange }: VehicleDataFormProps) {
+export default function VehicleDataForm({
+  preco,
+  quilometragem,
+  cor,
+  combustivel,
+  observacoes,
+  onChange,
+}: VehicleDataFormProps) {
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-4">
+    <div className="space-y-6">
+      {/* Linha 1: Preço e Quilometragem */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block mb-1 font-medium">Preço</label>
-          <input type="number" step="0.01" name="preco" value={preco} onChange={onChange} className="w-full p-2 border rounded" placeholder="Ex: 50000.00" />
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Preço
+          </label>
+          <input
+            type="number"
+            step="0.01"
+            name="preco"
+            value={preco}
+            onChange={onChange}
+            className="block w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Ex: 50000.00"
+          />
         </div>
         <div>
-          <label className="block mb-1 font-medium">Quilometragem</label>
-          <input type="number" name="quilometragem" value={quilometragem} onChange={onChange} className="w-full p-2 border rounded" placeholder="Ex: 30000" />
-        </div>
-        <div>
-          <label className="block mb-1 font-medium">Cor</label>
-          <input type="text" name="cor" value={cor} onChange={onChange} className="w-full p-2 border rounded" placeholder="Ex: Prata" />
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Quilometragem
+          </label>
+          <input
+            type="number"
+            name="quilometragem"
+            value={quilometragem}
+            onChange={onChange}
+            className="block w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Ex: 30000"
+          />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+
+      {/* Linha 2: Cor e Combustível */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block mb-1 font-medium">Combustível</label>
-          <input type="text" name="combustivel" value={combustivel} onChange={onChange} className="w-full p-2 border rounded" placeholder="Ex: Gasolina" />
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Cor
+          </label>
+          <input
+            type="text"
+            name="cor"
+            value={cor}
+            onChange={onChange}
+            className="block w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Ex: Prata"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Combustível
+          </label>
+          <input
+            type="text"
+            name="combustivel"
+            value={combustivel}
+            onChange={onChange}
+            className="block w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Ex: Gasolina"
+          />
         </div>
       </div>
+
+      {/* Linha 3: Observações */}
       <div>
-        <label className="block mb-1 font-medium">Observações</label>
-        <textarea name="observacoes" value={observacoes} onChange={onChange} className="w-full p-2 border rounded" rows={3} placeholder="Informações adicionais..." />
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Observações
+        </label>
+        <textarea
+          name="observacoes"
+          value={observacoes}
+          onChange={onChange}
+          rows={3}
+          className="block w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Informações adicionais..."
+        />
       </div>
     </div>
   );

@@ -11,14 +11,14 @@ import {
   fetchDetalhesModelo,
 } from "@/lib/fipe";
 
-// Componentes modulares
+// Componentes modulares modernizados
 import FipeSelectors from "@/components/FipeSelectors";
 import VehicleDataForm from "@/components/VehicleDataForm";
 import SellerForm from "@/components/SellerForm";
 import OptionalsSelect from "@/components/OptionalsSelect";
 import FileUpload from "@/components/FileUpload";
 
-// Importa a função do serviço
+// Serviço para submeter os dados do veículo
 import { submitVehicleData } from "@/lib/vehicleService";
 
 interface VehicleFormData {
@@ -137,7 +137,7 @@ export default function AddVehiclePage() {
     loadOptionals();
   }, []);
 
-  // Função para buscar detalhes FIPE para o ano selecionado
+  // Busca detalhes FIPE para o ano selecionado
   async function handleFetchFipe() {
     if (formData.marca && formData.modelo && formData.ano) {
       try {
@@ -203,7 +203,7 @@ export default function AddVehiclePage() {
     }
 
     try {
-      // Chama a função do serviço para inserir os dados
+      // Envia os dados do veículo
       await submitVehicleData(
         user,
         formData,
@@ -223,77 +223,78 @@ export default function AddVehiclePage() {
 
   return (
     <AuthGuard>
-      <div className="p-8 max-w-4xl m-4 mx-auto bg-white shadow rounded">
-        <h1 className="text-3xl font-bold mb-6 text-center">Adicionar Veículo</h1>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* FIPE Selectors */}
-          <FipeSelectors
-            category={formData.category_id}
-            marca={formData.marca}
-            modelo={formData.modelo}
-            ano={formData.ano}
-            marcas={marcas}
-            modelos={modelos}
-            anos={anos}
-            onChange={handleChange}
-            onFetchFipe={handleFetchFipe}
-          />
+      <div className="px-4 py-8 max-w-4xl mx-auto">
+        <div className="bg-white shadow-md rounded-lg p-8">
+          <h1 className="text-3xl font-bold mb-6 text-center">Adicionar Veículo</h1>
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* FIPE Selectors */}
+            <FipeSelectors
+              category={formData.category_id}
+              marca={formData.marca}
+              modelo={formData.modelo}
+              ano={formData.ano}
+              marcas={marcas}
+              modelos={modelos}
+              anos={anos}
+              onChange={handleChange}
+              onFetchFipe={handleFetchFipe}
+            />
 
-          {fipeInfo && (
-            <div className="p-4 bg-gray-100 rounded">
-              <p>
-                <strong>Valor FIPE:</strong> {fipeInfo.Valor}
-              </p>
-              <p>
-                <strong>Data de Referência:</strong> {fipeInfo.MesReferencia}
-              </p>
-            </div>
-          )}
+            {fipeInfo && (
+              <div className="p-4 bg-gray-100 rounded-lg">
+                <p>
+                  <span className="font-semibold">Valor FIPE:</span> {fipeInfo.Valor}
+                </p>
+                <p>
+                  <span className="font-semibold">Data de Referência:</span> {fipeInfo.MesReferencia}
+                </p>
+              </div>
+            )}
 
-          {/* Vehicle Data */}
-          <VehicleDataForm
-            preco={formData.preco}
-            quilometragem={formData.quilometragem}
-            cor={formData.cor}
-            combustivel={formData.combustivel}
-            observacoes={formData.observacoes}
-            onChange={handleChange}
-          />
+            {/* Dados do Veículo */}
+            <VehicleDataForm
+              preco={formData.preco}
+              quilometragem={formData.quilometragem}
+              cor={formData.cor}
+              combustivel={formData.combustivel}
+              observacoes={formData.observacoes}
+              onChange={handleChange}
+            />
 
-          {/* Seller Details */}
-          <SellerForm
-            sellerType={formData.vendedorTipo}
-            sellerName={formData.nome_vendedor}
-            phone={formData.telefone}
-            company={formData.empresa}
-            socialMedia={formData.redes_sociais}
-            address={formData.endereco}
-            onChange={handleChange}
-          />
+            {/* Dados do Vendedor */}
+            <SellerForm
+              sellerType={formData.vendedorTipo}
+              sellerName={formData.nome_vendedor}
+              phone={formData.telefone}
+              company={formData.empresa}
+              socialMedia={formData.redes_sociais}
+              address={formData.endereco}
+              onChange={handleChange}
+            />
 
-          {/* Optionals */}
-          <OptionalsSelect
-            optionals={optionals}
-            selectedOptionals={selectedOptionals}
-            onToggleOptional={handleToggleOptional}
-          />
+            {/* Opcionais */}
+            <OptionalsSelect
+              optionals={optionals}
+              selectedOptionals={selectedOptionals}
+              onToggleOptional={handleToggleOptional}
+            />
 
-          {/* File Upload */}
-          <FileUpload
-            previewUrls={previewUrls}
-            onFileChange={handleFileChange}
-            onRemoveFile={handleRemoveFile}
-          />
+            {/* Upload de Arquivos */}
+            <FileUpload
+              previewUrls={previewUrls}
+              onFileChange={handleFileChange}
+              onRemoveFile={handleRemoveFile}
+            />
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-          >
-            {loading ? "Salvando..." : "Adicionar Veículo"}
-          </button>
-        </form>
-        <div className="mb-4"></div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              {loading ? "Salvando..." : "Adicionar Veículo"}
+            </button>
+          </form>
+        </div>
       </div>
     </AuthGuard>
   );
