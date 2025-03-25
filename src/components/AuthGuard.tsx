@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import LoadingState from "./LoadingState";
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -22,7 +23,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     checkAuth();
   }, [router]);
 
-  if (loading) return <p>Verificando autenticação...</p>;
+  if (loading) return <LoadingState message="Verificando autenticação..." />;
 
   return <>{children}</>;
 }

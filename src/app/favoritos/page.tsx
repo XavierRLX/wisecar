@@ -8,6 +8,7 @@ import { useVehicles } from "@/hooks/useVehicles";
 import { supabase } from "@/lib/supabase";
 import VehicleCard from "@/components/VehicleCard";
 import EmptyState from "@/components/EmptyState";
+import LoadingState from "@/components/LoadingState";
 
 export default function FavoritosPage() {
   const router = useRouter();
@@ -53,7 +54,7 @@ export default function FavoritosPage() {
     }
   }
 
-  if (loading) return <p className="p-8">Carregando veículos favoritos...</p>;
+  if (loading) return <LoadingState message="Carregando veículos..." />;
   if (error) return <p className="p-8 text-red-500">Erro: {error}</p>;
 
   return (
