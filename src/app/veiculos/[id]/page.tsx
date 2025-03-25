@@ -1,20 +1,16 @@
+// app/veiculos/id/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import AuthGuard from "@/components/AuthGuard";
 import { fetchFipeAtualizado } from "@/lib/fipe";
 import { Vehicle } from "@/types";
-import {
-  Car,
-  Calendar,
-  DollarSign,
-  Activity,
-  Palette,
-  Droplet,
-  Check,
-} from "lucide-react";
+import { Calendar, DollarSign, Activity, Palette, Droplet, Check } from "lucide-react";
+import SellerDetails from "@/components/SellerDetails";
+import OptionalList from "@/components/OptionalList";
+import Gallery from "@/components/Gallery";
 
 export default function VehicleDetailsPage() {
   const { id } = useParams();
@@ -23,7 +19,7 @@ export default function VehicleDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const [fipeAtual, setFipeAtual] = useState<any>(null);
 
-  async function fetchVehicle() {
+  const fetchVehicle = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("vehicles")
@@ -35,41 +31,31 @@ export default function VehicleDetailsPage() {
       `)
       .eq("id", id)
       .single();
-  
+
     if (error) {
       setError(error.message);
     } else {
       setVehicle(data);
     }
     setLoading(false);
-  }
+  }, [id]);
 
   useEffect(() => {
     if (id) fetchVehicle();
-  }, [id]);
+  }, [id, fetchVehicle]);
 
-  async function handleCompararFipe() {
+  const handleCompararFipe = async () => {
     if (!vehicle || !vehicle.fipe_info) return;
     try {
-      const fipeData =
-        typeof vehicle.fipe_info === "string"
-          ? JSON.parse(vehicle.fipe_info)
-          : vehicle.fipe_info;
-      const marcaCodigo = fipeData.codigoMarca;
-      const modeloCodigo = fipeData.codigoModelo;
-      const anoCodigo = fipeData.codigoAno; // ex: "2014-3"
+      const fipeData = typeof vehicle.fipe_info === "string" ? JSON.parse(vehicle.fipe_info) : vehicle.fipe_info;
+      const { codigoMarca, codigoModelo, codigoAno } = fipeData;
       const categoria = vehicle.category_id === 1 ? "carros" : "motos";
-      const dadosAtualizados = await fetchFipeAtualizado(
-        categoria,
-        marcaCodigo,
-        modeloCodigo,
-        anoCodigo
-      );
+      const dadosAtualizados = await fetchFipeAtualizado(categoria, codigoMarca, codigoModelo, codigoAno);
       setFipeAtual(dadosAtualizados);
     } catch (err) {
       console.error("Erro ao comparar com FIPE:", err);
     }
-  }
+  };
 
   if (loading) return <p className="p-8">Carregando veículo...</p>;
   if (error) return <p className="p-8 text-red-500">Erro: {error}</p>;
@@ -78,8 +64,8 @@ export default function VehicleDetailsPage() {
   return (
     <AuthGuard>
       <div className="max-w-4xl mx-auto p-8 space-y-6">
-        {/* Imagem Principal */}
-        <div className="mb-6">
+        {/* Seção de Imagem Principal */}
+        <section className="mb-6">
           {vehicle.vehicle_images && vehicle.vehicle_images.length > 0 ? (
             <img
               src={vehicle.vehicle_images[0].image_url}
@@ -91,13 +77,15 @@ export default function VehicleDetailsPage() {
               <span className="text-gray-500 text-xl">Sem imagem</span>
             </div>
           )}
-        </div>
+        </section>
 
-        {/* Card de Detalhes do Veículo */}
-        <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            {vehicle.brand} {vehicle.model}
-          </h1>
+        {/* Seção de Informações do Veículo */}
+        <section className="bg-white p-6 rounded-lg shadow-md space-y-4">
+          <header>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              {vehicle.brand} {vehicle.model}
+            </h1>
+          </header>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5 text-gray-500" />
@@ -108,7 +96,7 @@ export default function VehicleDetailsPage() {
             <div className="flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-gray-500" />
               <p className="text-gray-700">
-                <strong>Preço:</strong> R$ {vehicle.price}
+                <strong>Preço:</strong> {vehicle.price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -130,12 +118,9 @@ export default function VehicleDetailsPage() {
               </p>
             </div>
           </div>
-          <div>
-            <p className="text-gray-700">
-              <strong>Observações:</strong>{" "}
-              {vehicle.notes || "Sem observações"}
-            </p>
-          </div>
+          <p className="text-gray-700">
+            <strong>Observações:</strong> {vehicle.notes || "Sem observações"}
+          </p>
           <div>
             <button
               onClick={handleCompararFipe}
@@ -161,67 +146,17 @@ export default function VehicleDetailsPage() {
               </div>
             </div>
           )}
-        </div>
+        </section>
 
         {/* Seção de Detalhes do Vendedor */}
-        <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
-          <h2 className="text-2xl font-bold">Detalhes do Vendedor</h2>
-          {vehicle.seller_details ? (
-            <div>
-              <p>
-                <strong>Tipo:</strong> {vehicle.seller_details.seller_type}
-              </p>
-              <p>
-                <strong>Nome:</strong> {vehicle.seller_details.seller_name}
-              </p>
-              <p>
-                <strong>Telefone:</strong> {vehicle.seller_details.phone}
-              </p>
-              <p>
-                <strong>Empresa:</strong> {vehicle.seller_details.company}
-              </p>
-              <p>
-                <strong>Redes Sociais:</strong>{" "}
-                {vehicle.seller_details.social_media}
-              </p>
-              <p>
-                <strong>Endereço:</strong> {vehicle.seller_details.address}
-              </p>
-            </div>
-          ) : (
-            <p>Sem detalhes do vendedor.</p>
-          )}
-        </div>
+        <SellerDetails seller={vehicle.seller_details ?? null} />
 
         {/* Seção de Opcionais */}
-        <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
-          <h2 className="text-2xl font-bold">Opcionais</h2>
-          {vehicle.vehicle_optionals && vehicle.vehicle_optionals.length > 0 ? (
-              <ul className="list-disc pl-5">
-                {vehicle.vehicle_optionals.map((vo) => (
-                  <li key={vo.optional.id}>{vo.optional.name}</li>
-                ))}
-              </ul>
-            ) : (
-              <p>Sem opcionais.</p>
-            )}
-        </div>
+        <OptionalList vehicleOptionals={vehicle.vehicle_optionals} />
 
-        {/* Galeria de Imagens (se houver mais de uma) */}
+        {/* Seção de Galeria de Imagens */}
         {vehicle.vehicle_images && vehicle.vehicle_images.length > 1 && (
-          <div>
-            <h2 className="text-2xl font-semibold mb-4">Galeria</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {vehicle.vehicle_images.slice(1).map((img) => (
-                <img
-                  key={img.id}
-                  src={img.image_url}
-                  alt={`${vehicle.brand} ${vehicle.model}`}
-                  className="w-full h-48 object-cover rounded shadow"
-                />
-              ))}
-            </div>
-          </div>
+          <Gallery images={vehicle.vehicle_images.slice(1)} />
         )}
       </div>
     </AuthGuard>
