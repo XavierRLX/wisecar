@@ -15,8 +15,16 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --primary: #2563eb; /* Azul padrão, equivalente ao bg-blue-600 do Tailwind */
+  --primary: #1E5C79; 
 }
+
+.TextColorPrimary{
+  color: var(--primary);
+}
+
+ .bkgColorPrimary{
+  background-color: var(--primary);
+ }
 
 body {
   background: var(--background);
