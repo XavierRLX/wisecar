@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
 // next.config.js
 module.exports = {
   images: {
-    domains: ['img.icons8.com'],
+    domains: ['tffzmmrlohxzvjpsxkym.supabase.co'],
   },
 };
 
