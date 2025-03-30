@@ -225,7 +225,6 @@ export default function AddVehiclePage() {
     <AuthGuard>
       <div className="px-4 py-8 max-w-4xl mx-auto">
         <div className="bg-white shadow-md rounded-lg p-8">
-          <h1 className="text-3xl font-bold mb-6 text-center">Adicionar Veículo</h1>
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* FIPE Selectors */}
             <FipeSelectors
@@ -289,7 +288,7 @@ export default function AddVehiclePage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="w-full py-3 bkgColorPrimary text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               {loading ? "Salvando..." : "Adicionar Veículo"}
             </button>

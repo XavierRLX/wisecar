@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Heart, Trash2, Calendar, DollarSign, Activity } from "lucide-react";
+import Carousel from "@/components/Carousel";
 import { Vehicle } from "@/types";
 
 interface VehicleCardProps {
@@ -22,37 +23,42 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
   return (
     <div className="bg-white shadow-xl rounded-lg overflow-hidden transform transition duration-300 hover:scale-105">
       <div className="relative">
-        {vehicle.vehicle_images && vehicle.vehicle_images.length > 0 ? (
-          <img
-            src={vehicle.vehicle_images[0].image_url}
-            alt={`${vehicle.brand} ${vehicle.model}`}
-            className="w-full h-56 object-cover"
-          />
-        ) : (
-          <div className="w-full h-56 flex items-center justify-center">
-            <span className="text-gray-500">Sem imagem</span>
-          </div>
-        )}
+  {vehicle.vehicle_images && vehicle.vehicle_images.length > 1 ? (
+    // Se tiver mais de uma imagem, usa o Carousel
+    <Carousel images={vehicle.vehicle_images} />
+  ) : vehicle.vehicle_images && vehicle.vehicle_images.length === 1 ? (
+    // Se tiver somente uma imagem, renderiza a imagem normalmente
+    <img
+      src={vehicle.vehicle_images[0].image_url}
+      alt={`${vehicle.brand} ${vehicle.model}`}
+      className="w-full h-56 object-cover rounded-t-lg"
+    />
+  ) : (
+    <div className="w-full h-56 flex items-center justify-center">
+      <span className="text-gray-500">Sem imagem</span>
+    </div>
+  )}
 
-        {onToggleFavorite && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleFavorite(vehicle.id);
-            }}
-            aria-label={
-              isFavorited ? "Remover dos favoritos" : "Adicionar aos favoritos"
-            }
-            className="absolute top-1 right-1 bg-white bg-opacity-80 p-2 rounded-full shadow hover:bg-opacity-100 transition"
-          >
-            {isFavorited ? (
-              <Heart className="w-5 h-5 text-red-500" fill="currentColor" />
-            ) : (
-              <Heart className="w-5 h-5 text-gray-400" />
-            )}
-          </button>
-        )}
-      </div>
+  {onToggleFavorite && (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggleFavorite(vehicle.id);
+      }}
+      aria-label={
+        isFavorited ? "Remover dos favoritos" : "Adicionar aos favoritos"
+      }
+      className="absolute top-1 right-1 bg-white bg-opacity-80 p-2 rounded-full shadow hover:bg-opacity-100 transition"
+    >
+      {isFavorited ? (
+        <Heart className="w-5 h-5 text-red-500" fill="currentColor" />
+      ) : (
+        <Heart className="w-5 h-5 text-gray-400" />
+      )}
+    </button>
+  )}
+</div>
+
 
       <div className="p-4">
         <h2 className="text-sm font-semibold mb-2">

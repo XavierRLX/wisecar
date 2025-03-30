@@ -16,10 +16,16 @@
   --background: #ffffff;
   --foreground: #171717;
   --primary: #1E5C79; 
+  --primary-select: #07a3f1; 
+
 }
 
 .TextColorPrimary{
   color: var(--primary);
+}
+
+.TextColorPrimarySelect{
+  color: var(--primary-select);
 }
 
  .bkgColorPrimary{

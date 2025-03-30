@@ -10,7 +10,7 @@ import { Vehicle } from "@/types";
 import { Calendar, DollarSign, Activity, Palette, Droplet, Check } from "lucide-react";
 import SellerDetails from "@/components/SellerDetails";
 import OptionalList from "@/components/OptionalList";
-import Gallery from "@/components/Gallery";
+import Carousel from "@/components/Carousel";
 import Link from "next/link";
 import { type } from "os";
 
@@ -65,15 +65,13 @@ export default function VehicleDetailsPage() {
 
   return (
     <AuthGuard>
-      <div className="max-w-4xl mx-auto p-8 space-y-6">
-        {/* Seção de Imagem Principal */}
-        <section className="mb-6">
+      <div className="max-w-4xl mx-auto p-2 space-y-6">
+        {/* Seção de Informações do Veículo */}
+        <section className="bg-white p-2 rounded-lg shadow-md space-y-4">
+          {/* Seção de Imagem Principal */}
+          <section className="mb-6">
           {vehicle.vehicle_images && vehicle.vehicle_images.length > 0 ? (
-            <img
-              src={vehicle.vehicle_images[0].image_url}
-              alt={`${vehicle.brand} ${vehicle.model}`}
-              className="w-full h-96 object-cover rounded-lg shadow-lg"
-            />
+            <Carousel images={vehicle.vehicle_images} />
           ) : (
             <div className="w-full h-96 bg-gray-200 flex items-center justify-center rounded-lg shadow-lg">
               <span className="text-gray-500 text-xl">Sem imagem</span>
@@ -81,13 +79,8 @@ export default function VehicleDetailsPage() {
           )}
         </section>
 
-        {/* Seção de Informações do Veículo */}
-        <section className="bg-white p-6 rounded-lg shadow-md space-y-4">
           <header>
-          <Link href={`/veiculos/${vehicle.id}/editar`} className="px-4 py-2 bg-yellow-500 text-white rounded">
-                      Editar Veículo
-                    </Link>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
+            <h1 className="text-lg font-bold flex items-center gap-2">
               {vehicle.brand} {vehicle.model}
             </h1>
           </header>
@@ -134,6 +127,9 @@ export default function VehicleDetailsPage() {
               <Check className="w-5 h-5" />
               Comparar com FIPE
             </button>
+            <Link href={`/veiculos/${vehicle.id}/editar`} className="px-4 py-2 bg-yellow-500 text-white rounded">
+                      Editar Veículo
+                    </Link>
           </div>
           {fipeAtual && (
             <div className="mt-4 p-4 bg-gray-100 rounded">
@@ -160,9 +156,7 @@ export default function VehicleDetailsPage() {
         <OptionalList vehicleOptionals={vehicle.vehicle_optionals} />
 
         {/* Seção de Galeria de Imagens */}
-        {vehicle.vehicle_images && vehicle.vehicle_images.length > 1 && (
-          <Gallery images={vehicle.vehicle_images.slice(1)} />
-        )}
+        
       </div>
     </AuthGuard>
   );

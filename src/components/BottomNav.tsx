@@ -13,7 +13,7 @@ export default function BottomNav({ onMenuClick }: BottomNavProps) {
 
   // Função para determinar a classe ativa
   const activeClass = (route: string) =>
-    pathname === route ? "text-blue-600" : "text-gray-700";
+    pathname === route ? "TextColorPrimarySelect" : "TextColorPrimary";
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-md z-50">
