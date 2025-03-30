@@ -52,7 +52,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         onClick={onClose}
       ></div>
 
-      <div className="relative bg-white w-64 h-full shadow-xl flex flex-col p-4">
+      <div className="relative bg-white w-full sm:w-64 h-full shadow-xl flex flex-col p-4">
         <button
           aria-label="Fechar menu"
           className="absolute top-3 right-3 hover:bg-gray-100 rounded-full p-1 transition"

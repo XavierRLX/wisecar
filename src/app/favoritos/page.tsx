@@ -61,7 +61,6 @@ export default function FavoritosPage() {
     <AuthGuard>
       <EnsureProfile />
       <div className="p-8">
-        <h1 className="text-xl font-bold mb-4">Favoritos</h1>
         {favoriteVehicles.length === 0 ? (
           <EmptyState
             title="Nenhum veículo favoritado"

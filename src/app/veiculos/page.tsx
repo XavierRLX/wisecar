@@ -80,7 +80,6 @@ export default function VeiculosPage() {
     <AuthGuard>
       <EnsureProfile />
       <div className="p-8">
-        <h1 className="text-xl font-bold mb-4">Veículos</h1>
         {vehicles.length === 0 ? (
           <EmptyState
             title="Nenhum veículo adicionado"

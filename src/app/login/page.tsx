@@ -15,7 +15,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: process.env.NEXT_PUBLIC_REDIRECT_URL || "http://localhost:3000/veiculos",
+        redirectTo: process.env.NEXT_PUBLIC_REDIRECT_URL || "http://192.168.0.14:3000/veiculos",
       },
     });
 
@@ -40,12 +40,12 @@ export default function LoginPage() {
       </div>
       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-center">
         <p className="text-lg TextColorPrimary">
-          Adicione carros dos seus sonhos, compare preços.
+          Adicione carros dos seus sonhos.
         </p>
       </div>
 
       {/* Card de Login */}
-      <div className="relative z-10 bg-white shadow-md rounded-2xl px-8 py-10 max-w-md w-full text-center">
+      <div className="relative z-10 bg-white shadow-md rounded-lg px-8 py-10 max-w-md w-full text-center">
         <h2 className="text-3xl font-bold text-gray-800 TextColorPrimary mb-6">Login</h2>
         {errorMessage && (
           <p className="mb-4 text-sm text-red-500">{errorMessage}</p>

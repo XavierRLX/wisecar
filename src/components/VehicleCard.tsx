@@ -20,7 +20,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
   onRemoveFavorite,
 }) => {
   return (
-    <div className="bg-white shadow-xl rounded-xl overflow-hidden transform transition duration-300 hover:scale-105">
+    <div className="bg-white shadow-xl rounded-lg overflow-hidden transform transition duration-300 hover:scale-105">
       <div className="relative">
         {vehicle.vehicle_images && vehicle.vehicle_images.length > 0 ? (
           <img
@@ -29,7 +29,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
             className="w-full h-56 object-cover"
           />
         ) : (
-          <div className="w-full h-56 bg-gray-200 flex items-center justify-center">
+          <div className="w-full h-56 flex items-center justify-center">
             <span className="text-gray-500">Sem imagem</span>
           </div>
         )}
@@ -43,36 +43,37 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
             aria-label={
               isFavorited ? "Remover dos favoritos" : "Adicionar aos favoritos"
             }
-            className="absolute top-3 right-3 bg-white bg-opacity-80 p-2 rounded-full shadow hover:bg-opacity-100 transition"
+            className="absolute top-1 right-1 bg-white bg-opacity-80 p-2 rounded-full shadow hover:bg-opacity-100 transition"
           >
             {isFavorited ? (
-              <Heart className="w-6 h-6 text-red-500" fill="currentColor" />
+              <Heart className="w-5 h-5 text-red-500" fill="currentColor" />
             ) : (
-              <Heart className="w-6 h-6 text-gray-400" />
+              <Heart className="w-5 h-5 text-gray-400" />
             )}
           </button>
         )}
       </div>
 
       <div className="p-4">
-        <h2 className="text-xl font-semibold text-gray-800 mb-2">
+        <h2 className="text-sm font-semibold mb-2">
           {vehicle.brand} {vehicle.model}
         </h2>
-        <div className="flex justify-between text-gray-600 mb-4">
+        <div className="flex mb-4">
           <div className="flex items-center gap-1">
-            <Calendar className="w-5 h-5" />
+            <Calendar className="w-4 h-4" />
             <span>{vehicle.year}</span>
           </div>
+          
           <div className="flex items-center gap-1">
-            <DollarSign className="w-5 h-5" />
-            <span>R$ {vehicle.price}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Activity className="w-5 h-5" />
+            <Activity className="w-4 h-4 ml-4" />
             <span>{vehicle.mileage} km</span>
           </div>
         </div>
-        <div className="flex justify-end">
+        <div className="flex justify-between">
+        <div className="flex items-center gap-1">
+            <DollarSign className="w-5 h-5" />
+            <span>R$ {vehicle.price}</span>
+          </div>
           {onDelete ? (
             <button
               onClick={(e) => {
@@ -82,7 +83,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
               aria-label="Excluir veículo"
               className="text-gray-600 hover:text-red-600 transition"
             >
-              <Trash2 className="w-6 h-6" />
+              <Trash2 className="w-5 h-5" />
             </button>
           ) : onRemoveFavorite ? (
             <button
