@@ -24,18 +24,28 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-
+  
       if (user) {
-        const fullName = user.user_metadata?.full_name || "";
-        const [firstName, ...rest] = fullName.split(" ");
-        const lastName = rest.join(" ");
-        const avatarUrl = user.user_metadata?.avatar_url || "";
-        setUserProfile({ firstName, lastName, avatarUrl });
+        // Consulta a tabela "profiles" pelo id do usuário
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("first_name, last_name, avatar_url")
+          .eq("id", user.id)
+          .single();
+  
+        if (!error && data) {
+          setUserProfile({
+            firstName: data.first_name,
+            lastName: data.last_name,
+            avatarUrl: data.avatar_url,
+          });
+        }
       }
     }
-
+  
     getUserProfile();
   }, []);
+  
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -63,18 +73,29 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </button>
 
         {userProfile ? (
-          <div className="flex items-center gap-3 mt-8">
-            {userProfile.avatarUrl && (
-              <img
-                src={userProfile.avatarUrl}
-                alt="Avatar"
-                className="w-12 h-12 rounded-full object-cover"
-              />
-            )}
-            <div>
-              <h2 className="text-base font-semibold">
-                {userProfile.firstName} {userProfile.lastName}
-              </h2>
+          <div className="flex items-center justify-between mt-8">
+            <div className="flex items-center gap-3">
+              {userProfile.avatarUrl && (
+                <img
+                  src={userProfile.avatarUrl}
+                  alt="Avatar"
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+              )}
+              <div>
+                <h2 className="text-base font-semibold">
+                  {userProfile.firstName} {userProfile.lastName}
+                </h2>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/perfil"
+                onClick={onClose}
+                className="text-sm text-blue-600 hover:underline"
+              >
+                Perfil
+              </Link>
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-500 transition"
