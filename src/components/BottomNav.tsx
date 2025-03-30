@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Menu as MenuIcon, Car, PlusCircle, Heart } from "lucide-react";
+import { Menu as MenuIcon, Car, PlusCircle, Heart, Rss } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 interface BottomNavProps {
@@ -52,6 +52,15 @@ export default function BottomNav({ onMenuClick }: BottomNavProps) {
         >
           <Heart className="h-6 w-6" />
           <span className="text-xs">Favoritos</span>
+        </Link>
+
+        {/* Item Feed */}
+        <Link
+          href="/feed"
+          className={`flex flex-col items-center ${activeClass("/feed")} hover:text-blue-600`}
+        >
+          <Rss className="h-6 w-6" />
+          <span className="text-xs">Feed</span>
         </Link>
       </div>
     </nav>

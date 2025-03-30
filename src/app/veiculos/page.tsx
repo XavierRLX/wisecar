@@ -79,7 +79,7 @@ export default function VeiculosPage() {
   return (
     <AuthGuard>
       <EnsureProfile />
-      <div className="p-8">
+      <div className="p-4">
         {vehicles.length === 0 ? (
           <EmptyState
             title="Nenhum veículo adicionado"

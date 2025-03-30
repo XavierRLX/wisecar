@@ -59,24 +59,25 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
       </div>
 
       <div className="p-4">
-        <h2 className="text-sm font-semibold mb-2">
+        <h2 className="text-base font-semibold mb-4">
           {vehicle.brand} {vehicle.model}
         </h2>
-        <div className="flex mb-4">
+        <div className="flex mb-4 justify-between">
+        <div className="flex items-center gap-1">
+            <DollarSign className="w-5 h-5" />
+            <span>R$ {vehicle.price}</span>
+          </div>
           <div className="flex items-center gap-1">
             <Calendar className="w-4 h-4" />
             <span>{vehicle.year}</span>
           </div>
           <div className="flex items-center gap-1">
-            <Activity className="w-4 h-4 ml-4" />
+            <Activity className="w-4 h-4" />
             <span>{vehicle.mileage} km</span>
           </div>
         </div>
-        <div className="flex justify-between">
-          <div className="flex items-center gap-1">
-            <DollarSign className="w-5 h-5" />
-            <span>R$ {vehicle.price}</span>
-          </div>
+        <div className="flex justify-end">
+          
           {onDelete ? (
             <button
               onClick={(e) => {
@@ -107,3 +108,4 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
 };
 
 export default VehicleCard;
+
