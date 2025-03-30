@@ -24,15 +24,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-  
+
       if (user) {
-        // Consulta a tabela "profiles" pelo id do usuário
         const { data, error } = await supabase
           .from("profiles")
           .select("first_name, last_name, avatar_url")
           .eq("id", user.id)
           .single();
-  
+
         if (!error && data) {
           setUserProfile({
             firstName: data.first_name,
@@ -42,10 +41,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         }
       }
     }
-  
+
     getUserProfile();
   }, []);
-  
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -82,27 +80,26 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   className="w-12 h-12 rounded-full object-cover"
                 />
               )}
-              <div>
+              <div className="flex flex-col">
                 <h2 className="text-base font-semibold">
                   {userProfile.firstName} {userProfile.lastName}
                 </h2>
+                <Link
+                  href="/perfil"
+                  onClick={onClose}
+                  className="text-xs text-blue-600 hover:underline"
+                >
+                  Perfil
+                </Link>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Link
-                href="/perfil"
-                onClick={onClose}
-                className="text-sm text-blue-600 hover:underline"
-              >
-                Perfil
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-500 transition"
-              >
-                <LogOut className="h-4 w-4" /> Sair
-              </button>
-            </div>
+            <button
+              onClick={handleLogout}
+              className="text-gray-500 hover:text-red-500 transition"
+              aria-label="Sair"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
           </div>
         ) : (
           <p className="text-center text-sm mt-8 text-gray-400">
