@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, LogOut } from "lucide-react";
+import { X, LogOut, User } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -88,9 +89,24 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </p>
         )}
 
-        {/* Espaço para futuras opções abaixo */}
+        {/* Linha divisória */}
+        <hr className="my-4 border-gray-200" />
+
+        {/* Menu de opções */}
         <nav className="flex-1 mt-6 overflow-y-auto">
-          {/* opções do menu serão adicionadas aqui futuramente */}
+          <ul className="space-y-2">
+            <li>
+              <Link
+                href="/vendedor"
+                onClick={onClose}
+                className="flex items-center gap-3 p-2 rounded hover:bg-gray-100 transition"
+              >
+                <User className="w-5 h-5 text-gray-600" />
+                <span className="text-gray-800">Vendedor</span>
+              </Link>
+            </li>
+            {/* Outras opções podem ser adicionadas aqui */}
+          </ul>
         </nav>
       </div>
     </div>

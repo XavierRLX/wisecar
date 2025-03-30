@@ -1,6 +1,6 @@
 import UnderDevelopment from "@/components/UnderDevelopment";
 
-export default function FeedPage() {
+export default function Profile() {
   return (
     <UnderDevelopment
       redirectLink="/veiculos"
