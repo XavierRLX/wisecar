@@ -11,6 +11,7 @@ import { Calendar, DollarSign, Activity, Palette, Droplet, Check } from "lucide-
 import SellerDetails from "@/components/SellerDetails";
 import OptionalList from "@/components/OptionalList";
 import Carousel from "@/components/Carousel";
+import LoadingState from "@/components/LoadingState";
 import Link from "next/link";
 import { type } from "os";
 
@@ -59,7 +60,7 @@ export default function VehicleDetailsPage() {
     }
   };
 
-  if (loading) return <p className="p-8">Carregando veículo...</p>;
+  if (loading) return <LoadingState message="Carregando veículos..." />;
   if (error) return <p className="p-8 text-red-500">Erro: {error}</p>;
   if (!vehicle) return <p className="p-8">Veículo não encontrado</p>;
 

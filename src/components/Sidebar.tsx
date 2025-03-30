@@ -87,7 +87,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <Link
                   href="/perfil"
                   onClick={onClose}
-                  className="text-xs text-blue-600 hover:underline"
+                  className="text-xs TextColorPrimary hover:underline"
                 >
                   Perfil
                 </Link>

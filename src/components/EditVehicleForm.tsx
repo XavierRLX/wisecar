@@ -37,7 +37,7 @@ interface Props {
 export default function EditVehicleForm({ vehicle }: Props) {
   const router = useRouter();
 
-  // Estados para FipeSelectors (listas)
+  // Estados para FIPE selectors (listas)
   const [marcas, setMarcas] = useState<any[]>([]);
   const [modelos, setModelos] = useState<any[]>([]);
   const [anos, setAnos] = useState<any[]>([]);
@@ -45,6 +45,7 @@ export default function EditVehicleForm({ vehicle }: Props) {
   // Estado para os opcionais disponíveis (da tabela "optionals")
   const [optionals, setOptionals] = useState<any[]>([]);
 
+  // Estado do formulário com os dados do veículo
   const [formData, setFormData] = useState<VehicleFormData>({
     category_id: vehicle.category_id === 1 ? "carros" : "motos",
     marca: vehicle.brand,
@@ -55,7 +56,6 @@ export default function EditVehicleForm({ vehicle }: Props) {
     cor: vehicle.color,
     combustivel: vehicle.fuel,
     observacoes: vehicle.notes || "",
-    // Garante que o valor seja "particular" ou "profissional"
     vendedorTipo: vehicle.seller_details?.seller_type === "profissional" ? "profissional" : "particular",
     nome_vendedor: vehicle.seller_details?.seller_name || "",
     telefone: vehicle.seller_details?.phone || "",
@@ -94,39 +94,47 @@ export default function EditVehicleForm({ vehicle }: Props) {
     loadMarcas();
   }, [formData.category_id]);
 
-  // Carrega os modelos com base na marca
-  useEffect(() => {
-    async function loadModelos() {
-      if (formData.marca) {
-        try {
-          const data = await fetchModelos(formData.category_id, formData.marca);
-          setModelos(data.modelos);
-        } catch (error) {
-          console.error("Erro ao carregar modelos", error);
-        }
-      } else {
-        setModelos([]);
+ // Carrega os modelos com base na marca
+useEffect(() => {
+  async function loadModelos() {
+    // Verifica se formData.marca é um valor numérico (ou seja, um código válido)
+    if (formData.marca && !isNaN(Number(formData.marca))) {
+      try {
+        const data = await fetchModelos(formData.category_id, formData.marca);
+        setModelos(data.modelos);
+      } catch (error) {
+        console.error("Erro ao carregar modelos", error);
       }
+    } else {
+      // Se não for numérico, limpa os modelos ou trata de outra forma
+      setModelos([]);
     }
-    loadModelos();
-  }, [formData.marca, formData.category_id]);
+  }
+  loadModelos();
+}, [formData.marca, formData.category_id]);
 
-  // Carrega os anos com base na marca e modelo
-  useEffect(() => {
-    async function loadAnos() {
-      if (formData.marca && formData.modelo) {
-        try {
-          const data = await fetchAnos(formData.category_id, formData.marca, formData.modelo);
-          setAnos(data);
-        } catch (error) {
-          console.error("Erro ao carregar anos", error);
-        }
-      } else {
-        setAnos([]);
+// Carrega os anos com base na marca e modelo
+useEffect(() => {
+  async function loadAnos() {
+    if (
+      formData.marca &&
+      formData.modelo &&
+      !isNaN(Number(formData.marca)) &&
+      !isNaN(Number(formData.modelo))
+    ) {
+      try {
+        const data = await fetchAnos(formData.category_id, formData.marca, formData.modelo);
+        setAnos(data);
+      } catch (error) {
+        console.error("Erro ao carregar anos", error);
       }
+    } else {
+      setAnos([]);
     }
-    loadAnos();
-  }, [formData.marca, formData.modelo, formData.category_id]);
+  }
+  loadAnos();
+}, [formData.marca, formData.modelo, formData.category_id]);
+
 
   // Atualiza as pré-visualizações das imagens
   useEffect(() => {
@@ -135,7 +143,9 @@ export default function EditVehicleForm({ vehicle }: Props) {
     return () => urls.forEach((url) => URL.revokeObjectURL(url));
   }, [selectedFiles]);
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   }
@@ -143,7 +153,12 @@ export default function EditVehicleForm({ vehicle }: Props) {
   async function handleFetchFipe() {
     if (formData.marca && formData.modelo && formData.ano) {
       try {
-        const detalhes = await fetchDetalhesModelo(formData.category_id, formData.marca, formData.modelo, formData.ano);
+        const detalhes = await fetchDetalhesModelo(
+          formData.category_id,
+          formData.marca,
+          formData.modelo,
+          formData.ano
+        );
         const fipeData = {
           ...detalhes,
           codigoMarca: formData.marca,
@@ -159,6 +174,7 @@ export default function EditVehicleForm({ vehicle }: Props) {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
     // Atualiza os dados principais do veículo
     const { error } = await supabase
       .from("vehicles")
@@ -234,7 +250,7 @@ export default function EditVehicleForm({ vehicle }: Props) {
   }
 
   return (
-    <div className="p-8 max-w-4xl m-4 mx-auto bg-white shadow rounded">
+    <div className="p-8 max-w-4xl mx-auto m-4 bg-white shadow rounded">
       <h1 className="text-3xl font-bold mb-6 text-center">Editar Veículo</h1>
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* FIPE Selectors */}
@@ -291,7 +307,10 @@ export default function EditVehicleForm({ vehicle }: Props) {
             setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
           }
         />
-        <button type="submit" className="w-full py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+        <button
+          type="submit"
+          className="w-full py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+        >
           Salvar Alterações
         </button>
       </form>
