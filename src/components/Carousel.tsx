@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useSwipeable } from "react-swipeable";
 
 interface CarouselProps {
   images: { image_url: string }[];
@@ -22,37 +23,49 @@ export default function Carousel({ images }: CarouselProps) {
     );
   };
 
+  const handlers = useSwipeable({
+    onSwipedLeft: nextSlide,
+    onSwipedRight: prevSlide,
+    trackMouse: true, // permite swipe com mouse, útil para testes
+  });
+
   return (
-    <div className="relative">
-      {/* Imagem atual */}
-      <div className="w-full h-96 relative">
+    <div className="relative" {...handlers}>
+      <div className="w-full h-56 relative">
         <Image
           src={images[currentIndex].image_url}
           alt={`Imagem ${currentIndex + 1}`}
           fill
-          className="object-cover rounded-lg shadow-lg"
+          className="object-cover rounded-t-lg"
         />
       </div>
-      {/* Setas */}
       <button
-        onClick={prevSlide}
-        className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white bg-opacity-70 p-2 rounded-full hover:bg-opacity-100"
+        onClick={(e) => {
+          e.stopPropagation();
+          prevSlide();
+        }}
+        className="absolute top-1/2 left-2 transform -translate-y-1/2 bg-white bg-opacity-70 p-1 rounded-full hover:bg-opacity-100"
       >
-        <ChevronLeft className="w-6 h-6" />
+        <ChevronLeft className="w-5 h-5" />
       </button>
       <button
-        onClick={nextSlide}
-        className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white bg-opacity-70 p-2 rounded-full hover:bg-opacity-100"
+        onClick={(e) => {
+          e.stopPropagation();
+          nextSlide();
+        }}
+        className="absolute top-1/2 right-2 transform -translate-y-1/2 bg-white bg-opacity-70 p-1 rounded-full hover:bg-opacity-100"
       >
-        <ChevronRight className="w-6 h-6" />
+        <ChevronRight className="w-5 h-5" />
       </button>
-      {/* Indicadores (bolinhas) */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1">
         {images.map((_, index) => (
           <button
             key={index}
-            onClick={() => setCurrentIndex(index)}
-            className={`w-3 h-3 rounded-full ${
+            onClick={(e) => {
+              e.stopPropagation();
+              setCurrentIndex(index);
+            }}
+            className={`w-2 h-2 rounded-full ${
               index === currentIndex ? "bg-blue-600" : "bg-gray-400"
             }`}
           />
