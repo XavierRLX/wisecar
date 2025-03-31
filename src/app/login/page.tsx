@@ -15,7 +15,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: process.env.NEXT_PUBLIC_REDIRECT_URL || "http://192.168.0.14:3000/veiculos",
+        redirectTo: process.env.NEXT_PUBLIC_REDIRECT_URL || "http://localhost:3000/veiculos", //192.168.0.14n
       },
     });
 
@@ -31,6 +31,7 @@ export default function LoginPage() {
       {/* Elementos de fundo */}
       <div className="absolute top-5 left-1/2 transform -translate-x-1/2 text-center">
         <Image
+        unoptimized
           src="https://tffzmmrlohxzvjpsxkym.supabase.co/storage/v1/object/public/logowisecar//name+logo_wisecar.png"
           alt="WiseCar Logo"
           width={150}
@@ -58,6 +59,7 @@ export default function LoginPage() {
         >
           {loading && <Loader2 className="animate-spin w-5 h-5" />}
           <Image
+          unoptimized
             src="https://tffzmmrlohxzvjpsxkym.supabase.co/storage/v1/object/public/logowisecar//google_logo.png"
             alt="Google Logo"
             width={20}

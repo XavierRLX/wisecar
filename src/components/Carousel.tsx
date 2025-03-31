@@ -33,6 +33,7 @@ export default function Carousel({ images }: CarouselProps) {
     <div className="relative" {...handlers}>
       <div className="w-full h-56 relative">
         <Image
+        unoptimized
           src={images[currentIndex].image_url}
           alt={`Imagem ${currentIndex + 1}`}
           fill

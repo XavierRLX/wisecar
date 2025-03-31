@@ -7,9 +7,14 @@ const nextConfig: NextConfig = {
 // next.config.js
 module.exports = {
   images: {
-    domains: ['tffzmmrlohxzvjpsxkym.supabase.co'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'tffzmmrlohxzvjpsxkym.supabase.co',
+        pathname: '/**',
+      },
+    ],
   },
 };
-
 
 export default nextConfig;

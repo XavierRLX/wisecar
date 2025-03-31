@@ -23,6 +23,7 @@ export default function Header() {
       <div className="flex-1">
       <Link href="/">
             <Image
+            unoptimized
                 src="https://tffzmmrlohxzvjpsxkym.supabase.co/storage/v1/object/public/logowisecar//text+logo_next_to.png"
                 alt="WiseCar Logo"
                 width={110}
