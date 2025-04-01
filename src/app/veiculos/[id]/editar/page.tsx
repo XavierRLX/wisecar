@@ -4,6 +4,7 @@ import EditVehicleForm from "@/components/EditVehicleForm";
 import AuthGuard from "@/components/AuthGuard";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import LoadingState from "@/components/LoadingState";
 import { supabase } from "@/lib/supabase";
 import { Vehicle } from "@/types";
 
@@ -43,7 +44,7 @@ export default function EditVehiclePage() {
     if (id) fetchVehicle();
   }, [id]);
 
-  if (loading) return <p className="p-8">Carregando veículo...</p>;
+  if (loading) return <LoadingState message="Carregando veículos..." />;
   if (error) return <p className="p-8 text-red-500">Erro: {error}</p>;
   if (!vehicle) return <p className="p-8">Veículo não encontrado</p>;
 

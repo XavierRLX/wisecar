@@ -347,6 +347,13 @@ if (insertOptError) {
         >
           Salvar Alterações
         </button>
+        <button
+  type="button"
+  onClick={() => router.push(`/veiculos/${vehicle.id}`)}
+  className="w-full py-3 bg-gray-300 text-black rounded hover:bg-gray-400 transition-colors"
+>
+  Cancelar
+</button>
       </form>
     </div>
   );
