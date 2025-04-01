@@ -3,8 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "@/app/globals.css";
 import ClientOnly from "@/components/ClientOnly";
 import ClientNav from "@/components/ClientNav";
-import Header from "@/components/Header"; // importe o Header
-import Providers from "./providers"; // Providers
+import Header from "@/components/Header";
+import Providers from "./providers";
+import ContentWrapper from "@/components/ContentWrapper";
 
 const geistSans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
@@ -23,9 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       >
         <Providers>
           <Header />
-          <div className="pt-12 pb-16">
-            {children}
-          </div>
+          <ContentWrapper>{children}</ContentWrapper>
           <ClientOnly>
             <ClientNav />
           </ClientOnly>

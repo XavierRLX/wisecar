@@ -46,7 +46,7 @@ export default function LoginPage() {
       </div>
 
       {/* Card de Login */}
-      <div className="relative z-10 bg-white shadow-md rounded-lg px-8 py-10 max-w-md w-full text-center">
+      <div className="relative bg-white shadow-md rounded-lg px-8 py-10 max-w-md w-full text-center">
         <h2 className="text-3xl font-bold text-gray-800 TextColorPrimary mb-6">Login</h2>
         {errorMessage && (
           <p className="mb-4 text-sm text-red-500">{errorMessage}</p>
