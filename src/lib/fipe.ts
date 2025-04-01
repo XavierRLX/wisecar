@@ -17,8 +17,11 @@ export async function fetchMarcas(categoria: "carros" | "motos") {
     ano: string
   ) {
     const url = `https://parallelum.com.br/fipe/api/v1/${categoria}/marcas/${marcaId}/modelos/${modeloId}/anos/${ano}`;
+    console.log("URL para buscar detalhes FIPE:", url);
     const response = await fetch(url);
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Erro na resposta da API FIPE:", response.status, errorText);
       throw new Error("Erro ao buscar detalhes do modelo");
     }
     return await response.json();

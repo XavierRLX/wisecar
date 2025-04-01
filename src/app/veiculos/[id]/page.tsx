@@ -55,15 +55,19 @@ export default function VehicleDetailsPage() {
           : vehicle.fipe_info;
       const { codigoMarca, codigoModelo, codigoAno } = fipeData;
       const categoria = vehicle.category_id === 1 ? "carros" : "motos";
-      // Se o código do ano estiver no formato "2025-1", usa só "2025"
-      const anoCode = codigoAno.includes("-") ? codigoAno.split("-")[0] : codigoAno;
-      const dadosAtualizados = await fetchFipeAtualizado(categoria, codigoMarca, codigoModelo, anoCode);
+      // Use o código completo do ano, sem separar o hífen
+      const dadosAtualizados = await fetchFipeAtualizado(
+        categoria,
+        codigoMarca,
+        codigoModelo,
+        codigoAno
+      );
       setFipeAtual(dadosAtualizados);
     } catch (err) {
       console.error("Erro ao comparar com FIPE:", err);
     }
   };
-
+  
   if (loading) return <LoadingState message="Carregando veículos..." />;
   if (error) return <p className="p-8 text-red-500">Erro: {error}</p>;
   if (!vehicle) return <p className="p-8">Veículo não encontrado</p>;
