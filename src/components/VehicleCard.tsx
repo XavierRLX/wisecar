@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import { Heart, Trash2, Calendar, DollarSign, Activity } from "lucide-react";
 import { Vehicle } from "@/types";
 import Carousel from "@/components/Carousel";
@@ -12,6 +11,7 @@ interface VehicleCardProps {
   onToggleFavorite?: (vehicleId: string) => void;
   onDelete?: (vehicleId: string) => void;
   onRemoveFavorite?: (vehicleId: string) => void;
+  extraActions?: React.ReactNode;
 }
 
 const VehicleCard: React.FC<VehicleCardProps> = ({
@@ -20,9 +20,11 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
   onToggleFavorite,
   onDelete,
   onRemoveFavorite,
+  extraActions,
 }) => {
   return (
     <div className="bg-white shadow-xl rounded-lg overflow-hidden transform transition duration-300 hover:scale-105">
+      {/* Imagem */}
       <div className="relative">
         {vehicle.vehicle_images && vehicle.vehicle_images.length > 1 ? (
           <Carousel images={vehicle.vehicle_images} />
@@ -33,7 +35,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
             className="w-full h-56 object-cover rounded-t-lg"
           />
         ) : (
-          <div className="w-full h-56 flex items-center justify-center">
+          <div className="w-full h-56 flex items-center justify-center bg-gray-200">
             <span className="text-gray-500">Sem imagem</span>
           </div>
         )}
@@ -44,9 +46,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
               e.stopPropagation();
               onToggleFavorite(vehicle.id);
             }}
-            aria-label={
-              isFavorited ? "Remover dos favoritos" : "Adicionar aos favoritos"
-            }
+            aria-label={isFavorited ? "Remover dos favoritos" : "Adicionar aos favoritos"}
             className="absolute top-1 right-1 bg-white bg-opacity-80 p-2 rounded-full shadow hover:bg-opacity-100 transition"
           >
             {isFavorited ? (
@@ -58,12 +58,13 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
         )}
       </div>
 
+      {/* Dados do veículo */}
       <div className="p-4">
         <h2 className="text-base font-semibold mb-4">
           {vehicle.brand} {vehicle.model}
         </h2>
         <div className="flex mb-4 justify-between">
-        <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1">
             <DollarSign className="w-5 h-5" />
             <span>R$ {vehicle.price}</span>
           </div>
@@ -77,7 +78,6 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
           </div>
         </div>
         <div className="flex justify-end">
-          
           {onDelete ? (
             <button
               onClick={(e) => {
@@ -102,10 +102,10 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
             </button>
           ) : null}
         </div>
+        {extraActions && <div className="mt-2">{extraActions}</div>}
       </div>
     </div>
   );
 };
 
 export default VehicleCard;
-
