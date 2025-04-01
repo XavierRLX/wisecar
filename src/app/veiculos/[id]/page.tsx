@@ -13,7 +13,6 @@ import OptionalList from "@/components/OptionalList";
 import Carousel from "@/components/Carousel";
 import LoadingState from "@/components/LoadingState";
 import Link from "next/link";
-import { type } from "os";
 
 export default function VehicleDetailsPage() {
   const { id } = useParams();
@@ -30,7 +29,7 @@ export default function VehicleDetailsPage() {
         *,
         vehicle_images(*),
         seller_details(*),
-        vehicle_optionals!inner(optional:optionals(*))
+        vehicle_optionals(optional:optionals(*))
       `)
       .eq("id", id)
       .single();
@@ -50,10 +49,15 @@ export default function VehicleDetailsPage() {
   const handleCompararFipe = async () => {
     if (!vehicle || !vehicle.fipe_info) return;
     try {
-      const fipeData = typeof vehicle.fipe_info === "string" ? JSON.parse(vehicle.fipe_info) : vehicle.fipe_info;
+      const fipeData =
+        typeof vehicle.fipe_info === "string"
+          ? JSON.parse(vehicle.fipe_info)
+          : vehicle.fipe_info;
       const { codigoMarca, codigoModelo, codigoAno } = fipeData;
       const categoria = vehicle.category_id === 1 ? "carros" : "motos";
-      const dadosAtualizados = await fetchFipeAtualizado(categoria, codigoMarca, codigoModelo, codigoAno);
+      // Se o código do ano estiver no formato "2025-1", usa só "2025"
+      const anoCode = codigoAno.includes("-") ? codigoAno.split("-")[0] : codigoAno;
+      const dadosAtualizados = await fetchFipeAtualizado(categoria, codigoMarca, codigoModelo, anoCode);
       setFipeAtual(dadosAtualizados);
     } catch (err) {
       console.error("Erro ao comparar com FIPE:", err);
@@ -71,14 +75,14 @@ export default function VehicleDetailsPage() {
         <section className="bg-white p-2 rounded-lg shadow-md space-y-4">
           {/* Seção de Imagem Principal */}
           <section className="mb-6">
-          {vehicle.vehicle_images && vehicle.vehicle_images.length > 0 ? (
-            <Carousel images={vehicle.vehicle_images} />
-          ) : (
-            <div className="w-full h-96 bg-gray-200 flex items-center justify-center rounded-lg shadow-lg">
-              <span className="text-gray-500 text-xl">Sem imagem</span>
-            </div>
-          )}
-        </section>
+            {vehicle.vehicle_images && vehicle.vehicle_images.length > 0 ? (
+              <Carousel images={vehicle.vehicle_images} />
+            ) : (
+              <div className="w-full h-96 bg-gray-200 flex items-center justify-center rounded-lg shadow-lg">
+                <span className="text-gray-500 text-xl">Sem imagem</span>
+              </div>
+            )}
+          </section>
 
           <header>
             <h1 className="text-lg font-bold flex items-center gap-2">
@@ -129,8 +133,8 @@ export default function VehicleDetailsPage() {
               Comparar com FIPE
             </button>
             <Link href={`/veiculos/${vehicle.id}/editar`} className="px-4 py-2 bg-yellow-500 text-white rounded">
-                      Editar Veículo
-                    </Link>
+              Editar Veículo
+            </Link>
           </div>
           {fipeAtual && (
             <div className="mt-4 p-4 bg-gray-100 rounded">
@@ -157,7 +161,6 @@ export default function VehicleDetailsPage() {
         <OptionalList vehicleOptionals={vehicle.vehicle_optionals} />
 
         {/* Seção de Galeria de Imagens */}
-        
       </div>
     </AuthGuard>
   );

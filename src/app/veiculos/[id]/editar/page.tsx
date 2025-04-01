@@ -2,14 +2,13 @@
 
 import EditVehicleForm from "@/components/EditVehicleForm";
 import AuthGuard from "@/components/AuthGuard";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Vehicle } from "@/types";
 
 export default function EditVehiclePage() {
   const { id } = useParams();
-  const router = useRouter();
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -17,11 +16,11 @@ export default function EditVehiclePage() {
   useEffect(() => {
     async function fetchVehicle() {
       setLoading(true);
-      // Busca o veículo com suas relações
+      // Alterado: remoção do "!inner" para garantir que mesmo sem opcionais a consulta retorne os dados
       const { data, error } = await supabase
         .from("vehicles")
         .select(
-          "*, seller_details(*), vehicle_optionals!inner(optional:optionals(*)), vehicle_images(*)"
+          "*, seller_details(*), vehicle_optionals(optional:optionals(*)), vehicle_images(*)"
         )
         .eq("id", id)
         .single();
@@ -29,7 +28,6 @@ export default function EditVehiclePage() {
       if (error) {
         setError(error.message);
       } else if (data) {
-        // Verifica se o usuário autenticado é o dono do veículo
         const {
           data: { user },
         } = await supabase.auth.getUser();

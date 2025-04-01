@@ -37,20 +37,27 @@ interface Props {
 export default function EditVehicleForm({ vehicle }: Props) {
   const router = useRouter();
 
-  // Estados para FIPE selectors (listas)
-  const [marcas, setMarcas] = useState<any[]>([]);
-  const [modelos, setModelos] = useState<any[]>([]);
-  const [anos, setAnos] = useState<any[]>([]);
+  // Converter fipe_info, se existir
+  const initialFipeData = vehicle.fipe_info
+    ? (() => {
+        try {
+          return typeof vehicle.fipe_info === "string"
+            ? JSON.parse(vehicle.fipe_info)
+            : vehicle.fipe_info;
+        } catch (error) {
+          console.error("Erro ao parsear fipe_info:", error);
+          return null;
+        }
+      })()
+    : null;
 
-  // Estado para os opcionais disponíveis (da tabela "optionals")
-  const [optionals, setOptionals] = useState<any[]>([]);
-
-  // Estado do formulário com os dados do veículo
+  // Estado do formulário usando o código completo do ano (ex: "2025-1")
   const [formData, setFormData] = useState<VehicleFormData>({
     category_id: vehicle.category_id === 1 ? "carros" : "motos",
-    marca: vehicle.brand,
-    modelo: vehicle.model,
-    ano: vehicle.year.toString(),
+    marca: initialFipeData?.codigoMarca || vehicle.brand,
+    modelo: initialFipeData?.codigoModelo || vehicle.model,
+    // NÃO divida o valor; use o código completo para que o select e a chamada à API FIPE funcionem
+    ano: initialFipeData?.codigoAno || vehicle.year.toString(),
     preco: vehicle.price.toString(),
     quilometragem: vehicle.mileage.toString(),
     cor: vehicle.color,
@@ -65,10 +72,12 @@ export default function EditVehicleForm({ vehicle }: Props) {
   });
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  // Inicialmente, os opcionais selecionados estarão vazios
   const [selectedOptionals, setSelectedOptionals] = useState<number[]>([]);
-  const [fipeInfo, setFipeInfo] = useState<any>(null);
+  const [fipeInfo, setFipeInfo] = useState<any>(initialFipeData);
 
   // Carrega os opcionais disponíveis
+  const [optionals, setOptionals] = useState<any[]>([]);
   useEffect(() => {
     async function loadOptionals() {
       const { data, error } = await supabase.from("optionals").select("*");
@@ -80,6 +89,19 @@ export default function EditVehicleForm({ vehicle }: Props) {
     }
     loadOptionals();
   }, []);
+
+  // Inicializa os opcionais selecionados com os opcionais já cadastrados no veículo
+  useEffect(() => {
+    if (vehicle && vehicle.vehicle_optionals) {
+      const optionalIds = vehicle.vehicle_optionals.map((vo) => vo.optional.id);
+      setSelectedOptionals(optionalIds);
+    }
+  }, [vehicle]);
+
+  // Estados para FIPE selectors (listas)
+  const [marcas, setMarcas] = useState<any[]>([]);
+  const [modelos, setModelos] = useState<any[]>([]);
+  const [anos, setAnos] = useState<any[]>([]);
 
   // Carrega as marcas com base na categoria
   useEffect(() => {
@@ -94,47 +116,44 @@ export default function EditVehicleForm({ vehicle }: Props) {
     loadMarcas();
   }, [formData.category_id]);
 
- // Carrega os modelos com base na marca
-useEffect(() => {
-  async function loadModelos() {
-    // Verifica se formData.marca é um valor numérico (ou seja, um código válido)
-    if (formData.marca && !isNaN(Number(formData.marca))) {
-      try {
-        const data = await fetchModelos(formData.category_id, formData.marca);
-        setModelos(data.modelos);
-      } catch (error) {
-        console.error("Erro ao carregar modelos", error);
+  // Carrega os modelos com base na marca
+  useEffect(() => {
+    async function loadModelos() {
+      if (formData.marca && !isNaN(Number(formData.marca))) {
+        try {
+          const data = await fetchModelos(formData.category_id, formData.marca);
+          setModelos(data.modelos);
+        } catch (error) {
+          console.error("Erro ao carregar modelos", error);
+        }
+      } else {
+        setModelos([]);
       }
-    } else {
-      // Se não for numérico, limpa os modelos ou trata de outra forma
-      setModelos([]);
     }
-  }
-  loadModelos();
-}, [formData.marca, formData.category_id]);
+    loadModelos();
+  }, [formData.marca, formData.category_id]);
 
-// Carrega os anos com base na marca e modelo
-useEffect(() => {
-  async function loadAnos() {
-    if (
-      formData.marca &&
-      formData.modelo &&
-      !isNaN(Number(formData.marca)) &&
-      !isNaN(Number(formData.modelo))
-    ) {
-      try {
-        const data = await fetchAnos(formData.category_id, formData.marca, formData.modelo);
-        setAnos(data);
-      } catch (error) {
-        console.error("Erro ao carregar anos", error);
+  // Carrega os anos com base na marca e modelo
+  useEffect(() => {
+    async function loadAnos() {
+      if (
+        formData.marca &&
+        formData.modelo &&
+        !isNaN(Number(formData.marca)) &&
+        !isNaN(Number(formData.modelo))
+      ) {
+        try {
+          const data = await fetchAnos(formData.category_id, formData.marca, formData.modelo);
+          setAnos(data);
+        } catch (error) {
+          console.error("Erro ao carregar anos", error);
+        }
+      } else {
+        setAnos([]);
       }
-    } else {
-      setAnos([]);
     }
-  }
-  loadAnos();
-}, [formData.marca, formData.modelo, formData.category_id]);
-
+    loadAnos();
+  }, [formData.marca, formData.modelo, formData.category_id]);
 
   // Atualiza as pré-visualizações das imagens
   useEffect(() => {
@@ -175,64 +194,79 @@ useEffect(() => {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    // Atualiza os dados principais do veículo
-    const { error } = await supabase
-      .from("vehicles")
-      .update({
-        brand: formData.marca,
-        model: formData.modelo,
-        year: parseInt(formData.ano),
-        price: parseFloat(formData.preco),
-        mileage: parseInt(formData.quilometragem),
-        color: formData.cor,
-        fuel: formData.combustivel,
-        notes: formData.observacoes,
-      })
-      .eq("id", vehicle.id);
-    if (error) {
-      console.error("Erro ao atualizar veículo:", error.message);
-      return;
-    }
+     // Converte os códigos para os nomes correspondentes, usando as listas carregadas
+  const brandName =
+  marcas.find((m) => m.codigo === formData.marca)?.nome || formData.marca;
+const modelName =
+  modelos.find((mod) => String(mod.codigo) === formData.modelo)?.nome ||
+  formData.modelo;
+
+// Se o código do ano estiver no formato "2025-1", extraímos apenas a parte numérica
+const yearValue = formData.ano.includes("-")
+  ? parseInt(formData.ano.split("-")[0])
+  : parseInt(formData.ano);
+
+// Atualiza os dados principais do veículo, salvando os nomes em vez dos códigos
+const { error } = await supabase
+  .from("vehicles")
+  .update({
+    brand: brandName,
+    model: modelName,
+    year: yearValue,
+    price: parseFloat(formData.preco),
+    mileage: parseInt(formData.quilometragem),
+    color: formData.cor,
+    fuel: formData.combustivel,
+    notes: formData.observacoes,
+    fipe_info: fipeInfo ? JSON.stringify(fipeInfo) : null,
+  })
+  .eq("id", vehicle.id);
 
     // Atualiza ou insere os detalhes do vendedor
     const { error: sellerError } = await supabase
-      .from("seller_details")
-      .upsert({
-        vehicle_id: vehicle.id,
-        seller_type: formData.vendedorTipo,
-        seller_name: formData.nome_vendedor,
-        phone: formData.telefone,
-        company: formData.empresa,
-        social_media: formData.redes_sociais,
-        address: formData.endereco,
-      });
-    if (sellerError) {
-      console.error("Erro ao atualizar detalhes do vendedor:", sellerError.message);
-      return;
-    }
+  .from("seller_details")
+  .upsert(
+    {
+      vehicle_id: vehicle.id,
+      seller_type: formData.vendedorTipo,
+      seller_name: formData.nome_vendedor,
+      phone: formData.telefone,
+      company: formData.empresa,
+      social_media: formData.redes_sociais,
+      address: formData.endereco,
+    },
+    { onConflict: "vehicle_id" }
+  );
+if (sellerError) {
+  console.error("Erro ao atualizar detalhes do vendedor:", sellerError.message);
+  return;
+}
 
-    // Atualiza os opcionais: exclui os antigos e insere os novos
-    const { error: deleteError } = await supabase
-      .from("vehicle_optionals")
-      .delete()
-      .eq("vehicle_id", vehicle.id);
-    if (deleteError) {
-      console.error("Erro ao excluir opcionais antigos:", deleteError.message);
-      return;
-    }
-    if (selectedOptionals.length > 0) {
-      const rows = selectedOptionals.map((optionalId) => ({
-        vehicle_id: vehicle.id,
-        optional_id: optionalId,
-      }));
-      const { error: insertOptError } = await supabase
-        .from("vehicle_optionals")
-        .insert(rows);
-      if (insertOptError) {
-        console.error("Erro ao inserir opcionais:", insertOptError.message);
-        return;
-      }
-    }
+
+   // Atualiza os opcionais: remove os antigos e insere os novos
+const { error: deleteError } = await supabase
+.from("vehicle_optionals")
+.delete()
+.eq("vehicle_id", vehicle.id);
+if (deleteError) {
+console.error("Erro ao excluir opcionais antigos:", deleteError.message);
+return;
+}
+if (selectedOptionals.length > 0) {
+const rows = selectedOptionals.map((optionalId) => ({
+  vehicle_id: vehicle.id,
+  optional_id: optionalId,
+}));
+const { error: insertOptError } = await supabase
+  .from("vehicle_optionals")
+  .upsert(rows, { onConflict: "vehicle_id, optional_id" });
+if (insertOptError) {
+  console.error("Erro ao inserir opcionais:", insertOptError.message);
+  return;
+}
+}
+
+    
 
     // Atualiza imagens, se necessário
     if (selectedFiles.length > 0) {
@@ -284,7 +318,7 @@ useEffect(() => {
           address={formData.endereco}
           onChange={handleChange}
         />
-        {/* Optionals */}
+        {/* Opcionais */}
         <OptionalsSelect
           optionals={optionals}
           selectedOptionals={selectedOptionals}
