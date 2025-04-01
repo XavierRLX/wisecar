@@ -2,6 +2,7 @@
 "use client";
 
 import { Optional } from "@/types";
+import { CheckCircle } from "lucide-react";
 
 interface VehicleOptional {
   optional: Optional;
@@ -11,18 +12,21 @@ interface Props {
   vehicleOptionals?: VehicleOptional[];
 }
 
-export default function OptionalList({ vehicleOptionals }: Props) {
+export default function OptionalList({ vehicleOptionals }: { vehicleOptionals?: { optional: { id: number; name: string } }[] }) {
   return (
-    <section className="bg-white p-6 rounded-lg shadow-md space-y-4">
-      <h2 className="text-2xl font-bold">Opcionais</h2>
+    <section className="mt-4">
+      <h2 className="text-2xl font-bold mb-4">Opcionais</h2>
       {vehicleOptionals && vehicleOptionals.length > 0 ? (
-        <ul className="list-disc pl-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {vehicleOptionals.map((vo) => (
-            <li key={vo.optional.id}>{vo.optional.name}</li>
+            <div key={vo.optional.id} className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-500" />
+              <span className="text-gray-700">{vo.optional.name}</span>
+            </div>
           ))}
-        </ul>
+        </div>
       ) : (
-        <p>Sem opcionais.</p>
+        <p className="text-gray-500">Sem opcionais.</p>
       )}
     </section>
   );

@@ -74,97 +74,102 @@ export default function VehicleDetailsPage() {
 
   return (
     <AuthGuard>
-      <div className="max-w-4xl mx-auto p-2 space-y-6">
-        {/* Seção de Informações do Veículo */}
-        <section className="bg-white p-2 rounded-lg shadow-md space-y-4">
-          {/* Seção de Imagem Principal */}
-          <section className="mb-6">
+          <div className="max-w-4xl mx-auto p-4 space-y-6">
+        {/* Card do veículo */}
+        <section className="bg-white p-4 rounded-lg shadow-md">
+          {/* Imagem */}
+          <section className="mb-4">
             {vehicle.vehicle_images && vehicle.vehicle_images.length > 0 ? (
               <Carousel images={vehicle.vehicle_images} />
             ) : (
-              <div className="w-full h-96 bg-gray-200 flex items-center justify-center rounded-lg shadow-lg">
+              <div className="w-full h-64 bg-gray-200 flex items-center justify-center rounded-lg shadow-lg">
                 <span className="text-gray-500 text-xl">Sem imagem</span>
               </div>
             )}
           </section>
 
-          <header>
-            <h1 className="text-lg font-bold flex items-center gap-2">
-              {vehicle.brand} {vehicle.model}
-            </h1>
+          {/* Título */}
+          <header className="mb-4">
+            <h1 className="text-2xl font-bold">{vehicle.brand} {vehicle.model}</h1>
           </header>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          {/* Informações organizadas em duas colunas */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5 text-gray-500" />
-              <p className="text-gray-700">
+              <span className="text-gray-700">
                 <strong>Ano:</strong> {vehicle.year}
-              </p>
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-gray-500" />
-              <p className="text-gray-700">
+              <span className="text-gray-700">
                 <strong>Preço:</strong> {vehicle.price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-              </p>
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <Activity className="w-5 h-5 text-gray-500" />
-              <p className="text-gray-700">
+              <span className="text-gray-700">
                 <strong>Quilometragem:</strong> {vehicle.mileage} km
-              </p>
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <Palette className="w-5 h-5 text-gray-500" />
-              <p className="text-gray-700">
+              <span className="text-gray-700">
                 <strong>Cor:</strong> {vehicle.color}
-              </p>
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <Droplet className="w-5 h-5 text-gray-500" />
-              <p className="text-gray-700">
+              <span className="text-gray-700">
                 <strong>Combustível:</strong> {vehicle.fuel}
-              </p>
+              </span>
             </div>
           </div>
-          <p className="text-gray-700">
+
+          {/* Observações */}
+          <p className="text-gray-700 mb-4">
             <strong>Observações:</strong> {vehicle.notes || "Sem observações"}
           </p>
-          <div>
+
+          {/* Botões de ação simplificados */}
+          <div className="flex gap-2">
             <button
               onClick={handleCompararFipe}
-              className="flex items-center gap-2 w-full py-2 px-4 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+              className="flex-1 py-2 border border-green-600 text-green-600 rounded hover:bg-green-50 transition-colors"
             >
-              <Check className="w-5 h-5" />
-              Comparar com FIPE
+              Comparar FIPE
             </button>
-            <Link href={`/veiculos/${vehicle.id}/editar`} className="px-4 py-2 bg-yellow-500 text-white rounded">
-              Editar Veículo
+            <Link
+              href={`/veiculos/${vehicle.id}/editar`}
+              className="flex-1 py-2 text-center border border-gray-400 text-gray-600 rounded hover:bg-gray-50 transition-colors"
+            >
+              Editar
             </Link>
           </div>
+
+          {/* Exibição dos dados FIPE, se disponíveis */}
           {fipeAtual && (
             <div className="mt-4 p-4 bg-gray-100 rounded">
               <div className="flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-gray-700" />
-                <p className="text-gray-800">
-                  <strong>Valor FIPE Atual:</strong> {fipeAtual.Valor}
-                </p>
+                <span className="text-gray-800">
+                  <strong>Valor FIPE:</strong> {fipeAtual.Valor}
+                </span>
               </div>
               <div className="flex items-center gap-2 mt-2">
                 <Calendar className="w-5 h-5 text-gray-700" />
-                <p className="text-gray-800">
+                <span className="text-gray-800">
                   <strong>Data de Referência:</strong> {fipeAtual.MesReferencia}
-                </p>
+                </span>
               </div>
             </div>
           )}
-        </section>
-
-        {/* Seção de Detalhes do Vendedor */}
+         <div className=" mt-5 bg-white p-4 rounded-lg shadow-md">
         <SellerDetails seller={vehicle.seller_details ?? null} />
-
-        {/* Seção de Opcionais */}
         <OptionalList vehicleOptionals={vehicle.vehicle_optionals} />
-
-        {/* Seção de Galeria de Imagens */}
+        </div>
+        </section>
       </div>
     </AuthGuard>
   );
