@@ -46,15 +46,15 @@ export default function LoginPage() {
       </div>
 
       {/* Card de Login */}
-      <div className="relative bg-white shadow-md rounded-lg px-8 py-10 max-w-md w-full text-center">
-        <h2 className="text-3xl font-bold text-gray-800 TextColorPrimary mb-6">Login</h2>
+      <div className="relative z-10 bg-white shadow-md rounded-lg px-8 py-10 max-w-md w-full text-center">
+        <h2 className="text-3xl font-bold text-gray-800 TextColorPrimary mb-6">Login !</h2>
         {errorMessage && (
           <p className="mb-4 text-sm text-red-500">{errorMessage}</p>
         )}
         <button
           onClick={handleLogin}
           disabled={loading}
-          className="flex items-center justify-center gap-3 w-full py-3 rounded-lg bg-blue-600 text-white cursor-pointer hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:pointer-events-none"
+          className="flex items-center justify-center gap-3 w-full py-3 rounded-lg bkgColorPrimary text-white cursor-pointer hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:pointer-events-none"
           aria-label="Entrar com Google"
         >
           {loading && <Loader2 className="animate-spin w-5 h-5" />}
