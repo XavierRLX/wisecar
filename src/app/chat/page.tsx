@@ -1,4 +1,4 @@
-// app/chat/page.tsx
+// Exemplo em app/chat/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -14,29 +14,38 @@ export default function ChatListPage() {
 
   useEffect(() => {
     async function fetchConversations() {
-      // Obter o usuário autenticado
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.push("/login");
         return;
       }
       
-      // Buscar conversas onde o usuário é comprador ou vendedor
+      // Query com expansão utilizando aliases únicos
       const { data, error } = await supabase
         .from("conversations")
-        .select("*")
+        .select(`
+          *,
+          vehicles(brand,model),
+          buyer:profiles!buyer_id(username),
+          seller:profiles!seller_id(username),
+          messages(id)
+        `)
         .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
         .order("created_at", { ascending: false });
       
       if (error) {
         console.error("Erro ao buscar conversas:", error.message);
       } else if (data) {
-        setConversations(data);
+        // Filtrar apenas conversas que têm mensagens, se necessário
+        const filtered = data.filter(conv => conv.messages && conv.messages.length > 0);
+        setConversations(filtered);
       }
       setLoading(false);
     }
     fetchConversations();
   }, [router]);
+  
+  
 
   if (loading) return <LoadingState message="Carregando conversas..." />;
 
@@ -51,9 +60,11 @@ export default function ChatListPage() {
             <li key={conv.id} className="border p-4 rounded-lg hover:bg-gray-100 transition">
               <Link href={`/chat/${conv.id}`}>
                 <div>
-                  <p className="font-semibold">Veículo: {conv.vehicle_id}</p>
+                  <p className="font-semibold">
+                    Veículo: {conv.vehicles ? `${conv.vehicles.brand} ${conv.vehicles.model}` : conv.vehicle_id}
+                  </p>
                   <p className="text-sm text-gray-600">
-                    Participantes: {conv.buyer_id} e {conv.seller_id}
+                    Participantes: {conv.buyer ? conv.buyer.username : conv.buyer_id} e {conv.seller ? conv.seller.username : conv.seller_id}
                   </p>
                   <p className="text-xs text-gray-500">
                     Criado em: {new Date(conv.created_at).toLocaleString()}
