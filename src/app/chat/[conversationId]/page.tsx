@@ -18,7 +18,7 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // Obtém o usuário autenticado
+  // Obter o usuário autenticado
   useEffect(() => {
     async function getCurrentUser() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -27,7 +27,7 @@ export default function ChatPage() {
     getCurrentUser();
   }, []);
 
-  // Função para buscar as mensagens da conversa, com expansão do sender
+  // Função para buscar mensagens da conversa com expansão do sender
   async function fetchMessages() {
     if (!conversationId) return;
     const { data, error } = await supabase
@@ -65,6 +65,25 @@ export default function ChatPage() {
         (payload) => {
           console.log("Nova mensagem recebida (chat):", payload.new);
           setMessages((prev) => {
+            // Se a mensagem for do usuário atual, verifique se já existe uma mensagem pendente com o mesmo conteúdo
+            if (payload.new.sender_id === currentUserId) {
+              const index = prev.findIndex(
+                (msg) =>
+                  msg.pending &&
+                  msg.content === payload.new.content &&
+                  Math.abs(
+                    new Date(payload.new.created_at).getTime() -
+                      new Date(msg.created_at).getTime()
+                  ) < 2000 // diferença de até 2 segundos
+              );
+              if (index !== -1) {
+                // Substitua a mensagem temporária pela mensagem oficial
+                const updated = [...prev];
+                updated[index] = payload.new;
+                return updated;
+              }
+            }
+            // Se não encontrar, apenas adicione a nova mensagem
             if (prev.find((msg) => msg.id === payload.new.id)) return prev;
             return [...prev, payload.new];
           });
@@ -92,7 +111,7 @@ export default function ChatPage() {
       supabase.removeChannel(channel);
       supabase.removeChannel(testChannel);
     };
-  }, [conversationId]);
+  }, [conversationId, currentUserId]);
 
   // Função para enviar nova mensagem com atualização otimista
   async function sendMessage(e: React.FormEvent) {
@@ -102,16 +121,18 @@ export default function ChatPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    // Cria uma mensagem temporária para atualização otimista
     const tempMessage = {
       id: `temp-${Math.random().toString(36).substring(2, 9)}`,
       conversation_id: conversationId,
       sender_id: user.id,
       content: newMessage,
       created_at: new Date().toISOString(),
-      sender: { username: "Você" }
+      sender: { username: "Você" },
+      pending: true, // Marca como temporária
     };
 
-    // Atualização otimista: adiciona a mensagem no estado local
+    // Atualização otimista: adiciona a mensagem ao estado local
     setMessages((prev) => [...prev, tempMessage]);
     setNewMessage("");
 
