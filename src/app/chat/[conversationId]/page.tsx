@@ -1,94 +1,178 @@
-// app/chat/[conversationId]/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import LoadingState from "@/components/LoadingState";
+import RealtimeTest from "@/components/RealtimeTest";
 
 export default function ChatPage() {
-  const { conversationId } = useParams();
+  // Converte conversationId para string, se for um array
+  const params = useParams();
+  const conversationId = Array.isArray(params.conversationId)
+    ? params.conversationId[0]
+    : params.conversationId;
+
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // Função para buscar as mensagens da conversa
+  // Obtém o usuário autenticado
+  useEffect(() => {
+    async function getCurrentUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setCurrentUserId(user.id);
+    }
+    getCurrentUser();
+  }, []);
+
+  // Função para buscar as mensagens da conversa, com expansão do sender
   async function fetchMessages() {
+    if (!conversationId) return;
     const { data, error } = await supabase
       .from("messages")
-      .select("*")
+      .select(`
+         *,
+         sender:profiles!sender_id(username, avatar_url)
+      `)
       .eq("conversation_id", conversationId)
       .order("created_at", { ascending: true });
     if (!error && data) {
       setMessages(data);
+    } else if (error) {
+      console.error("Erro ao buscar mensagens:", error.message);
     }
     setLoading(false);
   }
 
+  // Configura a assinatura Realtime para novos INSERTs na conversa
   useEffect(() => {
-    if (conversationId) {
-      fetchMessages();
+    if (!conversationId) return;
+    console.log("Iniciando assinatura realtime para conversationId:", conversationId);
+    fetchMessages();
 
-      // (Opcional) Configurar Supabase Realtime para atualizar as mensagens em tempo real
-      const subscription = supabase
-        .channel("chat")
-        .on(
-          "postgres_changes",
-          { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` },
-          (payload) => {
-            setMessages((prev) => [...prev, payload.new]);
-          }
-        )
-        .subscribe();
+    const channel = supabase
+      .channel("chat")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          console.log("Nova mensagem recebida (chat):", payload.new);
+          setMessages((prev) => {
+            if (prev.find((msg) => msg.id === payload.new.id)) return prev;
+            return [...prev, payload.new];
+          });
+        }
+      )
+      .subscribe((status) => {
+        console.log("Realtime subscription status:", status);
+      });
 
-      return () => {
-        supabase.removeChannel(subscription);
-      };
-    }
+    // Canal de teste para depuração
+    const testChannel = supabase
+      .channel("test-chat")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages" },
+        (payload) => {
+          console.log("Evento de teste - nova mensagem inserida:", payload.new);
+        }
+      )
+      .subscribe((status) => {
+        console.log("Test subscription status:", status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+      supabase.removeChannel(testChannel);
+    };
   }, [conversationId]);
 
-  // Função para enviar uma nova mensagem
+  // Função para enviar nova mensagem com atualização otimista
   async function sendMessage(e: React.FormEvent) {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !conversationId) return;
 
-    // Obter o ID do usuário remetente
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data, error } = await supabase
+    const tempMessage = {
+      id: `temp-${Math.random().toString(36).substring(2, 9)}`,
+      conversation_id: conversationId,
+      sender_id: user.id,
+      content: newMessage,
+      created_at: new Date().toISOString(),
+      sender: { username: "Você" }
+    };
+
+    // Atualização otimista: adiciona a mensagem no estado local
+    setMessages((prev) => [...prev, tempMessage]);
+    setNewMessage("");
+
+    const { error } = await supabase
       .from("messages")
       .insert({
         conversation_id: conversationId,
         sender_id: user.id,
-        content: newMessage,
+        content: tempMessage.content,
       });
-
     if (error) {
       console.error("Erro ao enviar mensagem:", error.message);
-    } else {
-      setNewMessage("");
-      // A mensagem será adicionada via Realtime ou atualize o estado manualmente:
-      // setMessages((prev) => [...prev, data[0]]);
+      setMessages((prev) => prev.filter((msg) => msg.id !== tempMessage.id));
     }
   }
 
   if (loading) return <LoadingState message="Carregando chat..." />;
 
   return (
-    <div className="p-4 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Chat</h1>
-      <div className="border p-4 rounded-lg h-96 overflow-y-auto mb-4">
-        {messages.map((msg) => (
-          <div key={msg.id} className="mb-2">
-            {/* Aqui você pode buscar o nome do usuário a partir do sender_id se tiver essa informação */}
-            <p className="text-sm text-gray-600">
-              <strong>{msg.sender_id}</strong>: {msg.content}
-            </p>
-          </div>
-        ))}
-      </div>
-      <form onSubmit={sendMessage} className="flex gap-2">
+    <div className="h-screen flex flex-col">
+      {/* Componente de teste para depuração Realtime */}
+      <RealtimeTest conversationId={conversationId} />
+
+      {/* Cabeçalho */}
+      <header className="p-4 border-b">
+        <h1 className="text-xl font-bold">Chat</h1>
+      </header>
+
+      {/* Área de Mensagens com scroll */}
+      <main className="flex-1 overflow-y-auto p-4">
+        {messages.map((msg) => {
+          const isCurrentUser = msg.sender_id === currentUserId;
+          return (
+            <div
+              key={msg.id}
+              className={`flex ${isCurrentUser ? "justify-end" : "justify-start"} mb-2`}
+            >
+              <div
+                className={`max-w-xs p-3 rounded-lg ${
+                  isCurrentUser
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200 text-gray-800"
+                }`}
+              >
+                {!isCurrentUser && msg.sender && (
+                  <p className="text-xs font-semibold mb-1">
+                    {msg.sender.username}
+                  </p>
+                )}
+                <p>{msg.content}</p>
+                <p className="text-xs text-right mt-1">
+                  {new Date(msg.created_at).toLocaleTimeString()}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </main>
+
+      {/* Campo de Envio fixo na parte inferior */}
+      <form onSubmit={sendMessage} className="p-4 border-t flex">
         <input
           type="text"
           placeholder="Digite sua mensagem..."
@@ -98,7 +182,7 @@ export default function ChatPage() {
         />
         <button
           type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="ml-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
         >
           Enviar
         </button>
