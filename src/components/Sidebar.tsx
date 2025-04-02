@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, LogOut, User } from "lucide-react";
+import { X, LogOut, User, Heart } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -121,6 +121,16 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               >
                 <User className="w-5 h-5 text-gray-600" />
                 <span className="text-gray-800">Vendedor</span>
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/favoritos"
+                onClick={onClose}
+                className="flex items-center gap-3 p-2 rounded hover:bg-gray-100 transition"
+              >
+                <Heart className="w-5 h-5 text-gray-600" />
+                <span className="text-gray-800">Favoritos</span>
               </Link>
             </li>
             {/* Outras opções podem ser adicionadas aqui */}
