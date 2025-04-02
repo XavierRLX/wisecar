@@ -40,6 +40,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
           </div>
         )}
 
+        {/* Botão de Favoritos – exiba-o apenas se a função for passada */}
         {onToggleFavorite && (
           <button
             onClick={(e) => {
@@ -102,6 +103,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
             </button>
           ) : null}
         </div>
+        {/* Ações extras, como o botão de chat */}
         {extraActions && <div className="mt-2">{extraActions}</div>}
       </div>
     </div>
