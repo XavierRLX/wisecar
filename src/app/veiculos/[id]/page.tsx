@@ -165,7 +165,7 @@ export default function VehicleDetailsPage() {
               </div>
             </div>
           )}
-         <div className=" mt-5 bg-white p-4 rounded-lg shadow-md">
+         <div className=" mt-2 bg-white p-4 rounded-lg shadow-md">
         <SellerDetails seller={vehicle.seller_details ?? null} />
         <OptionalList vehicleOptionals={vehicle.vehicle_optionals} />
         </div>

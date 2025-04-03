@@ -7,18 +7,17 @@ import { usePathname } from "next/navigation";
 export default function Header() {
   const pathname = usePathname();
 
-  // Se estiver na página de login, não renderiza o Header
-  if (pathname === "/login") return null;
+  // Não renderiza o header se a rota for "/login" ou se for uma conversa (rota que começa com "/chat/")
+  if (pathname === "/login" || pathname.startsWith("/chat/")) return null;
 
-  // Mapeamento de rotas para título exibido
+  // Mapeamento de títulos para outras rotas
   const routeTitles: { [key: string]: string } = {
     "/veiculos": "Veículos",
     "/favoritos": "Favoritos",
     "/adicionar": "Adicionar",
-    // Adicione outras rotas conforme necessário
+    // Outras rotas conforme necessário
   };
 
-  // Título padrão (pode ser vazio se não houver correspondência)
   const title = routeTitles[pathname] || "";
 
   return (
@@ -39,7 +38,7 @@ export default function Header() {
         <h2 className="text-md font-medium TextColorPrimary">{title}</h2>
       </div>
       <div className="flex-1">
-        {/* Pode colocar algum ícone ou deixar vazio */}
+        {/* Espaço para ícones ou outras ações, se necessário */}
       </div>
     </header>
   );

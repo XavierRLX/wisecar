@@ -7,7 +7,10 @@ import Sidebar from "./Sidebar";
 
 export default function ClientNav() {
   const pathname = usePathname();
-  if (pathname === "/login") return null;
+  
+  // Exibe o BottomNav apenas se o pathname for exatamente "/chat"
+  const showBottomNav = pathname === "/chat";
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   function handleOpenSidebar() {
     setIsSidebarOpen(true);
@@ -17,7 +20,7 @@ export default function ClientNav() {
   }
   return (
     <>
-      <BottomNav onMenuClick={handleOpenSidebar} />
+      {showBottomNav && <BottomNav onMenuClick={handleOpenSidebar} />}
       <Sidebar isOpen={isSidebarOpen} onClose={handleCloseSidebar} />
     </>
   );
