@@ -1,3 +1,4 @@
+// app/chat/[conversationId]/page.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -5,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import LoadingState from "@/components/LoadingState";
 import RealtimeTest from "@/components/RealtimeTest";
-import { ArrowLeft, Send  } from "lucide-react";
+import { ArrowLeft, Send } from "lucide-react";
 
 export default function ChatPage() {
   const params = useParams();
@@ -19,9 +20,10 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // Ref para rolar até o final
+  // Ref para scroll automático
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Obtém o usuário autenticado
   useEffect(() => {
     async function getCurrentUser() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -30,24 +32,31 @@ export default function ChatPage() {
     getCurrentUser();
   }, []);
 
+  // Busca as mensagens da conversa
   async function fetchMessages() {
     if (!conversationId) return;
-    const { data, error } = await supabase
-      .from("messages")
-      .select(`
-         *,
-         sender:profiles!sender_id(username, avatar_url)
-      `)
-      .eq("conversation_id", conversationId)
-      .order("created_at", { ascending: true });
-    if (!error && data) {
-      setMessages(data);
-    } else if (error) {
-      console.error("Erro ao buscar mensagens:", error.message);
+    try {
+      const { data, error } = await supabase
+        .from("messages")
+        .select(`
+           *,
+           sender:profiles!sender_id(username, avatar_url)
+        `)
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true });
+      if (error) {
+        console.error("Erro ao buscar mensagens:", error.message);
+      } else if (data) {
+        setMessages(data);
+      }
+    } catch (err: any) {
+      console.error("Erro inesperado ao buscar mensagens:", err.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
+  // Configura a assinatura realtime
   useEffect(() => {
     if (!conversationId) return;
     console.log("Iniciando assinatura realtime para conversationId:", conversationId);
@@ -75,6 +84,7 @@ export default function ChatPage() {
         console.log("Realtime subscription status:", status);
       });
 
+    // Canal de teste para depuração
     const testChannel = supabase
       .channel("test-chat")
       .on(
@@ -94,43 +104,50 @@ export default function ChatPage() {
     };
   }, [conversationId]);
 
-  // Rolar automaticamente até o final sempre que as mensagens mudarem
+  // Rola para o final sempre que as mensagens mudam
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
 
+  // Função para enviar mensagem com atualização otimista
   async function sendMessage(e: React.FormEvent) {
     e.preventDefault();
     if (!newMessage.trim() || !conversationId) return;
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    const tempMessage = {
-      id: `temp-${Math.random().toString(36).substring(2, 9)}`,
-      conversation_id: conversationId,
-      sender_id: user.id,
-      content: newMessage,
-      created_at: new Date().toISOString(),
-      sender: { username: "Você" },
-      pending: true,
-    };
-
-    setMessages((prev) => [...prev, tempMessage]);
-    setNewMessage("");
-
-    const { error } = await supabase
-      .from("messages")
-      .insert({
+      const tempMessage = {
+        id: `temp-${Math.random().toString(36).substring(2, 9)}`,
         conversation_id: conversationId,
         sender_id: user.id,
-        content: tempMessage.content,
-      });
-    if (error) {
-      console.error("Erro ao enviar mensagem:", error.message);
-      setMessages((prev) => prev.filter((msg) => msg.id !== tempMessage.id));
+        content: newMessage,
+        created_at: new Date().toISOString(),
+        sender: { username: "Você" },
+        pending: true,
+      };
+
+      // Atualização otimista
+      setMessages((prev) => [...prev, tempMessage]);
+      setNewMessage("");
+
+      const { error } = await supabase
+        .from("messages")
+        .insert({
+          conversation_id: conversationId,
+          sender_id: user.id,
+          content: tempMessage.content,
+        });
+
+      if (error) {
+        console.error("Erro ao enviar mensagem:", error.message);
+        setMessages((prev) => prev.filter((msg) => msg.id !== tempMessage.id));
+      }
+    } catch (err: any) {
+      console.error("Erro inesperado ao enviar mensagem:", err.message);
     }
   }
 
@@ -140,7 +157,7 @@ export default function ChatPage() {
     <div className="h-screen flex flex-col bg-gray-50">
       <RealtimeTest conversationId={conversationId} />
 
-      {/* Cabeçalho personalizado da conversa */}
+      {/* Cabeçalho personalizado com seta de voltar */}
       <header className="flex items-center p-4 bg-white shadow">
         <button
           onClick={() => router.push("/chat")}
@@ -149,10 +166,10 @@ export default function ChatPage() {
         >
           <ArrowLeft className="h-6 w-6 text-gray-700" />
         </button>
-        <h1 className="text-xl font-bold text-gray-600">Chat</h1>
+        <h1 className="text-xl font-bold text-gray-800">Chat</h1>
       </header>
 
-      {/* Área de mensagens */}
+      {/* Área de mensagens rolável */}
       <main className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg) => {
           const isCurrentUser = msg.sender_id === currentUserId;
@@ -162,22 +179,22 @@ export default function ChatPage() {
               className={`flex ${isCurrentUser ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-xs p-2 rounded-lg shadow ${
+                className={`max-w-xs p-4 rounded-lg shadow ${
                   isCurrentUser
                     ? "bkgColorPrimary text-white"
                     : "bg-white text-gray-800 border border-gray-200"
                 }`}
               >
                 {!isCurrentUser && msg.sender && (
-                  <p className="text-xs font-semibold mb-2">
+                  <p className="text-xs font-semibold mb-1">
                     {msg.sender.username}
                   </p>
                 )}
                 <p className="text-sm">{msg.content}</p>
-                <p className={`text-xs text-right mt-1 ${ 
+                <p className={`text-xs text-right mt-1 ${
                   isCurrentUser
-                  ?"text-gray-100"
-                  : "text-gray-800"
+                  ? "text-gray-100"
+                  : "text-gray-500"
                 }`}
                   >
                   {new Date(msg.created_at).toLocaleTimeString([], {
@@ -192,7 +209,7 @@ export default function ChatPage() {
         <div ref={messagesEndRef} />
       </main>
 
-     {/* Campo de envio fixo */}
+      {/* Formulário de envio fixo */}
       <form onSubmit={sendMessage} className="p-4 bg-white shadow-inner flex">
         <input
           type="text"
@@ -203,7 +220,7 @@ export default function ChatPage() {
         />
         <button
           type="submit"
-          className="ml-3 p-3 bkgColorPrimary text-white rounded-lg hover:bg-blue-700 transition"
+          className="ml-3 p-3 bkgColorPrimary text-white rounded-lg"
           aria-label="Enviar mensagem"
         >
           <Send className="w-6 h-6" />

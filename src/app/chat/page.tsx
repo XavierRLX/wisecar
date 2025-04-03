@@ -1,3 +1,4 @@
+// app/chat/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -18,26 +19,32 @@ export default function ChatListPage() {
         router.push("/login");
         return;
       }
-      
-      const { data, error } = await supabase
-        .from("conversations")
-        .select(`
-          *,
-          vehicles(brand, model, vehicle_images(image_url)),
-          buyer:profiles!buyer_id(username),
-          seller:profiles!seller_id(username),
-          messages(id)
-        `)
-        .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
-        .order("created_at", { ascending: false });
-      
-      if (error) {
-        console.error("Erro ao buscar conversas:", error.message);
-      } else if (data) {
-        const filtered = data.filter(conv => conv.messages && conv.messages.length > 0);
-        setConversations(filtered);
+
+      try {
+        const { data, error } = await supabase
+          .from("conversations")
+          .select(`
+            *,
+            vehicles(brand, model, vehicle_images(image_url)),
+            buyer:profiles!buyer_id(username),
+            seller:profiles!seller_id(username),
+            messages(id)
+          `)
+          .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
+          .order("created_at", { ascending: false });
+  
+        if (error) {
+          console.error("Erro ao buscar conversas:", error.message);
+        } else if (data) {
+          // Filtra apenas as conversas que possuem mensagens
+          const filtered = data.filter(conv => conv.messages && conv.messages.length > 0);
+          setConversations(filtered);
+        }
+      } catch (err: any) {
+        console.error("Erro inesperado:", err.message);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     fetchConversations();
   }, [router]);
@@ -45,7 +52,7 @@ export default function ChatListPage() {
   if (loading) return <LoadingState message="Carregando conversas..." />;
 
   return (
-    <div className="px-2 py-8 max-w-4xl mx-auto">
+    <div className="py-8 px-2 max-w-4xl mx-auto">
       {conversations.length === 0 ? (
         <p className="text-gray-600 text-center">Nenhuma conversa encontrada.</p>
       ) : (
@@ -56,7 +63,8 @@ export default function ChatListPage() {
               className="border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-colors"
             >
               <Link href={`/chat/${conv.id}`}>
-                <div className="flex items-center gap-4 pr-4">
+                <div className="flex items-center gap-4 pr-3">
+                  {/* Imagem do veículo */}
                   <div className="w-20 h-20 flex-shrink-0">
                     {conv.vehicles && conv.vehicles.vehicle_images && conv.vehicles.vehicle_images.length > 0 ? (
                       <img
@@ -70,9 +78,10 @@ export default function ChatListPage() {
                       </div>
                     )}
                   </div>
+                  {/* Informações da conversa */}
                   <div className="flex flex-col flex-1">
                     <div className="flex items-center justify-between">
-                      <p className="text-ml font-bold text-gray-800">
+                      <p className="text-lg font-bold text-gray-800">
                         {conv.vehicles ? `${conv.vehicles.brand} ${conv.vehicles.model}` : "Veículo"}
                       </p>
                       <p className="text-xs text-gray-500">
