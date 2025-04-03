@@ -11,18 +11,9 @@ export default function Header() {
   // Não renderiza o header em /login ou em páginas de conversa individual (ex: /chat/123)
   if (pathname === "/login" || pathname.startsWith("/chat/")) return null;
 
-  const routeTitles: { [key: string]: string } = {
-    "/veiculos": "Veículos",
-    "/favoritos": "Favoritos",
-    "/adicionar": "Adicionar",
-    // Outras rotas, se necessário
-  };
-
-  const title = routeTitles[pathname] || "";
-
   return (
     <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 shadow-sm flex items-center h-12 z-50">
-      <div className="flex-1">
+      <div>
         <Link href="/">
           <Image
             unoptimized
@@ -33,9 +24,6 @@ export default function Header() {
             className="mx-auto"
           />
         </Link>
-      </div>
-      <div className="flex-1 text-center">
-        <h2 className="text-md font-medium text-gray-800">{title}</h2>
       </div>
       <div className="flex-1">
         {/* Espaço para ícones ou outras ações */}
