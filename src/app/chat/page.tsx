@@ -19,7 +19,6 @@ export default function ChatListPage() {
         return;
       }
       
-      // Query com expansão usando aliases e incluindo os dados do veículo e dos perfis, inclusive as imagens do veículo
       const { data, error } = await supabase
         .from("conversations")
         .select(`
@@ -35,7 +34,6 @@ export default function ChatListPage() {
       if (error) {
         console.error("Erro ao buscar conversas:", error.message);
       } else if (data) {
-        // Opcional: filtrar apenas conversas que têm mensagens
         const filtered = data.filter(conv => conv.messages && conv.messages.length > 0);
         setConversations(filtered);
       }
@@ -58,8 +56,7 @@ export default function ChatListPage() {
               className="border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-colors"
             >
               <Link href={`/chat/${conv.id}`}>
-                <div className="flex items-center gap-4">
-                  {/* Imagem do veículo à esquerda */}
+                <div className="flex items-center gap-4 p-4">
                   <div className="w-20 h-20 flex-shrink-0">
                     {conv.vehicles && conv.vehicles.vehicle_images && conv.vehicles.vehicle_images.length > 0 ? (
                       <img
@@ -73,13 +70,12 @@ export default function ChatListPage() {
                       </div>
                     )}
                   </div>
-                  {/* Informações da conversa */}
                   <div className="flex flex-col flex-1">
                     <div className="flex items-center justify-between">
                       <p className="text-lg font-bold text-gray-800">
                         {conv.vehicles ? `${conv.vehicles.brand} ${conv.vehicles.model}` : "Veículo"}
                       </p>
-                      <p className="text-xs text-gray-500 p-2">
+                      <p className="text-xs text-gray-500">
                         {new Date(conv.created_at).toLocaleDateString()}
                       </p>
                     </div>

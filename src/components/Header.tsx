@@ -1,3 +1,4 @@
+// components/Header.tsx
 "use client";
 
 import Image from "next/image";
@@ -7,15 +8,14 @@ import { usePathname } from "next/navigation";
 export default function Header() {
   const pathname = usePathname();
 
-  // Não renderiza o header se a rota for "/login" ou se for uma conversa (rota que começa com "/chat/")
+  // Não renderiza o header em /login ou em páginas de conversa individual (ex: /chat/123)
   if (pathname === "/login" || pathname.startsWith("/chat/")) return null;
 
-  // Mapeamento de títulos para outras rotas
   const routeTitles: { [key: string]: string } = {
     "/veiculos": "Veículos",
     "/favoritos": "Favoritos",
     "/adicionar": "Adicionar",
-    // Outras rotas conforme necessário
+    // Outras rotas, se necessário
   };
 
   const title = routeTitles[pathname] || "";
@@ -35,10 +35,10 @@ export default function Header() {
         </Link>
       </div>
       <div className="flex-1 text-center">
-        <h2 className="text-md font-medium TextColorPrimary">{title}</h2>
+        <h2 className="text-md font-medium text-gray-800">{title}</h2>
       </div>
       <div className="flex-1">
-        {/* Espaço para ícones ou outras ações, se necessário */}
+        {/* Espaço para ícones ou outras ações */}
       </div>
     </header>
   );

@@ -1,9 +1,9 @@
+// app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "@/app/globals.css";
 import ClientOnly from "@/components/ClientOnly";
-import ClientNav from "@/components/ClientNav";
-import Header from "@/components/Header";
+import GlobalNav from "@/components/GlobalNav";
 import Providers from "./providers";
 import ContentWrapper from "@/components/ContentWrapper";
 
@@ -23,11 +23,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-100 text-gray-900`}
       >
         <Providers>
-          <Header />
-          <ContentWrapper>{children}</ContentWrapper>
           <ClientOnly>
-            <ClientNav />
+            <GlobalNav />
           </ClientOnly>
+          <ContentWrapper>{children}</ContentWrapper>
         </Providers>
       </body>
     </html>

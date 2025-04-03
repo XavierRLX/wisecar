@@ -19,10 +19,9 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // Ref para a área final das mensagens
+  // Ref para rolar até o final
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Obtém o usuário autenticado
   useEffect(() => {
     async function getCurrentUser() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -31,7 +30,6 @@ export default function ChatPage() {
     getCurrentUser();
   }, []);
 
-  // Função para buscar as mensagens da conversa, com expansão do sender
   async function fetchMessages() {
     if (!conversationId) return;
     const { data, error } = await supabase
@@ -50,14 +48,6 @@ export default function ChatPage() {
     setLoading(false);
   }
 
-  // Efeito para rolar para o final quando as mensagens mudarem
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages]);
-
-  // Configura a assinatura Realtime para novos INSERTs na conversa
   useEffect(() => {
     if (!conversationId) return;
     console.log("Iniciando assinatura realtime para conversationId:", conversationId);
@@ -85,7 +75,6 @@ export default function ChatPage() {
         console.log("Realtime subscription status:", status);
       });
 
-    // Canal de teste para depuração (opcional)
     const testChannel = supabase
       .channel("test-chat")
       .on(
@@ -105,7 +94,13 @@ export default function ChatPage() {
     };
   }, [conversationId]);
 
-  // Função para enviar nova mensagem com atualização otimista
+  // Rolar automaticamente até o final sempre que as mensagens mudarem
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
   async function sendMessage(e: React.FormEvent) {
     e.preventDefault();
     if (!newMessage.trim() || !conversationId) return;
@@ -123,7 +118,6 @@ export default function ChatPage() {
       pending: true,
     };
 
-    // Atualização otimista: adiciona a mensagem temporária
     setMessages((prev) => [...prev, tempMessage]);
     setNewMessage("");
 
@@ -144,10 +138,9 @@ export default function ChatPage() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
-      {/* Componente de teste para depuração Realtime */}
       <RealtimeTest conversationId={conversationId} />
 
-      {/* Cabeçalho com seta de voltar */}
+      {/* Cabeçalho personalizado da conversa */}
       <header className="flex items-center p-4 bg-white shadow">
         <button
           onClick={() => router.push("/chat")}
@@ -159,7 +152,7 @@ export default function ChatPage() {
         <h1 className="text-xl font-bold text-gray-800">Chat</h1>
       </header>
 
-      {/* Área de Mensagens com scroll */}
+      {/* Área de mensagens */}
       <main className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg) => {
           const isCurrentUser = msg.sender_id === currentUserId;
@@ -182,17 +175,19 @@ export default function ChatPage() {
                 )}
                 <p className="text-sm">{msg.content}</p>
                 <p className="text-xs text-right mt-1 text-gray-500">
-                  {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(msg.created_at).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </p>
               </div>
             </div>
           );
         })}
-        {/* Div "sentinela" para rolar até o final */}
         <div ref={messagesEndRef} />
       </main>
 
-      {/* Campo de Envio fixo na parte inferior */}
+      {/* Campo de envio fixo */}
       <form onSubmit={sendMessage} className="p-4 bg-white shadow-inner flex">
         <input
           type="text"
