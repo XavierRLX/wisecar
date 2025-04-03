@@ -8,6 +8,7 @@ import { getOrCreateConversation } from "@/lib/chatService";
 import { useIsSeller } from "@/hooks/useIsSeller";
 import { useNonSellerVehicles } from "@/hooks/useNonSellerVehicles";
 import { supabase } from "@/lib/supabase";
+import RestrictedAccessAlert from "@/components/RestrictedAccessAlert";
 
 export default function SellerPage() {
   const router = useRouter();
@@ -18,11 +19,12 @@ export default function SellerPage() {
 
   if (isSeller === false) {
     return (
-      <div className="p-4 text-center">
-        <h2 className="text-2xl font-bold mb-2">Acesso Restrito</h2>
-        <p>
-          Esta área é exclusiva para vendedores. Se deseja se tornar um vendedor, entre em contato ou atualize seu perfil.
-        </p>
+      <div className="p-2 mt-60 flex justify-center items-center">
+        <RestrictedAccessAlert
+          message="Esta área é exclusiva para vendedores. Para acessar, assine um plano ou atualize seu perfil."
+          buttonText="Assinar Plano"
+          onButtonClick={() => router.push("/planos")}  
+        />
       </div>
     );
   }
@@ -42,7 +44,7 @@ export default function SellerPage() {
                 <button
                   onClick={async (e) => {
                     e.stopPropagation();
-                    // Exemplo: usa vehicle.user_id como comprador. Ajuste conforme sua lógica.
+                    // Exemplo simples: usa vehicle.user_id como comprador; ajuste conforme sua lógica
                     const buyerId = vehicle.user_id;
                     const { data: { user } } = await supabase.auth.getUser();
                     const sellerId = user?.id;
