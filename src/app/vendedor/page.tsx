@@ -31,8 +31,8 @@ export default function SellerPage() {
 
   return (
     <div className="p-4">
-      <h1 className="text-3xl font-bold mb-4">Área do Vendedor</h1>
-      <p className="mb-6 text-gray-600">
+      <h1 className="text-xl font-bold mb-4">Área do Vendedor</h1>
+      <p className="mb-6 text-base text-gray-600">
         Veja os veículos adicionados por usuários comuns e entre em contato com os interessados.
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

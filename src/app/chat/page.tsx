@@ -81,7 +81,7 @@ export default function ChatListPage() {
                   {/* Informações da conversa */}
                   <div className="flex flex-col flex-1">
                     <div className="flex items-center justify-between">
-                      <p className="text-lg font-bold text-gray-800">
+                      <p className="text-ml font-bold text-gray-800">
                         {conv.vehicles ? `${conv.vehicles.brand} ${conv.vehicles.model}` : "Veículo"}
                       </p>
                       <p className="text-xs text-gray-500">
