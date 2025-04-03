@@ -45,7 +45,7 @@ export default function ChatListPage() {
   if (loading) return <LoadingState message="Carregando conversas..." />;
 
   return (
-    <div className="p-4 max-w-4xl mx-auto">
+    <div className="px-2 py-8 max-w-4xl mx-auto">
       {conversations.length === 0 ? (
         <p className="text-gray-600 text-center">Nenhuma conversa encontrada.</p>
       ) : (
@@ -56,7 +56,7 @@ export default function ChatListPage() {
               className="border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-colors"
             >
               <Link href={`/chat/${conv.id}`}>
-                <div className="flex items-center gap-4 p-4">
+                <div className="flex items-center gap-4 pr-4">
                   <div className="w-20 h-20 flex-shrink-0">
                     {conv.vehicles && conv.vehicles.vehicle_images && conv.vehicles.vehicle_images.length > 0 ? (
                       <img
@@ -72,7 +72,7 @@ export default function ChatListPage() {
                   </div>
                   <div className="flex flex-col flex-1">
                     <div className="flex items-center justify-between">
-                      <p className="text-lg font-bold text-gray-800">
+                      <p className="text-ml font-bold text-gray-800">
                         {conv.vehicles ? `${conv.vehicles.brand} ${conv.vehicles.model}` : "Veículo"}
                       </p>
                       <p className="text-xs text-gray-500">

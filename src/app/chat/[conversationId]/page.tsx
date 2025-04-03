@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import LoadingState from "@/components/LoadingState";
 import RealtimeTest from "@/components/RealtimeTest";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Send  } from "lucide-react";
 
 export default function ChatPage() {
   const params = useParams();
@@ -149,7 +149,7 @@ export default function ChatPage() {
         >
           <ArrowLeft className="h-6 w-6 text-gray-700" />
         </button>
-        <h1 className="text-xl font-bold text-gray-800">Chat</h1>
+        <h1 className="text-xl font-bold text-gray-600">Chat</h1>
       </header>
 
       {/* Área de mensagens */}
@@ -162,19 +162,24 @@ export default function ChatPage() {
               className={`flex ${isCurrentUser ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-xs p-4 rounded-lg shadow ${
+                className={`max-w-xs p-2 rounded-lg shadow ${
                   isCurrentUser
-                    ? "bg-blue-600 text-white"
+                    ? "bkgColorPrimary text-white"
                     : "bg-white text-gray-800 border border-gray-200"
                 }`}
               >
                 {!isCurrentUser && msg.sender && (
-                  <p className="text-xs font-semibold mb-1">
+                  <p className="text-xs font-semibold mb-2">
                     {msg.sender.username}
                   </p>
                 )}
                 <p className="text-sm">{msg.content}</p>
-                <p className="text-xs text-right mt-1 text-gray-500">
+                <p className={`text-xs text-right mt-1 ${ 
+                  isCurrentUser
+                  ?"text-gray-100"
+                  : "text-gray-800"
+                }`}
+                  >
                   {new Date(msg.created_at).toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -187,7 +192,7 @@ export default function ChatPage() {
         <div ref={messagesEndRef} />
       </main>
 
-      {/* Campo de envio fixo */}
+     {/* Campo de envio fixo */}
       <form onSubmit={sendMessage} className="p-4 bg-white shadow-inner flex">
         <input
           type="text"
@@ -198,9 +203,10 @@ export default function ChatPage() {
         />
         <button
           type="submit"
-          className="ml-3 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          className="ml-3 p-3 bkgColorPrimary text-white rounded-lg hover:bg-blue-700 transition"
+          aria-label="Enviar mensagem"
         >
-          Enviar
+          <Send className="w-6 h-6" />
         </button>
       </form>
     </div>
