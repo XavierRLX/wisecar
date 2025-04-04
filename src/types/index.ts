@@ -7,7 +7,7 @@ export interface VehicleImage {
 
 export interface Optional {
   id: number;
-  name: string; // Nome do opcional (ex: "Sunroof", "Electric Windows", etc.)
+  name: string;
 }
 
 export interface VehicleOptional {
@@ -29,15 +29,15 @@ export interface Vehicle {
   created_at?: string;
   vehicle_images?: VehicleImage[];
   fipe_info?: any;
-  optionals?: Optional[]; // Caso use essa propriedade separadamente
+  optionals?: Optional[]; 
   seller_details?: SellerDetails;
-  vehicle_optionals?: VehicleOptional[]; // Relacionamento N:N
+  vehicle_optionals?: VehicleOptional[]; 
 }
 
 export interface SellerDetails {
   id: string;
   vehicle_id: string;
-  seller_type: string;     // "individual" ou "professional"
+  seller_type: string;    
   seller_name: string;
   phone: string;
   company: string;
