@@ -53,6 +53,7 @@ export default function ChatListPage() {
 
   return (
     <div className="py-8 px-2 max-w-4xl mx-auto">
+       <h1 className="text-xl font-bold mb-2">Mensagens</h1>
       {conversations.length === 0 ? (
         <p className="text-gray-600 text-center">Nenhuma conversa encontrada.</p>
       ) : (

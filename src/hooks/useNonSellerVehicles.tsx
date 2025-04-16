@@ -15,8 +15,15 @@ export function useNonSellerVehicles() {
     try {
       const { data, error } = await supabase
         .from("vehicles")
-        .select("*, vehicle_images(*), profiles(is_seller, username), favorites(*)")
-        .eq("profiles.is_seller", false);
+        .select(`
+          *,
+          vehicle_images(*),
+          user:profiles!user_id(is_seller, username),
+          favorites(*)
+        `)
+        // Garante que só sejam retornados veículos cujo dono (user) não seja vendedor
+        .eq("user.is_seller", false);
+
       if (error) {
         setError(error.message);
       } else {

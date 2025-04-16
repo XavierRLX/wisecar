@@ -23,7 +23,7 @@ export default function SellerPage() {
         <RestrictedAccessAlert
           message="Esta área é exclusiva para vendedores. Para acessar, assine um plano ou atualize seu perfil."
           buttonText="Assinar Plano"
-          onButtonClick={() => router.push("/planos")}  
+          onButtonClick={() => router.push("/planos")}
         />
       </div>
     );
@@ -44,7 +44,7 @@ export default function SellerPage() {
                 <button
                   onClick={async (e) => {
                     e.stopPropagation();
-                    // Exemplo simples: usa vehicle.user_id como comprador; ajuste conforme sua lógica
+                    // Exemplo: usa vehicle.user_id como comprador; ajuste conforme sua lógica
                     const buyerId = vehicle.user_id;
                     const { data: { user } } = await supabase.auth.getUser();
                     const sellerId = user?.id;
