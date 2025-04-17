@@ -74,9 +74,9 @@ export default function VehicleDetailsPage() {
 
   return (
     <AuthGuard>
-          <div className="max-w-4xl mx-auto p-4 space-y-6">
+          <div className="max-w-4xl mx-auto space-y-6">
         {/* Card do veículo */}
-        <section className="bg-white p-4 rounded-lg shadow-md">
+        <section className="bg-white p-4 rounded-lg">
           {/* Imagem */}
           <section className="mb-4">
             {vehicle.vehicle_images && vehicle.vehicle_images.length > 0 ? (
@@ -165,7 +165,7 @@ export default function VehicleDetailsPage() {
               </div>
             </div>
           )}
-         <div className=" mt-2 bg-white p-4 rounded-lg shadow-md">
+         <div className=" mt-2 bg-white p-4 rounded-lg">
         <SellerDetails seller={vehicle.seller_details ?? null} />
         <OptionalList vehicleOptionals={vehicle.vehicle_optionals} />
         </div>
