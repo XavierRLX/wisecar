@@ -10,8 +10,8 @@ vehicleOptionals?: VehicleOptional[];
 
 export default function OptionalList({ vehicleOptionals }: { vehicleOptionals?: { optional: { id: number; name: string } }[] }) {
   return (
-    <section className="mt-4">
-      <h2 className="text-2xl font-bold mb-4">Opcionais</h2>
+    <section className="my-4">
+      <h2 className="text-lg font-bold mb-4">Opcionais</h2>
       {vehicleOptionals && vehicleOptionals.length > 0 ? (
         <div className="grid grid-cols-2 gap-4">
           {vehicleOptionals.map((vo) => (

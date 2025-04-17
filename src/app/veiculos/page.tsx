@@ -89,6 +89,7 @@ export default function VeiculosPage() {
           />
         ) : (
           <div className="grid grid-cols-1 gap-4">
+               <h2 className="text-lg font-bold mb-4">Veículos Desejados</h2>
             {vehicles.map((vehicle) => (
               <div
                 key={vehicle.id}

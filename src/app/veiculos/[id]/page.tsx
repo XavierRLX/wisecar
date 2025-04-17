@@ -76,7 +76,7 @@ export default function VehicleDetailsPage() {
     <AuthGuard>
           <div className="max-w-4xl mx-auto space-y-6">
         {/* Card do veículo */}
-        <section className="bg-white p-4 rounded-lg">
+        <section className="bg-white p-3 rounded-lg">
           {/* Imagem */}
           <section className="mb-4">
             {vehicle.vehicle_images && vehicle.vehicle_images.length > 0 ? (
@@ -89,11 +89,11 @@ export default function VehicleDetailsPage() {
           </section>
 
           {/* Título */}
-          <header className="mb-4">
-            <h1 className="text-2xl font-bold">{vehicle.brand} {vehicle.model}</h1>
+          <header className="my-4">
+            <h1 className="text-lg font-bold mb-4">{vehicle.brand} {vehicle.model}</h1>
           </header>
 
-                    {/* Informações organizadas em duas colunas */}
+          {/* Informações organizadas em duas colunas */}
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5 text-gray-500" />
@@ -154,7 +154,7 @@ export default function VehicleDetailsPage() {
 
           {/* Exibição dos dados FIPE, se disponíveis */}
           {fipeAtual && (
-            <div className="mt-4 p-4 bg-gray-100 rounded">
+            <div className="mt-4 p-2 bg-gray-100 rounded">
               <div className="flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-gray-700" />
                 <span className="text-gray-800">
@@ -169,7 +169,7 @@ export default function VehicleDetailsPage() {
               </div>
             </div>
           )}
-         <div className=" mt-2 bg-white p-4 rounded-lg">
+         <div className=" mt-2 bg-white p-2 rounded-lg">
         <SellerDetails seller={vehicle.seller_details ?? null} />
         <OptionalList vehicleOptionals={vehicle.vehicle_optionals} />
         </div>
