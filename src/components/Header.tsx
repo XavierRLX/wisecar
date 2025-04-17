@@ -17,10 +17,10 @@ export default function Header() {
         <Link href="/">
           <Image
             unoptimized
-            src="https://tffzmmrlohxzvjpsxkym.supabase.co/storage/v1/object/public/logowisecar/text+logo_next_to.png"
+            src="https://tffzmmrlohxzvjpsxkym.supabase.co/storage/v1/object/public/logowisecar//allwheels_logo_2_png.png"
             alt="WiseCar Logo"
-            width={110}
-            height={60}
+            width={100}
+            height={50}
             className="mx-auto"
           />
         </Link>

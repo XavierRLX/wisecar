@@ -32,10 +32,10 @@ export default function LoginPage() {
       <div className="absolute top-5 left-1/2 transform -translate-x-1/2 text-center">
         <Image
           unoptimized
-          src="https://tffzmmrlohxzvjpsxkym.supabase.co/storage/v1/object/public/logowisecar//name+logo_wisecar.png"
+          src="https://tffzmmrlohxzvjpsxkym.supabase.co/storage/v1/object/public/logowisecar//allwheels_logo_png.png"
           alt="WiseCar Logo"
-          width={150}
-          height={60}
+          width={200}
+          height={100}
           className="mx-auto"
         />
       </div>
