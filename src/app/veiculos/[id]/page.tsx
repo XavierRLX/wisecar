@@ -93,8 +93,8 @@ export default function VehicleDetailsPage() {
             <h1 className="text-2xl font-bold">{vehicle.brand} {vehicle.model}</h1>
           </header>
 
-          {/* Informações organizadas em duas colunas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    {/* Informações organizadas em duas colunas */}
+          <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5 text-gray-500" />
               <span className="text-gray-700">
@@ -104,7 +104,11 @@ export default function VehicleDetailsPage() {
             <div className="flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-gray-500" />
               <span className="text-gray-700">
-                <strong>Preço:</strong> {vehicle.price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                <strong>Preço:</strong>{" "}
+                {vehicle.price.toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                })}
               </span>
             </div>
             <div className="flex items-center gap-2">

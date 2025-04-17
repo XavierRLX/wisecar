@@ -13,7 +13,7 @@ export default function OptionalList({ vehicleOptionals }: { vehicleOptionals?: 
     <section className="mt-4">
       <h2 className="text-2xl font-bold mb-4">Opcionais</h2>
       {vehicleOptionals && vehicleOptionals.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-4">
           {vehicleOptionals.map((vo) => (
             <div key={vo.optional.id} className="flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-green-500" />

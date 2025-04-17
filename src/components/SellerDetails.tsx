@@ -13,8 +13,8 @@ export default function SellerDetails({ seller }: Props) {
 
   return (
 <section className="mb-4">
-      <h2 className="text-2xl font-bold mb-4">Detalhes do Vendedor</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+<h2 className="text-2xl font-bold mb-4">Detalhes do Vendedor</h2>
+  <div className="grid grid-cols-2 gap-4">
         <div className="flex items-center gap-2">
           <User className="w-5 h-5 text-gray-500" />
           <p className="text-gray-700">
