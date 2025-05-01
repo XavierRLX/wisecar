@@ -10,7 +10,7 @@ interface UnderDevelopmentProps {
 
 export default function UnderDevelopment({
   title = "Página em desenvolvimento",
-  description = "Estamos preparando um espaço incrível onde você poderá postar e compartilhar os seus carros. Volte em breve para conferir todas as novidades!",
+  description = "Volte em breve para conferir todas as novidades!",
   redirectLink = "/",
   redirectText = "Voltar",
 }: UnderDevelopmentProps) {
