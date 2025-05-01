@@ -135,7 +135,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             </li>
             <li>
               <Link
-                href="/meus-veiculos"
+                href="/minhaGaragem"
                 onClick={onClose}
                 className="flex items-center gap-3 p-2 rounded hover:bg-gray-100 transition"
               >
