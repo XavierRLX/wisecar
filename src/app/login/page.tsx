@@ -14,9 +14,7 @@ export default function LoginPage() {
     setErrorMessage(null);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: {
-        redirectTo: process.env.NEXT_PUBLIC_REDIRECT_URL || "https://wisecar.onrender.com/veiculos",
-      },
+      options: { redirectTo: process.env.NEXT_PUBLIC_REDIRECT_URL },
     });
 
     if (error) {
