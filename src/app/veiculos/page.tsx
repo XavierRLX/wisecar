@@ -12,7 +12,8 @@ import LoadingState from "@/components/LoadingState";
 
 export default function VeiculosPage() {
   const router = useRouter();
-  const { vehicles, loading, error, refetch } = useVehicles();
+  // ← aqui: passo o modo "desire"
+  const { vehicles, loading, error, refetch } = useVehicles("desire");
   const [favorites, setFavorites] = useState<string[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -69,7 +70,12 @@ export default function VeiculosPage() {
         await supabase.storage.from(bucket).remove([relativePath]);
       }
     }
-    await supabase.from("vehicles").delete().eq("id", vehicleId).eq("user_id", userId);
+    // mantém a mesma condição de delete que você tinha
+    await supabase
+      .from("vehicles")
+      .delete()
+      .eq("id", vehicleId)
+      .eq("user_id", userId);
     refetch();
   }
 
@@ -89,7 +95,7 @@ export default function VeiculosPage() {
           />
         ) : (
           <div className="grid grid-cols-1 gap-4">
-               <h2 className="text-lg font-bold mb-4">Veículos Desejados</h2>
+            <h2 className="text-lg font-bold mb-4">Veículos Desejados</h2>
             {vehicles.map((vehicle) => (
               <div
                 key={vehicle.id}

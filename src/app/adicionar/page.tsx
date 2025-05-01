@@ -23,6 +23,7 @@ import { submitVehicleData } from "@/lib/vehicleService";
 
 interface VehicleFormData {
   category_id: "carros" | "motos";
+  is_for_sale: boolean ;
   marca: string;
   modelo: string;
   ano: string;
@@ -47,6 +48,7 @@ export default function AddVehiclePage() {
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [formData, setFormData] = useState<VehicleFormData>({
     category_id: "carros",
+    is_for_sale: true,
     marca: "",
     modelo: "",
     ano: "",
@@ -224,6 +226,23 @@ export default function AddVehiclePage() {
   return (
     <AuthGuard>
       <div className="px-4 py-8 max-w-4xl mx-auto">
+      <div className="mb-4">
+            <label className="block font-medium mb-1">Tipo de veículo</label>
+            <select
+              name="is_for_sale"
+              value={String(formData.is_for_sale)}
+              onChange={e =>
+                setFormData(prev => ({
+                  ...prev,
+                  is_for_sale: e.target.value === "true",
+                }))
+              }
+              className="border rounded px-2 py-1"
+            >
+              <option value="true">Desejado</option>
+              <option value="false">Minha Garagem</option>
+            </select>
+          </div>
         <div className="bg-white shadow-md rounded-lg p-8">
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* FIPE Selectors */}

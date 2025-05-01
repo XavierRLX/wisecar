@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { uploadVehicleImage } from "@/hooks/useUploadImage";
 
 export async function submitVehicleData(
-  user: any, // ou defina o tipo correto de usuário, se houver
+  user: any,
   formData: any,
   fipeInfo: any,
   marcas: any[],
@@ -18,9 +18,11 @@ export async function submitVehicleData(
     modelos.find((mod) => String(mod.codigo) === formData.modelo)?.nome ||
     formData.modelo;
 
-  // Monta os dados do veículo
+  // Monta os dados do veículo incluindo as novas flags
   const vehicleData = {
     user_id: user.id,
+    owner_id: formData.is_for_sale ? null : user.id, // Só preenche se for garagem
+    is_for_sale: formData.is_for_sale,               // Desejado x Minha Garagem
     category_id: formData.category_id === "carros" ? 1 : 2,
     fipe_info: fipeInfo ? JSON.stringify(fipeInfo) : null,
     brand: brandName,
@@ -33,7 +35,7 @@ export async function submitVehicleData(
     notes: formData.observacoes,
   };
 
-  // Insere o veículo na tabela "vehicles"
+  // Insere o veículo
   const { data, error } = await supabase
     .from("vehicles")
     .insert(vehicleData)
@@ -43,7 +45,7 @@ export async function submitVehicleData(
   }
   const insertedVehicle = data[0];
 
-  // Upload das imagens, se houver
+  // Upload das imagens
   if (selectedFiles.length > 0) {
     await Promise.all(
       selectedFiles.map(async (file) => {
@@ -55,7 +57,7 @@ export async function submitVehicleData(
     );
   }
 
-  // Insere os dados do vendedor na tabela "seller_details"
+  // Detalhes do vendedor
   const sellerData = {
     vehicle_id: insertedVehicle.id,
     seller_type: formData.vendedorTipo,
@@ -74,7 +76,7 @@ export async function submitVehicleData(
     );
   }
 
-  // Insere os opcionais selecionados na tabela "vehicle_optionals"
+  // Opcionais selecionados
   if (selectedOptionals.length > 0) {
     const rows = selectedOptionals.map((optionalId) => ({
       vehicle_id: insertedVehicle.id,
@@ -97,7 +99,14 @@ export async function updateVehicleData(
   selectedFiles: File[],
   selectedOptionals: number[]
 ) {
-  // 1. Atualiza os dados principais do veículo na tabela "vehicles"
+  // Recupera o user para atribuir owner_id, se necessário
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const ownerId = formData.is_for_sale ? null : user?.id || null;
+
+  // 1. Atualiza os dados principais
   const { error: updateError } = await supabase
     .from("vehicles")
     .update({
@@ -109,14 +118,16 @@ export async function updateVehicleData(
       color: formData.cor,
       fuel: formData.combustivel,
       notes: formData.observacoes,
-      // Se necessário, atualize também o fipe_info
+      // Novos campos:
+      owner_id: ownerId,
+      is_for_sale: formData.is_for_sale,
     })
     .eq("id", vehicleId);
   if (updateError) {
     throw new Error("Erro ao atualizar veículo: " + updateError.message);
   }
 
-  // 2. Atualiza ou insere os detalhes do vendedor usando upsert
+  // 2. Upsert nos detalhes do vendedor
   const { error: sellerError } = await supabase
     .from("seller_details")
     .upsert({
@@ -129,19 +140,13 @@ export async function updateVehicleData(
       address: formData.endereco,
     });
   if (sellerError) {
-    throw new Error("Erro ao atualizar detalhes do vendedor: " + sellerError.message);
+    throw new Error(
+      "Erro ao atualizar detalhes do vendedor: " + sellerError.message
+    );
   }
 
-  // 3. Atualiza os opcionais:
-  //    Primeiro, exclua os registros existentes
-  const { error: deleteOptionalsError } = await supabase
-    .from("vehicle_optionals")
-    .delete()
-    .eq("vehicle_id", vehicleId);
-  if (deleteOptionalsError) {
-    throw new Error("Erro ao remover opcionais existentes: " + deleteOptionalsError.message);
-  }
-  //    Em seguida, insira os opcionais selecionados
+  // 3. Substitui os opcionais
+  await supabase.from("vehicle_optionals").delete().eq("vehicle_id", vehicleId);
   if (selectedOptionals.length > 0) {
     const rows = selectedOptionals.map((optionalId) => ({
       vehicle_id: vehicleId,
@@ -151,13 +156,13 @@ export async function updateVehicleData(
       .from("vehicle_optionals")
       .insert(rows);
     if (insertOptionalsError) {
-      throw new Error("Erro ao inserir opcionais: " + insertOptionalsError.message);
+      throw new Error(
+        "Erro ao inserir opcionais: " + insertOptionalsError.message
+      );
     }
   }
 
-  // 4. Atualiza as imagens, se necessário
-  // Se houver novas imagens a serem adicionadas, faça o upload.
-  // Dependendo da lógica de sua aplicação, você pode querer remover as imagens antigas.
+  // 4. Upload de novas imagens (se houver)
   if (selectedFiles.length > 0) {
     await Promise.all(
       selectedFiles.map(async (file) => {
