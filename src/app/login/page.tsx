@@ -15,7 +15,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: process.env.NEXT_PUBLIC_REDIRECT_URL || "http://localhost:3000/veiculos",
+        redirectTo: process.env.NEXT_PUBLIC_REDIRECT_URL || "https://wisecar.onrender.com/veiculos",
       },
     });
 
