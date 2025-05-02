@@ -44,7 +44,6 @@ export default function SellerPage() {
                 <button
                   onClick={async (e) => {
                     e.stopPropagation();
-                    // Exemplo: usa vehicle.user_id como comprador; ajuste conforme sua lógica
                     const buyerId = vehicle.user_id;
                     const { data: { user } } = await supabase.auth.getUser();
                     const sellerId = user?.id;
@@ -75,8 +74,9 @@ export default function SellerPage() {
                       d="M8 10h.01M12 10h.01M16 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  Chat
+                  Chat<span className="font-medium">@{vehicle.profiles.username}</span>
                 </button>
+                
               }
             />
           </div>

@@ -1,3 +1,4 @@
+// app/minhaGaragem/page.tsx
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -19,7 +20,9 @@ export default function MinhaGaragemPage() {
       <EnsureProfile />
       <div className="p-4">
         {vehicles.length === 0 ? (
-          <p className="text-center text-gray-500">Nenhum carro na sua garagem.</p>
+          <p className="text-center text-gray-500">
+            Nenhum carro na sua garagem.
+          </p>
         ) : (
           <div className="grid grid-cols-1 gap-4">
             {vehicles.map((v) => (
@@ -28,7 +31,20 @@ export default function MinhaGaragemPage() {
                 onClick={() => router.push(`/veiculos/${v.id}`)}
                 className="cursor-pointer"
               >
-                <VehicleCard vehicle={v} />
+                <VehicleCard
+                  vehicle={v}
+                  extraActions={
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/veiculos/${v.id}/manutencoes`);
+                      }}
+                      className="w-full mt-2 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                    >
+                      Manutenções
+                    </button>
+                  }
+                />
               </div>
             ))}
           </div>

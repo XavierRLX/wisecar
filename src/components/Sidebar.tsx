@@ -120,7 +120,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 className="flex items-center gap-3 p-2 rounded hover:bg-gray-100 transition"
               >
                 <User className="w-5 h-5 text-gray-600" />
-                <span className="text-gray-800">Vendedor</span>
+                <span className="text-gray-800">Área do vendedor</span>
               </Link>
             </li>
             <li>
