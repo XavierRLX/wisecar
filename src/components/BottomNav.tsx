@@ -11,13 +11,14 @@ interface BottomNavProps {
 export default function BottomNav({ onMenuClick }: BottomNavProps) {
   const pathname = usePathname();
 
-  // Função para determinar a classe ativa
+  // Determina classe ativa
   const activeClass = (route: string) =>
     pathname === route ? "TextColorPrimarySelect" : "TextColorPrimary";
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-md z-50">
-      <div className="flex justify-around items-center py-2">
+      {/* Usamos grid para posicionar 5 colunas de forma uniforme */}
+      <div className="grid grid-cols-5 items-center py-1 px-1">
         {/* Botão Menu */}
         <button
           onClick={onMenuClick}
@@ -36,7 +37,7 @@ export default function BottomNav({ onMenuClick }: BottomNavProps) {
           <span className="text-xs">Veículos</span>
         </Link>
 
-        {/* Ícone de Adicionar */}
+        {/* Ícone Adicionar centralizado */}
         <Link
           href="/adicionar"
           className={`flex flex-col items-center ${activeClass("/adicionar")} hover:text-blue-600`}
@@ -45,7 +46,7 @@ export default function BottomNav({ onMenuClick }: BottomNavProps) {
           <span className="text-xs">Adicionar</span>
         </Link>
 
-        {/* Item Favoritos */}
+        {/* Item Chat */}
         <Link
           href="/chat"
           className={`flex flex-col items-center ${activeClass("/chat")} hover:text-blue-600`}
