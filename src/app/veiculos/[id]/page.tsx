@@ -1,13 +1,19 @@
-// app/veiculos/id/page.tsx
+// app/veiculos/[id]/page.tsx
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import AuthGuard from "@/components/AuthGuard";
 import { fetchFipeAtualizado } from "@/lib/fipe";
 import { Vehicle } from "@/types";
-import { Calendar, DollarSign, Activity, Palette, Droplet, Check } from "lucide-react";
+import {
+  Calendar,
+  DollarSign,
+  Activity,
+  Palette,
+  Droplet,
+} from "lucide-react";
 import SellerDetails from "@/components/SellerDetails";
 import OptionalList from "@/components/OptionalList";
 import Carousel from "@/components/Carousel";
@@ -16,8 +22,10 @@ import Link from "next/link";
 
 export default function VehicleDetailsPage() {
   const { id } = useParams();
+  const router = useRouter();
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [loading, setLoading] = useState(true);
+  const [moving, setMoving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fipeAtual, setFipeAtual] = useState<any>(null);
 
@@ -47,133 +55,166 @@ export default function VehicleDetailsPage() {
   }, [id, fetchVehicle]);
 
   const handleCompararFipe = async () => {
-    if (!vehicle || !vehicle.fipe_info) return;
+    if (!vehicle?.fipe_info) return;
     try {
       const fipeData =
         typeof vehicle.fipe_info === "string"
           ? JSON.parse(vehicle.fipe_info)
           : vehicle.fipe_info;
-      const { codigoMarca, codigoModelo, codigoAno } = fipeData;
       const categoria = vehicle.category_id === 1 ? "carros" : "motos";
-      // Use o código completo do ano, sem separar o hífen
-      const dadosAtualizados = await fetchFipeAtualizado(
+      const atual = await fetchFipeAtualizado(
         categoria,
-        codigoMarca,
-        codigoModelo,
-        codigoAno
+        fipeData.codigoMarca,
+        fipeData.codigoModelo,
+        fipeData.codigoAno
       );
-      setFipeAtual(dadosAtualizados);
+      setFipeAtual(atual);
     } catch (err) {
       console.error("Erro ao comparar com FIPE:", err);
     }
   };
-  
-  if (loading) return <LoadingState message="Carregando veículos..." />;
+
+  const handleMoveToGarage = async () => {
+    if (!vehicle) return;
+    setMoving(true);
+    const {
+      data: { user },
+      error: authErr,
+    } = await supabase.auth.getUser();
+    if (authErr || !user) {
+      setMoving(false);
+      return router.push("/login");
+    }
+    const { error: updErr } = await supabase
+      .from("vehicles")
+      .update({
+        is_for_sale: false,
+        owner_id: user.id,
+      })
+      .eq("id", vehicle.id);
+    setMoving(false);
+    if (updErr) {
+      alert("Não foi possível mover para a garagem: " + updErr.message);
+      return;
+    }
+    router.push("/minhaGaragem");
+  };
+
+  if (loading) return <LoadingState message="Carregando veículo..." />;
   if (error) return <p className="p-8 text-red-500">Erro: {error}</p>;
   if (!vehicle) return <p className="p-8">Veículo não encontrado</p>;
 
   return (
     <AuthGuard>
-          <div className="max-w-4xl mx-auto space-y-6">
-        {/* Card do veículo */}
-        <section className="bg-white p-3 rounded-lg">
-          {/* Imagem */}
-          <section className="mb-4">
-            {vehicle.vehicle_images && vehicle.vehicle_images.length > 0 ? (
-              <Carousel images={vehicle.vehicle_images} />
-            ) : (
-              <div className="w-full h-64 bg-gray-200 flex items-center justify-center rounded-lg shadow-lg">
-                <span className="text-gray-500 text-xl">Sem imagem</span>
-              </div>
-            )}
-          </section>
-
-          {/* Título */}
-          <header className="my-4">
-            <h1 className="text-lg font-bold mb-4">{vehicle.brand} {vehicle.model}</h1>
-          </header>
-
-          {/* Informações organizadas em duas colunas */}
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-gray-500" />
-              <span className="text-gray-700">
-                <strong>Ano:</strong> {vehicle.year}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-gray-500" />
-              <span className="text-gray-700">
-                <strong>Preço:</strong>{" "}
-                {vehicle.price.toLocaleString("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                })}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Activity className="w-5 h-5 text-gray-500" />
-              <span className="text-gray-700">
-                <strong>Quilometragem:</strong> {vehicle.mileage} km
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Palette className="w-5 h-5 text-gray-500" />
-              <span className="text-gray-700">
-                <strong>Cor:</strong> {vehicle.color}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Droplet className="w-5 h-5 text-gray-500" />
-              <span className="text-gray-700">
-                <strong>Combustível:</strong> {vehicle.fuel}
-              </span>
-            </div>
-          </div>
-
-          {/* Observações */}
-          <p className="text-gray-700 mb-4">
-            <strong>Observações:</strong> {vehicle.notes || "Sem observações"}
-          </p>
-
-          {/* Botões de ação simplificados */}
-          <div className="flex gap-2">
-            <button
-              onClick={handleCompararFipe}
-              className="flex-1 py-2 border border-green-600 text-green-600 rounded hover:bg-green-50 transition-colors"
-            >
-              Comparar FIPE
-            </button>
-            <Link
-              href={`/veiculos/${vehicle.id}/editar`}
-              className="flex-1 py-2 text-center border border-gray-400 text-gray-600 rounded hover:bg-gray-50 transition-colors"
-            >
-              Editar
-            </Link>
-          </div>
-
-          {/* Exibição dos dados FIPE, se disponíveis */}
-          {fipeAtual && (
-            <div className="mt-4 p-2 bg-gray-100 rounded">
-              <div className="flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-gray-700" />
-                <span className="text-gray-800">
-                  <strong>Valor FIPE:</strong> {fipeAtual.Valor}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 mt-2">
-                <Calendar className="w-5 h-5 text-gray-700" />
-                <span className="text-gray-800">
-                  <strong>Data de Referência:</strong> {fipeAtual.MesReferencia}
-                </span>
-              </div>
+      <div className="max-w-4xl mx-auto space-y-6 p-4">
+        {/* Imagens */}
+        <section className="mb-4">
+          {vehicle.vehicle_images && vehicle.vehicle_images.length > 0 ? (
+            <Carousel images={vehicle.vehicle_images} />
+          ) : (
+            <div className="w-full h-64 bg-gray-200 flex items-center justify-center rounded-lg shadow-lg">
+              <span className="text-gray-500 text-xl">Sem imagem</span>
             </div>
           )}
-         <div className=" mt-2 bg-white p-2 rounded-lg">
-        <SellerDetails seller={vehicle.seller_details ?? null} />
-        <OptionalList vehicleOptionals={vehicle.vehicle_optionals} />
-        </div>
         </section>
+
+        {/* Título e principais dados */}
+        <header className="mb-4">
+          <h1 className="text-2xl font-bold">
+            {vehicle.brand} {vehicle.model}
+          </h1>
+        </header>
+
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-gray-500" />
+            <span className="text-gray-700">
+              <strong>Ano:</strong> {vehicle.year}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <DollarSign className="w-5 h-5 text-gray-500" />
+            <span className="text-gray-700">
+              <strong>Preço:</strong>{" "}
+              {vehicle.price.toLocaleString("pt-BR", {
+                style: "currency",
+                currency: "BRL",
+              })}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Activity className="w-5 h-5 text-gray-500" />
+            <span className="text-gray-700">
+              <strong>Quilometragem:</strong> {vehicle.mileage} km
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Palette className="w-5 h-5 text-gray-500" />
+            <span className="text-gray-700">
+              <strong>Cor:</strong> {vehicle.color}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Droplet className="w-5 h-5 text-gray-500" />
+            <span className="text-gray-700">
+              <strong>Combustível:</strong> {vehicle.fuel}
+            </span>
+          </div>
+        </div>
+
+        {/* Observações */}
+        <p className="text-gray-700 mb-4">
+          <strong>Observações:</strong> {vehicle.notes || "Sem observações"}
+        </p>
+
+        {/* Botões de Ação */}
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={handleCompararFipe}
+            className="flex-1 py-2 border border-green-600 text-green-600 rounded hover:bg-green-50 transition"
+          >
+            Comparar FIPE
+          </button>
+          <Link
+            href={`/veiculos/${vehicle.id}/editar`}
+            className="flex-1 py-2 text-center border border-gray-400 text-gray-600 rounded hover:bg-gray-50 transition"
+          >
+            Editar
+          </Link>
+          {vehicle.is_for_sale && (
+            <button
+              onClick={handleMoveToGarage}
+              disabled={moving}
+              className="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50"
+            >
+              {moving ? "Movendo..." : "Marcar como Comprado"}
+            </button>
+          )}
+        </div>
+
+        {/* FIPE Atualizado */}
+        {fipeAtual && (
+          <div className="mt-4 p-4 bg-gray-100 rounded space-y-2">
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-gray-700" />
+              <span className="text-gray-800">
+                <strong>Valor FIPE:</strong> {fipeAtual.Valor}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-gray-700" />
+              <span className="text-gray-800">
+                <strong>Data de Referência:</strong> {fipeAtual.MesReferencia}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Detalhes do Vendedor e Opcionais */}
+        <div className="bg-white p-4 rounded shadow space-y-4">
+          <SellerDetails seller={vehicle.seller_details!} />
+          <OptionalList vehicleOptionals={vehicle.vehicle_optionals} />
+        </div>
       </div>
     </AuthGuard>
   );
