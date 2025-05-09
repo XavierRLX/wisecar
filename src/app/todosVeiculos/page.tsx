@@ -1,7 +1,7 @@
 // app/todosVeiculos/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import AuthGuard from "@/components/AuthGuard";
 import EnsureProfile from "@/components/EnsureProfile";
@@ -35,12 +35,14 @@ export default function TodosVeiculosPage() {
     loadFavs();
   }, []);
 
-  // toggle favorito (só faz sentido em veículos desejados)
+  // toggle favorito (só faz sentido em desejados)
   async function toggleFavorite(id: string) {
     if (!userId) return;
     const isFav = favorites.includes(id);
     if (!isFav) {
-      const { error } = await supabase.from("favorites").insert({ user_id: userId, vehicle_id: id });
+      const { error } = await supabase
+        .from("favorites")
+        .insert({ user_id: userId, vehicle_id: id });
       if (!error) setFavorites((f) => [...f, id]);
     } else {
       const { error } = await supabase
@@ -52,7 +54,7 @@ export default function TodosVeiculosPage() {
     }
   }
 
-  // delete universal (anúncio ou garagem)
+  // delete universal
   async function handleDelete(id: string) {
     // remove imagens
     const { data: imgs } = await supabase
@@ -60,21 +62,26 @@ export default function TodosVeiculosPage() {
       .select("image_url")
       .eq("vehicle_id", id);
     for (const img of imgs || []) {
-      const bucket = "vehicle-images";
-      const prefix = `/public/${bucket}/`;
-      const idx = img.image_url.indexOf(prefix);
+      const marker = `/public/vehicle-images/`;
+      const idx = img.image_url.indexOf(marker);
       if (idx !== -1) {
-        const path = img.image_url.substring(idx + prefix.length);
-        await supabase.storage.from(bucket).remove([path]);
+        const path = img.image_url.substring(idx + marker.length);
+        await supabase.storage.from("vehicle-images").remove([path]);
       }
     }
-    // remove veículo
+    // remove registro
     await supabase.from("vehicles").delete().eq("id", id);
     refetch();
   }
 
-  if (loading) return <LoadingState message="Carregando veículos..." />;
-  if (error) return <p className="p-8 text-red-500">Erro: {error}</p>;
+  // **cria uma lista ordenada por "Marca Modelo"**
+  const sorted = useMemo(() => {
+    return [...vehicles].sort((a, b) => {
+      const nameA = `${a.brand} ${a.model}`.toLowerCase();
+      const nameB = `${b.brand} ${b.model}`.toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
+  }, [vehicles]);
 
   return (
     <AuthGuard>
@@ -95,7 +102,7 @@ export default function TodosVeiculosPage() {
               }}
               className="absolute top-1 h-8 w-1/3 bg-white rounded-full shadow transition-all duration-300"
             />
-            {(["all", "desire", "garage"] as VehicleMode[]).map((m, i) => {
+            {(["all", "desire", "garage"] as VehicleMode[]).map((m) => {
               const labels = { all: "Todos", desire: "Desejado", garage: "Garagem" };
               return (
                 <button
@@ -113,7 +120,13 @@ export default function TodosVeiculosPage() {
         </div>
 
         {/* —— LISTAGEM —— */}
-        {vehicles.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <LoadingState message="Carregando veículos..." />
+          </div>
+        ) : error ? (
+          <p className="p-8 text-red-500">Erro: {error}</p>
+        ) : sorted.length === 0 ? (
           <EmptyState
             title="Nenhum veículo encontrado"
             description="Altere o filtro acima ou adicione novos veículos."
@@ -122,7 +135,7 @@ export default function TodosVeiculosPage() {
           />
         ) : (
           <div className="grid grid-cols-1 gap-4">
-            {vehicles.map((v) => (
+            {sorted.map((v) => (
               <div
                 key={v.id}
                 onClick={() => router.push(`/veiculos/${v.id}`)}
@@ -132,9 +145,9 @@ export default function TodosVeiculosPage() {
                   vehicle={v}
                   isFavorited={v.is_for_sale ? favorites.includes(v.id) : undefined}
                   onToggleFavorite={v.is_for_sale ? toggleFavorite : undefined}
-                  onDelete={handleDelete}
+                  onDelete={v.is_for_sale ? handleDelete : undefined}
                   extraActions={
-                    !v.is_for_sale && ( // só mostra se for garagem
+                    !v.is_for_sale && (
                       <div className="flex justify-end space-x-2 mt-2">
                         <button
                           onClick={(e) => {
@@ -142,7 +155,6 @@ export default function TodosVeiculosPage() {
                             router.push(`/veiculos/${v.id}/manutencoes`);
                           }}
                           className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition"
-                          aria-label="Manutenções"
                         >
                           <Wrench className="w-5 h-5" />
                           <span className="text-sm">Manutenções</span>
@@ -153,7 +165,6 @@ export default function TodosVeiculosPage() {
                             handleDelete(v.id);
                           }}
                           className="inline-flex items-center gap-1 px-2 py-1 text-gray-600 hover:text-red-600 transition"
-                          aria-label="Excluir veículo"
                         >
                           <Trash2 className="w-5 h-5" />
                         </button>

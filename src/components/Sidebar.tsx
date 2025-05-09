@@ -1,7 +1,8 @@
+// components/Sidebar.tsx
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, LogOut, User, Heart, CircleParking } from "lucide-react";
+import { X, LogOut, User, Heart, CircleParking, Car } from "lucide-react"; // ← importe Car
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -107,10 +108,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </p>
         )}
 
-        {/* Linha divisória */}
         <hr className="my-4 border-gray-200" />
 
-        {/* Menu de opções */}
         <nav className="flex-1 mt-6 overflow-y-auto">
           <ul className="space-y-2">
             <li>
@@ -135,6 +134,16 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             </li>
             <li>
               <Link
+                href="/veiculos"
+                onClick={onClose}
+                className="flex items-center gap-3 p-2 rounded hover:bg-gray-100 transition"
+              >
+                <Car className="w-5 h-5 text-gray-600" />
+                <span className="text-gray-800">Lista de Desejo</span>
+              </Link>
+            </li>
+            <li>
+              <Link
                 href="/minhaGaragem"
                 onClick={onClose}
                 className="flex items-center gap-3 p-2 rounded hover:bg-gray-100 transition"
@@ -143,7 +152,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <span className="text-gray-800">Minha Garagem</span>
               </Link>
             </li>
-            {/* Outras opções podem ser adicionadas aqui */}
           </ul>
         </nav>
       </div>

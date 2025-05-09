@@ -31,7 +31,7 @@ export default function BottomNav({ onMenuClick }: BottomNavProps) {
         {/* Item Veículos */}
         <Link
           href="/todosVeiculos"
-          className={`flex flex-col items-center ${activeClass("/veiculos")} hover:text-blue-600`}
+          className={`flex flex-col items-center ${activeClass("/todosVeiculos")} hover:text-blue-600`}
         >
           <Car className="h-6 w-6" />
           <span className="text-xs">Veículos</span>
