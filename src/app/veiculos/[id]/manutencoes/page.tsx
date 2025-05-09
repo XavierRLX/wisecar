@@ -69,6 +69,7 @@ export default function MaintenancePage() {
     <AuthGuard>
       <EnsureProfile />
       <div className="p-4 max-w-4xl mx-auto space-y-6">
+        {/* Cabeçalho + botão */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h1 className="text-2xl font-bold">Manutenções do Veículo</h1>
           <button
@@ -79,17 +80,19 @@ export default function MaintenancePage() {
           </button>
         </div>
 
+        {/* Resumo geral */}
         {records.length > 0 && (
           <div className="flex justify-between bg-blue-50 p-4 rounded-lg shadow-inner">
-            <div className="text-gray-700">
+            <span className="text-gray-700">
               <strong>Total de Manutenções:</strong> {records.length}
-            </div>
-            <div className="text-gray-800 font-semibold">
+            </span>
+            <span className="text-gray-800 font-semibold">
               <strong>Total Gasto:</strong> R$ {totalGasto.toFixed(2)}
-            </div>
+            </span>
           </div>
         )}
 
+        {/* Lista ou EmptyState */}
         {records.length === 0 ? (
           <EmptyState
             title="Nenhuma manutenção encontrada"
@@ -99,100 +102,109 @@ export default function MaintenancePage() {
           />
         ) : (
           <div className="space-y-6">
-            {records.map((r) => (
-              <div
-                key={r.id}
-                onClick={() =>
-                  router.push(`/veiculos/${vehicleId}/manutencoes/${r.id}`)
-                }
-                className="relative bg-white shadow rounded-lg p-4 space-y-4 cursor-pointer hover:shadow-lg transition"
-              >
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(r.id);
-                  }}
-                  className="absolute top-3 right-3 text-gray-400 hover:text-red-600 transition"
-                  aria-label="Excluir manutenção"
+            {records.map((r) => {
+              const partsTotal =
+                r.maintenance_parts.reduce((acc, p) => acc + p.price * p.quantity, 0) || 0;
+              return (
+                <div
+                  key={r.id}
+                  onClick={() =>
+                    router.push(`/veiculos/${vehicleId}/manutencoes/${r.id}`)
+                  }
+                  className="bg-white shadow rounded-lg p-4 space-y-4 cursor-pointer hover:shadow-lg transition"
                 >
-                  <Trash2 className="w-5 h-5" />
-                </button>
+                  {/* Header */}
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-lg font-semibold">{r.maintenance_name}</h2>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        r.status === "Feito"
+                          ? "bg-green-100 text-green-800"
+                          : r.status === "Cancelado"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-yellow-100 text-yellow-800"
+                      }`}
+                    >
+                      {r.status}
+                    </span>
+                  </div>
 
-                <div className="flex justify-between items-center">
-                  <h2 className="text-lg font-semibold">{r.maintenance_name}</h2>
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      r.status === "Feito"
-                        ? "bg-green-100 text-green-800"
-                        : r.status === "Cancelado"
-                        ? "bg-red-100 text-red-800"
-                        : "bg-yellow-100 text-yellow-800"
-                    }`}
-                  >
-                    {r.status}
-                  </span>
-                </div>
+                  {/* Detalhes básicos */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-700">
+                    <div>
+                      <strong>Tipo:</strong> {r.maintenance_type}
+                    </div>
+                    <div>
+                      <strong>Agendada:</strong> {r.scheduled_date ?? "—"}
+                    </div>
+                    <div>
+                      <strong>Km Agendado:</strong> {r.scheduled_km ?? "—"}
+                    </div>
+                    {r.status === "Feito" && (
+                      <>
+                        <div>
+                          <strong>Concluída:</strong> {r.completed_date}
+                        </div>
+                        <div>
+                          <strong>Km Concluído:</strong> {r.completed_km}
+                        </div>
+                      </>
+                    )}
+                    <div>
+                      <strong>Oficina:</strong> {r.provider ?? "—"}
+                    </div>
+                    <div>
+                      <strong>Notas:</strong> {r.notes ?? "—"}
+                    </div>
+                  </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-700">
-                  <div>
-                    <strong>Tipo:</strong> {r.maintenance_type}
-                  </div>
-                  <div>
-                    <strong>Agendada:</strong> {r.scheduled_date ?? "—"}
-                  </div>
-                  <div>
-                    <strong>Km Agendado:</strong> {r.scheduled_km ?? "—"}
-                  </div>
-                  {r.status === "Feito" && (
-                    <>
-                      <div>
-                        <strong>Concluída:</strong> {r.completed_date}
-                      </div>
-                      <div>
-                        <strong>Km Concluído:</strong> {r.completed_km}
-                      </div>
-                    </>
-                  )}
-                  <div>
-                    <strong>Oficina:</strong> {r.provider ?? "—"}
-                  </div>
-                  <div>
-                    <strong>Notas:</strong> {r.notes ?? "—"}
-                  </div>
-                </div>
-
-                {r.maintenance_parts!.length > 0 && (
-                  <div>
-                    <h3 className="font-medium">Peças:</h3>
-                    <ul className="mt-2 space-y-1 text-sm">
-                      {r.maintenance_parts!.map((p) => (
-                        <li
-                          key={p.id}
-                          className="flex justify-between bg-gray-50 p-2 rounded"
-                        >
-                          <div>
+                  {/* Peças */}
+                  {r.maintenance_parts.length > 0 && (
+                    <div>
+                      <h3 className="font-medium">Peças:</h3>
+                      <ul className="mt-2 space-y-1 text-sm">
+                        {r.maintenance_parts.map((p) => (
+                          <li
+                            key={p.id}
+                            className="flex justify-between bg-gray-50 p-2 rounded"
+                          >
                             <div>
-                              <strong>{p.name}</strong> (x{p.quantity})
+                              <div>
+                                <strong>{p.name}</strong> (x{p.quantity})
+                              </div>
+                              <div className="text-gray-600">
+                                {p.brand && <span>{p.brand} · </span>}
+                                {p.purchase_place}
+                              </div>
                             </div>
-                            <div className="text-gray-600">
-                              {p.brand && <span>{p.brand} · </span>}
-                              {p.purchase_place}
+                            <div className="font-medium">
+                              R$ {(p.price * p.quantity).toFixed(2)}
                             </div>
-                          </div>
-                          <div className="font-medium">
-                            R$ {(p.price * p.quantity).toFixed(2)}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
-                <div className="flex justify-end text-base font-semibold">
-                  Total: R$ {r.cost?.toFixed(2) ?? "0.00"}
+                  {/* Botão de delete e total alinhados */}
+                  <div className="flex justify-between items-center mt-4">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(r.id);
+                      }}
+                      className="text-gray-400 hover:text-red-600 transition"
+                      aria-label="Excluir manutenção"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                    <span className="text-base font-semibold">
+                      Total: R$ {r.cost?.toFixed(2) ?? "0.00"}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

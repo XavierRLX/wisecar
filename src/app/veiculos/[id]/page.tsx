@@ -21,7 +21,6 @@ import SellerDetails from "@/components/SellerDetails";
 import OptionalList from "@/components/OptionalList";
 import Carousel from "@/components/Carousel";
 import LoadingState from "@/components/LoadingState";
-import Link from "next/link";
 
 export default function VehicleDetailsPage() {
   const { id } = useParams();
