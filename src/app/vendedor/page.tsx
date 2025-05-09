@@ -36,51 +36,73 @@ export default function SellerPage() {
         Veja os veículos adicionados por usuários comuns e entre em contato com os interessados.
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {vehicles.map((vehicle) => (
-          <div key={vehicle.id} className="cursor-pointer">
-            <VehicleCard
-              vehicle={vehicle}
-              extraActions={
-                <button
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    const buyerId = vehicle.user_id;
-                    const { data: { user } } = await supabase.auth.getUser();
-                    const sellerId = user?.id;
-                    if (!buyerId || !sellerId) {
-                      alert("Dados insuficientes para iniciar o chat.");
-                      return;
-                    }
-                    try {
-                      const conversation = await getOrCreateConversation(vehicle.id, buyerId, sellerId);
-                      router.push(`/chat/${conversation.id}`);
-                    } catch (error) {
-                      console.error("Erro ao iniciar o chat:", error);
-                    }
-                  }}
-                  className="flex items-center gap-1 text-blue-600 hover:underline"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M8 10h.01M12 10h.01M16 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  Chat<span className="font-medium">@{vehicle.profiles.username}</span>
-                </button>
-                
-              }
-            />
-          </div>
-        ))}
+        {vehicles.map((vehicle) => {
+          // Formata data no padrão DD/MM/AAAA
+          const formattedDate = vehicle.created_at
+            ? new Date(vehicle.created_at).toLocaleDateString("pt-BR", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              })
+            : "";
+
+          return (
+            <div key={vehicle.id} className="cursor-pointer">
+              <VehicleCard
+                vehicle={vehicle}
+                extraActions={
+                  <div className="flex justify-between items-center">
+                    {/* Botão de Chat */}
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        const buyerId = vehicle.user_id;
+                        const { data: { user } } = await supabase.auth.getUser();
+                        const sellerId = user?.id;
+                        if (!buyerId || !sellerId) {
+                          alert("Dados insuficientes para iniciar o chat.");
+                          return;
+                        }
+                        try {
+                          const conversation = await getOrCreateConversation(
+                            vehicle.id,
+                            buyerId,
+                            sellerId
+                          );
+                          router.push(`/chat/${conversation.id}`);
+                        } catch (error) {
+                          console.error("Erro ao iniciar o chat:", error);
+                        }
+                      }}
+                      className="flex items-center gap-1 text-blue-600 hover:underline"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M8 10h.01M12 10h.01M16 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      Chat <span className="font-medium">@{vehicle.profiles.username}</span>
+                    </button>
+
+                    {/* Data de cadastro */}
+                    {formattedDate && (
+                      <span className="text-xs text-gray-500">{formattedDate}</span>
+                    )}
+                  </div>
+                }
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );
