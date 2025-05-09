@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { Vehicle } from "@/types";
 
 export type VehicleMode = 
+  | "all"     // todos os veículos (desejados + garagem)
   | "desire"  // itens que o usuário adicionou como “desejados” (is_for_sale = true)
   | "garage"; // itens na “minha garagem” (is_for_sale = false)
 
@@ -38,10 +39,15 @@ export function useVehicles(mode: VehicleMode = "desire") {
       query = query
         .eq("user_id", user.id)
         .eq("is_for_sale", true);
-    } else {
+    } else if (mode === "garage") {
       query = query
         .eq("owner_id", user.id)
         .eq("is_for_sale", false);
+    } else {
+      // mode === "all": combine desejados e garagem
+      query = query.or(
+        `and(user_id.eq.${user.id},is_for_sale.eq.true),and(owner_id.eq.${user.id},is_for_sale.eq.false)`
+      );
     }
 
     const { data, error: supError } = await query;
@@ -57,7 +63,7 @@ export function useVehicles(mode: VehicleMode = "desire") {
 
   useEffect(() => {
     fetchVehicles();
-  }, [mode]); // refetch quando o modo mudar
+  }, [mode]); // refetch toda vez que o modo mudar
 
   return { vehicles, loading, error, refetch: fetchVehicles };
 }

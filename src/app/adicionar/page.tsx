@@ -196,7 +196,6 @@ export default function AddVehiclePage() {
         {/* Subtítulo e Segmented Control Centralizados */}
           <div className="flex flex-col items-center space-y-2">
             <h1 className="text-medium text-gray-600">Escolha em qual lista adicionar</h1>
-
             <div className="relative inline-flex bg-gray-200 rounded-full p-1 h-10 w-64">
               {/* Indicador animado */}
               <div
