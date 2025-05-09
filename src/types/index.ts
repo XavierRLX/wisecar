@@ -47,3 +47,36 @@ export interface SellerDetails {
   address: string;
   created_at?: string;
 }
+
+export interface MaintenancePart {
+  id: string;
+  maintenance_record_id: string;
+  name: string;
+  brand?: string;
+  purchase_place?: string;
+  quantity: number;
+  price: number;
+  created_at?: string;
+}
+
+// agora a interface inclui exatamente o campo maintenance_parts
+export interface MaintenanceRecord {
+  id: string;
+  vehicle_id: string;
+  maintenance_name: string;
+  status: "A fazer" | "Feito" | "Cancelado";
+  maintenance_type: string;
+  scheduled_date: string | null;
+  scheduled_km: number | null;
+  completed_date: string | null;
+  completed_km: number | null;
+  provider: string | null;
+  cost: number | null;
+  notes: string | null;
+  created_at?: string;
+
+  // nome igual ao do select: maintenance_parts
+  maintenance_parts?: MaintenancePart[];
+}
+
+
