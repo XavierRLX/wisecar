@@ -13,6 +13,9 @@ import {
   Activity,
   Palette,
   Droplet,
+  RefreshCw,
+  Edit2,
+  CheckCircle,
 } from "lucide-react";
 import SellerDetails from "@/components/SellerDetails";
 import OptionalList from "@/components/OptionalList";
@@ -42,11 +45,8 @@ export default function VehicleDetailsPage() {
       .eq("id", id)
       .single();
 
-    if (error) {
-      setError(error.message);
-    } else {
-      setVehicle(data);
-    }
+    if (error) setError(error.message);
+    else setVehicle(data);
     setLoading(false);
   }, [id]);
 
@@ -118,12 +118,20 @@ export default function VehicleDetailsPage() {
           )}
         </section>
 
-        {/* Título e principais dados */}
-        <header className="mb-4">
+        {/* Título com botão de editar no canto direito */}
+        <header className="mb-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold">
             {vehicle.brand} {vehicle.model}
           </h1>
+          <button
+            onClick={() => router.push(`/veiculos/${vehicle.id}/editar`)}
+            aria-label="Editar veículo"
+            className="p-2 text-gray-500 hover:text-gray-800 transition"
+          >
+            <Edit2 className="w-6 h-6" />
+          </button>
         </header>
+
 
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div className="flex items-center gap-2">
@@ -167,30 +175,26 @@ export default function VehicleDetailsPage() {
           <strong>Observações:</strong> {vehicle.notes || "Sem observações"}
         </p>
 
-        {/* Botões de Ação */}
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={handleCompararFipe}
-            className="flex-1 py-2 border border-green-600 text-green-600 rounded hover:bg-green-50 transition"
-          >
-            Comparar FIPE
-          </button>
-          <Link
-            href={`/veiculos/${vehicle.id}/editar`}
-            className="flex-1 py-2 text-center border border-gray-400 text-gray-600 rounded hover:bg-gray-50 transition"
-          >
-            Editar
-          </Link>
-          {vehicle.is_for_sale && (
+        {/* Botões de Ação Modernos */}
+        <div className="flex justify-around flex-wrap gap-4 mb-4">
             <button
-              onClick={handleMoveToGarage}
-              disabled={moving}
-              className="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50"
+              onClick={handleCompararFipe}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition"
             >
-              {moving ? "Movendo..." : "Marcar como Comprado"}
+              <RefreshCw className="w-5 h-5" />
+              <span>Comparar FIPE</span>
             </button>
-          )}
-        </div>
+            {vehicle.is_for_sale && (
+              <button
+                onClick={handleMoveToGarage}
+                disabled={moving}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50"
+              >
+                <CheckCircle className="w-5 h-5" />
+                <span>{moving ? "Movendo..." : "Mover para Garagem"}</span>
+              </button>
+            )}
+          </div>
 
         {/* FIPE Atualizado */}
         {fipeAtual && (
