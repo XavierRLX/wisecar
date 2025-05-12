@@ -1,65 +1,71 @@
+// app/manutencoes/[id]/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Edit2, Trash2 } from "lucide-react";
+import { Edit2, Trash2, ArrowLeft } from "lucide-react";
 import AuthGuard from "@/components/AuthGuard";
 import EnsureProfile from "@/components/EnsureProfile";
 import LoadingState from "@/components/LoadingState";
 import EmptyState from "@/components/EmptyState";
 import { supabase } from "@/lib/supabase";
-import { MaintenanceRecord, MaintenancePart } from "@/types";
+import { MaintenanceRecord, MaintenancePart, Vehicle } from "@/types";
 
-type MaintenanceWithParts = MaintenanceRecord & {
+type MaintenanceWithRelations = MaintenanceRecord & {
   maintenance_parts: MaintenancePart[];
+  vehicle: Pick<Vehicle, "id" | "brand" | "model">;
 };
 
 export default function MaintenanceViewPage() {
-  const { id: vehicleId, manutencaoId } = useParams();
+  const { id } = useParams();              // id da manutenção
   const router = useRouter();
-  const [record, setRecord] = useState<MaintenanceWithParts | null>(null);
+  const [record, setRecord] = useState<MaintenanceWithRelations | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       setLoading(true);
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return router.push("/login");
 
+      // consulta incluindo peça e veículo
       const { data, error } = await supabase
         .from("maintenance_records")
-        .select("*, maintenance_parts(*)")
-        .eq("id", manutencaoId)
+        .select(`
+          *,
+          maintenance_parts(*),
+          vehicle:vehicles(id, brand, model)
+        `)
+        .eq("id", id)
         .single();
 
       if (!error && data) {
-        setRecord(data as MaintenanceWithParts);
+        setRecord(data as MaintenanceWithRelations);
       }
       setLoading(false);
     }
-    load();
-  }, [manutencaoId, router]);
+    if (id) load();
+  }, [id, router]);
 
   const handleDelete = async () => {
     if (!confirm("Deseja realmente excluir esta manutenção?")) return;
     const { error } = await supabase
       .from("maintenance_records")
       .delete()
-      .eq("id", manutencaoId);
-    if (!error) router.push(`/veiculos/${vehicleId}/manutencoes`);
+      .eq("id", id);
+    if (!error) router.push("/manutencoes");
     else alert("Erro: " + error.message);
   };
 
   if (loading) return <LoadingState message="Carregando detalhes..." />;
+
   if (!record)
     return (
       <EmptyState
         title="Manutenção não encontrada"
         description="Este registro não existe ou foi removido."
         buttonText="Voltar"
-        redirectTo={`/veiculos/${vehicleId}/manutencoes`}
+        redirectTo="/manutencoes"
       />
     );
 
@@ -76,44 +82,50 @@ export default function MaintenanceViewPage() {
     maintenance_parts,
     cost,
     created_at,
+    vehicle,
   } = record;
 
-  const partsTotal =
-    maintenance_parts.reduce((sum, p) => sum + p.price * p.quantity, 0) || 0;
+  const partsTotal = maintenance_parts.reduce(
+    (sum, p) => sum + p.price * p.quantity,
+    0
+  );
   const laborCost = ((cost ?? 0) - partsTotal).toFixed(2);
 
   return (
     <AuthGuard>
       <EnsureProfile />
       <div className="p-6 max-w-3xl mx-auto bg-white rounded-lg shadow-lg space-y-8">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">{maintenance_name}</h1>
-            <p className="text-sm text-gray-500">
-              Criado em: {created_at?.split("T")[0]}
-            </p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() =>
-                router.push(
-                  `/veiculos/${vehicleId}/manutencoes/${manutencaoId}/editar`
-                )
-              }
-              className="text-blue-600 hover:text-blue-800"
-              aria-label="Editar manutenção"
-            >
-              <Edit2 className="w-6 h-6" />
-            </button>
-            <button
-              onClick={handleDelete}
-              className="text-red-600 hover:text-red-800"
-              aria-label="Excluir manutenção"
-            >
-              <Trash2 className="w-6 h-6" />
-            </button>
-          </div>
+        {/* Voltar + Header */}
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => router.push("/manutencoes")}
+            className="text-gray-600 hover:text-gray-800 transition"
+            aria-label="Voltar"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-3xl font-bold">{maintenance_name}</h1>
+        </div>
+        <p className="text-sm text-gray-500">
+          Veículo: {vehicle.brand} {vehicle.model}
+          <span className="mx-2">•</span>
+          Criado em: {created_at?.split("T")[0]}
+        </p>
+
+        {/* Ações Editar / Excluir */}
+        <div className="flex space-x-4">
+          <button
+            onClick={() => router.push(`/manutencoes/${id}/editar`)}
+            className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
+          >
+            <Edit2 className="w-5 h-5" /> Editar
+          </button>
+          <button
+            onClick={handleDelete}
+            className="inline-flex items-center gap-1 text-red-600 hover:text-red-800"
+          >
+            <Trash2 className="w-5 h-5" /> Excluir
+          </button>
         </div>
 
         {/* Status */}
@@ -129,11 +141,11 @@ export default function MaintenanceViewPage() {
           {status}
         </span>
 
-        {/* Informações principais */}
+        {/* Informações */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-700">
           <div className="space-y-2">
             <p>
-              <strong>Tipo de Manutenção:</strong> {maintenance_type}
+              <strong>Tipo:</strong> {maintenance_type}
             </p>
             <p>
               <strong>Data Agendada:</strong> {scheduled_date ?? "—"}
@@ -146,7 +158,7 @@ export default function MaintenanceViewPage() {
             {status === "Feito" && (
               <>
                 <p>
-                  <strong>Data Conclusão:</strong> {completed_date}
+                  <strong>Data Concluída:</strong> {completed_date}
                 </p>
                 <p>
                   <strong>Km Concluído:</strong> {completed_km}
@@ -154,7 +166,7 @@ export default function MaintenanceViewPage() {
               </>
             )}
             <p>
-              <strong>Oficina / Profissional:</strong> {provider ?? "—"}
+              <strong>Oficina:</strong> {provider ?? "—"}
             </p>
             <p className="whitespace-pre-wrap">
               <strong>Observações:</strong> {notes ?? "—"}
@@ -165,9 +177,7 @@ export default function MaintenanceViewPage() {
         {/* Peças */}
         {maintenance_parts.length > 0 && (
           <div>
-            <h2 className="text-xl font-semibold mb-2">
-              Peças Utilizadas
-            </h2>
+            <h2 className="text-xl font-semibold mb-2">Peças Utilizadas</h2>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm text-left">
                 <thead className="bg-gray-100">
@@ -181,14 +191,12 @@ export default function MaintenanceViewPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {maintenance_parts.map((p) => (
+                  {maintenance_parts.map(p => (
                     <tr key={p.id} className="hover:bg-gray-50">
                       <td className="px-4 py-2">{p.name}</td>
                       <td className="px-4 py-2">{p.brand || "—"}</td>
                       <td className="px-4 py-2">{p.quantity}</td>
-                      <td className="px-4 py-2">
-                        R$ {p.price.toFixed(2)}
-                      </td>
+                      <td className="px-4 py-2">R$ {p.price.toFixed(2)}</td>
                       <td className="px-4 py-2">
                         R$ {(p.price * p.quantity).toFixed(2)}
                       </td>
@@ -203,7 +211,7 @@ export default function MaintenanceViewPage() {
 
         {/* Custos */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-800 font-medium">
-          <p>Mão de Obra: R$ {laborCost}</p>
+          <p>Custo Mão de Obra: R$ {laborCost}</p>
           <p>Total Peças: R$ {partsTotal.toFixed(2)}</p>
         </div>
         <div className="text-right text-2xl font-semibold">

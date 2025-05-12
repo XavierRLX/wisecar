@@ -1,87 +1,114 @@
 // app/minhaGaragem/page.tsx
 "use client";
 
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import AuthGuard from "@/components/AuthGuard";
 import EnsureProfile from "@/components/EnsureProfile";
-import { useVehicles } from "@/hooks/useVehicles";
+import { useVehicles, VehicleMode } from "@/hooks/useVehicles";
 import { supabase } from "@/lib/supabase";
-import LoadingState from "@/components/LoadingState";
 import VehicleCard from "@/components/VehicleCard";
+import EmptyState from "@/components/EmptyState";
+import LoadingState from "@/components/LoadingState";
 import { Wrench, Trash2 } from "lucide-react";
 
 export default function MinhaGaragemPage() {
   const router = useRouter();
-  const { vehicles, loading, error, refetch } = useVehicles("garage");
+  const mode: VehicleMode = "garage";
+  const { vehicles, loading, error, refetch } = useVehicles(mode);
+  const [userId, setUserId] = useState<string | null>(null);
 
-  // handler para excluir veículo e imagens
-  async function handleDelete(vehicleId: string) {
-    const { data: images } = await supabase
+  // carregar userId para permitir deletes
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserId(user.id);
+    });
+  }, []);
+
+  // ordena alfabeticamente
+  const sorted = useMemo(() => {
+    return [...vehicles].sort((a, b) =>
+      `${a.brand} ${a.model}`.localeCompare(`${b.brand} ${b.model}`)
+    );
+  }, [vehicles]);
+
+  async function handleDelete(id: string) {
+    if (!userId) return;
+    if (!confirm("Deseja realmente excluir este veículo?")) return;
+    // apagar imagens
+    const { data: imgs } = await supabase
       .from("vehicle_images")
       .select("image_url")
-      .eq("vehicle_id", vehicleId);
-    for (const img of images || []) {
-      const bucket = "vehicle-images";
-      const prefix = `/public/${bucket}/`;
-      const idx = img.image_url.indexOf(prefix);
+      .eq("vehicle_id", id);
+    for (const img of imgs || []) {
+      const marker = `/public/vehicle-images/`;
+      const idx = img.image_url.indexOf(marker);
       if (idx !== -1) {
-        const path = img.image_url.substring(idx + prefix.length);
-        await supabase.storage.from(bucket).remove([path]);
+        const path = img.image_url.substring(idx + marker.length);
+        await supabase.storage.from("vehicle-images").remove([path]);
       }
     }
-    await supabase.from("vehicles").delete().eq("id", vehicleId);
+    // apagar veículo
+    await supabase
+      .from("vehicles")
+      .delete()
+      .eq("id", id)
+      .eq("owner_id", userId);
     refetch();
   }
 
-  if (loading) return <LoadingState message="Carregando minha garagem..." />;
+  if (loading) return <LoadingState message="Carregando garagem..." />;
   if (error) return <p className="p-8 text-red-500">Erro: {error}</p>;
 
   return (
     <AuthGuard>
       <EnsureProfile />
-      <div className="p-4">
-        <h1 className="text-2xl font-bold mb-4">Minha Garagem</h1>
+      <div className="px-4 py-6 max-w-4xl mx-auto space-y-6">
+        <header className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold">Minha Garagem</h1>
+          <button
+            onClick={() => router.push("/veiculos/novo")}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+          >
+            Adicionar Veículo
+          </button>
+        </header>
 
-        {vehicles.length === 0 ? (
-          <p className="text-center text-gray-500">
-            Nenhum carro na sua garagem.
-          </p>
+        {sorted.length === 0 ? (
+          <EmptyState
+            title="Nenhum veículo na garagem"
+            description="Você ainda não moveu nenhum veículo para a garagem."
+            buttonText="Adicionar Veículo"
+            redirectTo="/veiculos/novo"
+          />
         ) : (
           <div className="grid grid-cols-1 gap-4">
-            {vehicles.map((v) => (
-              <div
-                key={v.id}
-                onClick={() => router.push(`/veiculos/${v.id}`)}
-                className="cursor-pointer"
-              >
+            {sorted.map((v) => (
+              <div key={v.id} className="cursor-pointer">
                 <VehicleCard
                   vehicle={v}
+                  onDelete={() => handleDelete(v.id)}
                   extraActions={
-                    <div className="flex justify-between space-x-2 mt-2">
-                      {/* Botão Manutenções */}
+                    <div className="flex justify-end space-x-2 mt-2">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          router.push(`/veiculos/${v.id}/manutencoes`);
+                          // navega para /manutencoes?vehicleId=...
+                          router.push(`/manutencoes?vehicleId=${v.id}`);
                         }}
                         className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition"
-                        aria-label="Manutenções"
                       >
                         <Wrench className="w-5 h-5" />
                         <span className="text-sm">Manutenções</span>
                       </button>
-
-                      {/* Botão Excluir */}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDelete(v.id);
                         }}
                         className="inline-flex items-center gap-1 px-2 py-1 text-gray-600 hover:text-red-600 transition"
-                        aria-label="Excluir veículo"
                       >
                         <Trash2 className="w-5 h-5" />
-                        <span className="sr-only">Excluir</span>
                       </button>
                     </div>
                   }

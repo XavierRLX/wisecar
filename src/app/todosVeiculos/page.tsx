@@ -23,7 +23,9 @@ export default function TodosVeiculosPage() {
   // carrega favoritos
   useEffect(() => {
     async function loadFavs() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
       const { data, error } = await supabase
@@ -35,7 +37,7 @@ export default function TodosVeiculosPage() {
     loadFavs();
   }, []);
 
-  // toggle favorito (só faz sentido em desejados)
+  // toggle favorito (apenas em desejados)
   async function toggleFavorite(id: string) {
     if (!userId) return;
     const isFav = favorites.includes(id);
@@ -43,14 +45,14 @@ export default function TodosVeiculosPage() {
       const { error } = await supabase
         .from("favorites")
         .insert({ user_id: userId, vehicle_id: id });
-      if (!error) setFavorites((f) => [...f, id]);
+      if (!error) setFavorites(f => [...f, id]);
     } else {
       const { error } = await supabase
         .from("favorites")
         .delete()
         .eq("user_id", userId)
         .eq("vehicle_id", id);
-      if (!error) setFavorites((f) => f.filter((x) => x !== id));
+      if (!error) setFavorites(f => f.filter(x => x !== id));
     }
   }
 
@@ -69,12 +71,12 @@ export default function TodosVeiculosPage() {
         await supabase.storage.from("vehicle-images").remove([path]);
       }
     }
-    // remove registro
+    // remove veículo
     await supabase.from("vehicles").delete().eq("id", id);
     refetch();
   }
 
-  // **cria uma lista ordenada por "Marca Modelo"**
+  // lista ordenada por "brand model"
   const sorted = useMemo(() => {
     return [...vehicles].sort((a, b) => {
       const nameA = `${a.brand} ${a.model}`.toLowerCase();
@@ -88,7 +90,7 @@ export default function TodosVeiculosPage() {
       <EnsureProfile />
 
       <div className="px-4 py-6 max-w-4xl mx-auto space-y-6">
-        {/* —— CONTROLE DE FILTRO —— */}
+        {/* Filtro de modo */}
         <div className="flex justify-center mb-6">
           <div className="relative inline-flex bg-gray-200 rounded-full p-1 h-10 w-72">
             <div
@@ -102,7 +104,7 @@ export default function TodosVeiculosPage() {
               }}
               className="absolute top-1 h-8 w-1/3 bg-white rounded-full shadow transition-all duration-300"
             />
-            {(["all", "desire", "garage"] as VehicleMode[]).map((m) => {
+            {(["all", "desire", "garage"] as VehicleMode[]).map(m => {
               const labels = { all: "Todos", desire: "Desejado", garage: "Garagem" };
               return (
                 <button
@@ -119,7 +121,7 @@ export default function TodosVeiculosPage() {
           </div>
         </div>
 
-        {/* —— LISTAGEM —— */}
+        {/* Listagem */}
         {loading ? (
           <div className="flex justify-center py-16">
             <LoadingState message="Carregando veículos..." />
@@ -135,12 +137,8 @@ export default function TodosVeiculosPage() {
           />
         ) : (
           <div className="grid grid-cols-1 gap-4">
-            {sorted.map((v) => (
-              <div
-                key={v.id}
-                onClick={() => router.push(`/veiculos/${v.id}`)}
-                className="cursor-pointer"
-              >
+            {sorted.map(v => (
+              <div key={v.id} className="cursor-pointer">
                 <VehicleCard
                   vehicle={v}
                   isFavorited={v.is_for_sale ? favorites.includes(v.id) : undefined}
@@ -149,10 +147,11 @@ export default function TodosVeiculosPage() {
                   extraActions={
                     !v.is_for_sale && (
                       <div className="flex justify-end space-x-2 mt-2">
+                        {/* Navega para a página global de manutenções, já filtrada */}
                         <button
-                          onClick={(e) => {
+                          onClick={e => {
                             e.stopPropagation();
-                            router.push(`/veiculos/${v.id}/manutencoes`);
+                            router.push(`/manutencoes?vehicleId=${v.id}`);
                           }}
                           className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition"
                         >
@@ -160,7 +159,7 @@ export default function TodosVeiculosPage() {
                           <span className="text-sm">Manutenções</span>
                         </button>
                         <button
-                          onClick={(e) => {
+                          onClick={e => {
                             e.stopPropagation();
                             handleDelete(v.id);
                           }}
