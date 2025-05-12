@@ -66,12 +66,6 @@ export default function MinhaGaragemPage() {
       <div className="px-4 py-6 max-w-4xl mx-auto space-y-6">
         <header className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Minha Garagem</h1>
-          <button
-            onClick={() => router.push("/veiculos/novo")}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-          >
-            Adicionar Veículo
-          </button>
         </header>
 
         {sorted.length === 0 ? (
@@ -87,13 +81,11 @@ export default function MinhaGaragemPage() {
               <div key={v.id} className="cursor-pointer">
                 <VehicleCard
                   vehicle={v}
-                  onDelete={() => handleDelete(v.id)}
                   extraActions={
                     <div className="flex justify-end space-x-2 mt-2">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          // navega para /manutencoes?vehicleId=...
                           router.push(`/manutencoes?vehicleId=${v.id}`);
                         }}
                         className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition"
