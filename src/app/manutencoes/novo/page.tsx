@@ -24,12 +24,17 @@ interface VehicleOption {
 }
 
 export default function NewMaintenancePage() {
-  const { id: vehicleIdParam } = useParams();
-  const router = useRouter();
+
+   const router = useRouter();
+
+    const params = useParams();
+    const rawId = params.id;
+    const vehicleIdParam = Array.isArray(rawId) ? rawId[0] : rawId ?? "";
+
 
   // — Lista de veículos para seleção
   const [vehicles, setVehicles] = useState<VehicleOption[]>([]);
-  const [selectedVehicle, setSelectedVehicle] = useState<string>(vehicleIdParam || "");
+  const [selectedVehicle, setSelectedVehicle] = useState<string>(vehicleIdParam);
 
   // — Dados da manutenção
   const [maintenanceName, setMaintenanceName] = useState("");
@@ -175,7 +180,7 @@ export default function NewMaintenancePage() {
       return;
     }
 
-    router.push(`/veiculos/${selectedVehicle}/manutencoes`);
+    router.push(`/manutencoes`);
   }
 
   return (

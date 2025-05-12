@@ -48,7 +48,7 @@ export default function AllMaintenancePage() {
 
     const { data } = await supabase
       .from("vehicles")
-      .select("id, brand, model")
+      .select("id, brand, model, user_id, category_id, year, price, mileage, color, fuel")
       .eq("owner_id", user.id)
       .eq("is_for_sale", false)
       .order("brand", { ascending: true })
