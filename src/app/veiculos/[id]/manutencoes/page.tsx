@@ -1,9 +1,9 @@
 // app/veiculos/[id]/manutencoes/page.tsx
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Trash2, PlusCircle } from "lucide-react";
+import { Trash2, PlusCircle, ChevronDown } from "lucide-react";
 import AuthGuard from "@/components/AuthGuard";
 import EnsureProfile from "@/components/EnsureProfile";
 import LoadingState from "@/components/LoadingState";
@@ -24,23 +24,22 @@ export default function MaintenancePage() {
   const [showTypeMenu, setShowTypeMenu] = useState(false);
   const [openStatusMenuId, setOpenStatusMenuId] = useState<string | null>(null);
 
+  const statusMenuRef = useRef<HTMLUListElement>(null);
+
   // filtros
   const [statusFilter, setStatusFilter] = useState<"" | "A fazer" | "Feito" | "Cancelado">("");
   const [typeFilter, setTypeFilter] = useState<string>("");
 
+  // carrega registros
   const load = useCallback(async () => {
     setLoading(true);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return router.push("/login");
-
     const { data, error } = await supabase
       .from("maintenance_records")
       .select("*, maintenance_parts(*)")
       .eq("vehicle_id", vehicleId)
       .order("scheduled_date", { ascending: true });
-
     if (!error && data) setRecords(data as MaintenanceWithParts[]);
     setLoading(false);
   }, [vehicleId, router]);
@@ -49,6 +48,23 @@ export default function MaintenancePage() {
     load();
   }, [load]);
 
+  // fecha dropdown de status ao clicar fora
+  useEffect(() => {
+    function handleOutsideClick(e: MouseEvent) {
+      if (
+        statusMenuRef.current &&
+        !statusMenuRef.current.contains(e.target as Node)
+      ) {
+        setOpenStatusMenuId(null);
+      }
+    }
+    if (openStatusMenuId) {
+      document.addEventListener("click", handleOutsideClick);
+      return () => document.removeEventListener("click", handleOutsideClick);
+    }
+  }, [openStatusMenuId]);
+
+  // deleta um registro
   const handleDelete = async (recordId: string) => {
     if (!confirm("Deseja excluir esta manutenção?")) return;
     const { error } = await supabase
@@ -59,7 +75,7 @@ export default function MaintenancePage() {
     else alert("Erro: " + error.message);
   };
 
-  // altera status na API e no estado local
+  // atualiza status
   const handleStatusChange = async (id: string, newStatus: MaintenanceRecord["status"]) => {
     const { error } = await supabase
       .from("maintenance_records")
@@ -75,7 +91,7 @@ export default function MaintenancePage() {
     }
   };
 
-  // aplica filtros
+  // filtros aplicados
   const filtered = useMemo(() => {
     return records.filter(r => {
       if (statusFilter && r.status !== statusFilter) return false;
@@ -109,7 +125,6 @@ export default function MaintenancePage() {
 
         {/* Filtros */}
         <div className="flex flex-wrap gap-4 items-center">
-          {/* Status Pills */}
           <div className="flex space-x-2 bg-gray-100 rounded-full p-1">
             {["", "A fazer", "Feito", "Cancelado"].map(st => (
               <button
@@ -125,16 +140,13 @@ export default function MaintenancePage() {
             ))}
           </div>
 
-          {/* Tipo Dropdown */}
           <div className="relative">
             <button
               onClick={() => setShowTypeMenu(v => !v)}
               className="flex items-center gap-1 px-3 py-2 border rounded-md text-gray-700 hover:border-gray-400 transition"
             >
               {typeFilter || "Todos os Tipos"}
-              <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
-              </svg>
+              <ChevronDown className="w-4 h-4 text-gray-500" />
             </button>
             {showTypeMenu && (
               <ul className="absolute right-0 mt-1 w-48 bg-white border rounded-md shadow-lg z-10">
@@ -170,7 +182,7 @@ export default function MaintenancePage() {
           </div>
         )}
 
-        {/* Lista ou Empty */}
+        {/* Lista ou EmptyState */}
         {filtered.length === 0 ? (
           <EmptyState
             title="Nenhuma manutenção"
@@ -188,26 +200,21 @@ export default function MaintenancePage() {
               return (
                 <div
                   key={r.id}
-                  className="relative bg-white shadow rounded-lg p-4 hover:shadow-lg transition cursor-pointer"
+                  className="bg-white shadow rounded-lg p-4 hover:shadow-lg transition cursor-pointer"
                   onClick={() => router.push(`/veiculos/${vehicleId}/manutencoes/${r.id}`)}
                 >
-                  {/* Botão Excluir */}
-                  <button
-                    onClick={e => { e.stopPropagation(); handleDelete(r.id); }}
-                    className="absolute top-3 right-3 text-gray-400 hover:text-red-600 transition"
-                    aria-label="Excluir"
-                  >
-                    <Trash2 className="w-5 h-5"/>
-                  </button>
-
-                  {/* Topo: título + badge status */}
+                  {/* Header: lixeira, título, status */}
                   <div className="flex justify-between items-center mb-2">
-                    <h2 className="text-lg font-semibold">{r.maintenance_name}</h2>
+                    
 
-                    <div className="relative">
-                      <span
+                    <h2 className="text-lg font-semibold flex-1 text-center">
+                      {r.maintenance_name}
+                    </h2>
+
+                    <div className="relative" ref={statusMenuRef}>
+                      <button
                         onClick={e => { e.stopPropagation(); setOpenStatusMenuId(r.id); }}
-                        className={`px-2 py-0.5 text-xs font-medium rounded-full cursor-pointer select-none
+                        className={`inline-flex items-center gap-1 px-3 py-1 text-base font-medium rounded-full select-none
                           ${r.status === "Feito"
                             ? "bg-green-100 text-green-800"
                             : r.status === "Cancelado"
@@ -215,9 +222,8 @@ export default function MaintenancePage() {
                             : "bg-yellow-100 text-yellow-800"}`}
                       >
                         {r.status}
-                      </span>
-
-                      {/* dropdown in-place */}
+                        <ChevronDown className="w-4 h-4"/>
+                      </button>
                       {openStatusMenuId === r.id && (
                         <ul className="absolute right-0 mt-1 w-36 bg-white border rounded-md shadow-lg z-20">
                           {["A fazer","Feito","Cancelado"].map(opt => (
@@ -237,7 +243,7 @@ export default function MaintenancePage() {
                     </div>
                   </div>
 
-                  {/* Detalhes resumidos */}
+                  {/* Resumo rápido */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-gray-700">
                     <div><strong>Tipo:</strong> {r.maintenance_type}</div>
                     <div><strong>Data:</strong> {r.scheduled_date ?? "—"}</div>
@@ -251,12 +257,19 @@ export default function MaintenancePage() {
                     </div>
                   )}
 
-                  {/* Rodapé: total */}
+                  {/* Total ao final */}
                   <div className="flex justify-end items-center mt-4">
                     <span className="text-base font-semibold">
                       R$ {r.cost?.toFixed(2) ?? "0.00"}
                     </span>
                   </div>
+                  <button
+                      onClick={e => { e.stopPropagation(); handleDelete(r.id); }}
+                      className="text-gray-400 hover:text-red-600 transition"
+                      aria-label="Excluir"
+                    >
+                      <Trash2 className="w-5 h-5"/>
+                    </button>
                 </div>
               );
             })}
