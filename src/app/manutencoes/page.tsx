@@ -21,7 +21,7 @@ export default function AllMaintenancePage() {
   const searchParams = useSearchParams();
   const presetVehicleId = searchParams.get("vehicleId") || "";
 
-  // Estados
+  // Estados principais
   const [records, setRecords] = useState<MaintenanceWithVehicle[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,17 +38,17 @@ export default function AllMaintenancePage() {
 
   // refs para fechar dropdown ao clicar fora
   const vehicleMenuRef = useRef<HTMLDivElement>(null);
-  const typeMenuRef    = useRef<HTMLDivElement>(null);
-  const statusMenuRef  = useRef<HTMLDivElement>(null);
+  const typeMenuRef = useRef<HTMLDivElement>(null);
+  const statusMenuRef = useRef<HTMLDivElement>(null);
 
-  // 1) Carrega apenas veículos da garagem (is_for_sale = false)
+  // 1) Carrega só veículos da garagem (is_for_sale = false)
   const loadVehicles = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return router.push("/login");
 
     const { data } = await supabase
-    .from("vehicles")
-    .select("id, brand, model, user_id, category_id, year, price, mileage, color, fuel")
+      .from("vehicles")
+      .select("id, brand, model")
       .eq("owner_id", user.id)
       .eq("is_for_sale", false)
       .order("brand", { ascending: true })
@@ -57,7 +57,7 @@ export default function AllMaintenancePage() {
     setVehicles(data || []);
   }, [router]);
 
-  // 2) Carrega manutenções apenas desses veículos
+  // 2) Carrega manutenções só desses veículos
   const loadRecords = useCallback(async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -86,11 +86,10 @@ export default function AllMaintenancePage() {
     setLoading(false);
   }, [router, vehicles]);
 
-  // on mount → carregar veículos → carregar registros
   useEffect(() => { loadVehicles(); }, [loadVehicles]);
   useEffect(() => { if (vehicles.length) loadRecords(); }, [vehicles, loadRecords]);
 
-  // fecha qualquer menu ao clicar fora
+  // Fecha qualquer dropdown ao clicar fora
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
       if (vehicleMenuRef.current && !vehicleMenuRef.current.contains(e.target as Node)) {
@@ -107,7 +106,7 @@ export default function AllMaintenancePage() {
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
 
-  // delete / update status
+  // Handlers de delete e status
   const handleDelete = async (recId: string) => {
     if (!confirm("Deseja excluir esta manutenção?")) return;
     const { error } = await supabase.from("maintenance_records").delete().eq("id", recId);
@@ -124,7 +123,7 @@ export default function AllMaintenancePage() {
     }
   };
 
-  // filtragem em memória
+  // Filtragem local
   const filtered = useMemo(() =>
     records
       .filter(r => !vehicleFilter || r.vehicle.id === vehicleFilter)
@@ -132,7 +131,9 @@ export default function AllMaintenancePage() {
       .filter(r => !typeFilter || r.maintenance_type === typeFilter)
   , [records, vehicleFilter, statusFilter, typeFilter]);
 
-  const totalGasto = useMemo(() => filtered.reduce((sum, r) => sum + (r.cost ?? 0), 0), [filtered]);
+  const totalGasto = useMemo(() =>
+    filtered.reduce((sum, r) => sum + (r.cost ?? 0), 0)
+  , [filtered]);
 
   if (loading) return <LoadingState message="Carregando manutenções..." />;
 
@@ -140,6 +141,7 @@ export default function AllMaintenancePage() {
     <AuthGuard>
       <EnsureProfile />
       <div className="p-4 max-w-4xl mx-auto space-y-6">
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h1 className="text-2xl font-bold">Todas as Manutenções</h1>
@@ -151,87 +153,113 @@ export default function AllMaintenancePage() {
           </button>
         </div>
 
-        {/* Filtros */}
-        <div className="flex flex-wrap gap-4 items-center">
-          {/* Veículo */}
-          <div ref={vehicleMenuRef} className="relative">
-            <button
-              onClick={() => setShowVehicleMenu(v => !v)}
-              className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-md bg-white hover:border-gray-400 transition"
+        {/* Filtros estilizados */}
+        <form className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          {/* Status */}
+          <div className="flex flex-col">
+            <label htmlFor="statusFilter" className="mb-1 text-sm font-medium text-gray-700">Status</label>
+            <div
+              id="statusFilter"
+              className="relative inline-flex bg-gray-100 rounded-full p-1 h-10 w-full"
             >
-              {vehicleFilter
-                ? vehicles.find(v => v.id === vehicleFilter)?.brand + " " +
-                  vehicles.find(v => v.id === vehicleFilter)?.model
-                : "Todos os Veículos"}
-              <ChevronDown className="w-4 h-4 text-gray-500" />
-            </button>
-            {showVehicleMenu && (
-              <ul className="absolute right-0 mt-1 w-56 bg-white border border-gray-200 rounded-md shadow-lg z-10">
-                <li
-                  onClick={() => { setVehicleFilter(""); setShowVehicleMenu(false); }}
-                  className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+              <div
+                style={{
+                  left:
+                    statusFilter === ""
+                      ? "1px"
+                      : statusFilter === "A fazer"
+                        ? "calc(100%/4 + 1px)"
+                        : statusFilter === "Feito"
+                          ? "calc(2 * 100%/4 + 1px)"
+                          : "calc(3 * 100%/4 + 1px)",
+                }}
+                className="absolute top-1 h-8 w-1/4 bg-white rounded-full shadow transition-all duration-200"
+              />
+              {(["","A fazer","Feito","Cancelado"] as const).map(st => (
+                <button
+                  key={st}
+                  type="button"
+                  onClick={() => setStatusFilter(st)}
+                  className={`relative z-10 flex-1 py-2 text-sm font-medium transition-colors ${
+                    statusFilter === st ? "text-blue-600" : "text-gray-700 hover:text-gray-900"
+                  }`}
                 >
-                  Todos
-                </li>
-                {vehicles.map(v => (
-                  <li
-                    key={v.id}
-                    onClick={() => { setVehicleFilter(v.id); setShowVehicleMenu(false); }}
-                    className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                  >
-                    {v.brand} {v.model}
-                  </li>
-                ))}
-              </ul>
-            )}
+                  {st === "" ? "Todos" : st}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Status */}
-          <div className="flex space-x-2">
-            {["", "A fazer", "Feito", "Cancelado"].map(st => (
+          {/* Veículo */}
+          <div className="flex flex-col">
+            <label htmlFor="vehicleFilter" className="mb-1 text-sm font-medium text-gray-700">Veículo</label>
+            <div ref={vehicleMenuRef} id="vehicleFilter" className="relative">
               <button
-                key={st}
-                onClick={() => setStatusFilter(st as any)}
-                className={`px-3 py-1 rounded-full text-sm font-medium transition
-                  ${statusFilter === st
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                type="button"
+                onClick={() => setShowVehicleMenu(v => !v)}
+                className="w-full text-left flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md bg-white hover:border-gray-400 transition"
               >
-                {st === "" ? "Todos" : st}
+                {vehicleFilter
+                  ? `${vehicles.find(v => v.id === vehicleFilter)!.brand} ${vehicles.find(v => v.id === vehicleFilter)!.model}`
+                  : "Todos os Veículos"}
+                <ChevronDown className="w-4 h-4 text-gray-500" />
               </button>
-            ))}
+              {showVehicleMenu && (
+                <ul className="absolute right-0 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-10">
+                  <li
+                    onClick={() => { setVehicleFilter(""); setShowVehicleMenu(false); }}
+                    className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                  >
+                    Todos
+                  </li>
+                  {vehicles.map(v => (
+                    <li
+                      key={v.id}
+                      onClick={() => { setVehicleFilter(v.id); setShowVehicleMenu(false); }}
+                      className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                    >
+                      {v.brand} {v.model}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
 
           {/* Tipo */}
-          <div ref={typeMenuRef} className="relative">
-            <button
-              onClick={() => setShowTypeMenu(v => !v)}
-              className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-md bg-white hover:border-gray-400 transition"
-            >
-              {typeFilter || "Todos os Tipos"}
-              <ChevronDown className="w-4 h-4 text-gray-500" />
-            </button>
-            {showTypeMenu && (
-              <ul className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-10">
-                <li
-                  onClick={() => { setTypeFilter(""); setShowTypeMenu(false); }}
-                  className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                >
-                  Todos
-                </li>
-                {Array.from(new Set(records.map(r => r.maintenance_type))).map(t => (
+          <div className="flex flex-col">
+            <label htmlFor="typeFilter" className="mb-1 text-sm font-medium text-gray-700">Tipo</label>
+            <div ref={typeMenuRef} id="typeFilter" className="relative">
+              <button
+                type="button"
+                onClick={() => setShowTypeMenu(v => !v)}
+                className="w-full text-left flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md bg-white hover:border-gray-400 transition"
+              >
+                {typeFilter || "Todos os Tipos"}
+                <ChevronDown className="w-4 h-4 text-gray-500" />
+              </button>
+              {showTypeMenu && (
+                <ul className="absolute right-0 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-10">
                   <li
-                    key={t}
-                    onClick={() => { setTypeFilter(t); setShowTypeMenu(false); }}
+                    onClick={() => { setTypeFilter(""); setShowTypeMenu(false); }}
                     className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                   >
-                    {t}
+                    Todos
                   </li>
-                ))}
-              </ul>
-            )}
+                  {Array.from(new Set(records.map(r => r.maintenance_type))).map(t => (
+                    <li
+                      key={t}
+                      onClick={() => { setTypeFilter(t); setShowTypeMenu(false); }}
+                      className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                    >
+                      {t}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
-        </div>
+        </form>
 
         {/* Resumo */}
         {filtered.length > 0 && (
@@ -256,7 +284,7 @@ export default function AllMaintenancePage() {
         ) : (
           <div className="space-y-4">
             {filtered.map(r => {
-              const partsTotal = r.maintenance_parts.reduce((s, p) => s + p.price * p.quantity, 0);
+              const partsTotal = r.maintenance_parts.reduce((sum, p) => sum + p.price * p.quantity, 0);
               return (
                 <div
                   key={r.id}
@@ -272,9 +300,9 @@ export default function AllMaintenancePage() {
                       <button
                         onClick={e => { e.stopPropagation(); setOpenStatusMenuId(r.id); }}
                         className={`inline-flex items-center gap-1 px-3 py-1 text-base font-medium rounded-full select-none
-                          ${r.status === "Feito"   ? "bg-green-100 text-green-800"
-                            : r.status === "Cancelado" ? "bg-red-100 text-red-800"
-                            : "bg-yellow-100 text-yellow-800"}`}
+                          ${r.status === "Feito" ? "bg-green-100 text-green-800"
+                          : r.status === "Cancelado" ? "bg-red-100 text-red-800"
+                          : "bg-yellow-100 text-yellow-800"}`}
                       >
                         {r.status}
                         <ChevronDown className="w-4 h-4" />
@@ -309,18 +337,18 @@ export default function AllMaintenancePage() {
                     </div>
                   )}
 
-                  {/* Total */}
-                  <div className="flex justify-end items-center mt-4">
+                  {/* Total e delete */}
+                  <div className="flex justify-between items-center mt-4">
+                    <button
+                      onClick={e => { e.stopPropagation(); handleDelete(r.id); }}
+                      className="text-gray-400 hover:text-red-600 transition"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
                     <span className="text-base font-semibold">
                       R$ {r.cost?.toFixed(2) ?? "0.00"}
                     </span>
                   </div>
-                  <button
-                    onClick={e => { e.stopPropagation(); handleDelete(r.id); }}
-                    className="text-gray-400 hover:text-red-600 transition mt-2"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
                 </div>
               );
             })}
