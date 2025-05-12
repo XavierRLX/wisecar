@@ -32,7 +32,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
           <img
             src={vehicle.vehicle_images[0].image_url}
             alt={`${vehicle.brand} ${vehicle.model}`}
-            className="w-full h-56 object-cover rounded-t-lg"
+            className="w-full h-56 object-contain rounded-t-lg"
           />
         ) : (
           <div className="w-full h-56 flex items-center justify-center bg-gray-200">
