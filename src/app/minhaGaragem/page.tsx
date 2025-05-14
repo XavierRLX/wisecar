@@ -1,61 +1,35 @@
 // app/minhaGaragem/page.tsx
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import AuthGuard from "@/components/AuthGuard";
 import EnsureProfile from "@/components/EnsureProfile";
-import { useVehicles, VehicleMode } from "@/hooks/useVehicles";
-import { supabase } from "@/lib/supabase";
-import VehicleCard from "@/components/VehicleCard";
-import EmptyState from "@/components/EmptyState";
 import LoadingState from "@/components/LoadingState";
+import EmptyState from "@/components/EmptyState";
+import VehicleCard from "@/components/VehicleCard";
 import { Wrench, Trash2 } from "lucide-react";
+
+import { useAuth } from "@/hooks/useAuth";
+import { useVehicles, VehicleMode } from "@/hooks/useVehicles";
+import { useDeleteVehicle } from "@/hooks/useDeleteVehicle";
 
 export default function MinhaGaragemPage() {
   const router = useRouter();
+  const { userId, loading: authLoading } = useAuth();
   const mode: VehicleMode = "garage";
-  const { vehicles, loading, error, refetch } = useVehicles(mode);
-  const [userId, setUserId] = useState<string | null>(null);
+  const { vehicles, loading: vehiclesLoading, error, refetch } = useVehicles(mode);
+  const { deleteVehicle } = useDeleteVehicle(refetch);
 
-  // carregar userId para permitir deletes
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setUserId(user.id);
-    });
-  }, []);
+  const loading = authLoading || vehiclesLoading;
 
-  // ordena alfabeticamente
-  const sorted = useMemo(() => {
-    return [...vehicles].sort((a, b) =>
-      `${a.brand} ${a.model}`.localeCompare(`${b.brand} ${b.model}`)
-    );
-  }, [vehicles]);
-
-  async function handleDelete(id: string) {
-    if (!userId) return;
-    if (!confirm("Deseja realmente excluir este veículo?")) return;
-    // apagar imagens
-    const { data: imgs } = await supabase
-      .from("vehicle_images")
-      .select("image_url")
-      .eq("vehicle_id", id);
-    for (const img of imgs || []) {
-      const marker = `/public/vehicle-images/`;
-      const idx = img.image_url.indexOf(marker);
-      if (idx !== -1) {
-        const path = img.image_url.substring(idx + marker.length);
-        await supabase.storage.from("vehicle-images").remove([path]);
-      }
-    }
-    // apagar veículo
-    await supabase
-      .from("vehicles")
-      .delete()
-      .eq("id", id)
-      .eq("owner_id", userId);
-    refetch();
-  }
+  const sorted = useMemo(
+    () =>
+      [...vehicles].sort((a, b) =>
+        `${a.brand} ${a.model}`.localeCompare(`${b.brand} ${b.model}`)
+      ),
+    [vehicles]
+  );
 
   if (loading) return <LoadingState message="Carregando garagem..." />;
   if (error) return <p className="p-8 text-red-500">Erro: {error}</p>;
@@ -78,11 +52,15 @@ export default function MinhaGaragemPage() {
         ) : (
           <div className="grid grid-cols-1 gap-4">
             {sorted.map((v) => (
-              <div key={v.id} className="cursor-pointer">
+              <div
+                key={v.id}
+                className="cursor-pointer"
+                onClick={() => router.push(`/veiculos/${v.id}`)}
+              >
                 <VehicleCard
                   vehicle={v}
                   extraActions={
-                    <div className="flex justify-end space-x-2 mt-2">
+                    <div className="flex justify-between items-center mt-2">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -96,7 +74,7 @@ export default function MinhaGaragemPage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDelete(v.id);
+                          deleteVehicle(v.id, userId!);
                         }}
                         className="inline-flex items-center gap-1 px-2 py-1 text-gray-600 hover:text-red-600 transition"
                       >

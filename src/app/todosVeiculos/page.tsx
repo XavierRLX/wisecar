@@ -1,94 +1,49 @@
 // app/todosVeiculos/page.tsx
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import AuthGuard from "@/components/AuthGuard";
 import EnsureProfile from "@/components/EnsureProfile";
-import { useVehicles, VehicleMode } from "@/hooks/useVehicles";
-import { supabase } from "@/lib/supabase";
-import VehicleCard from "@/components/VehicleCard";
-import EmptyState from "@/components/EmptyState";
 import LoadingState from "@/components/LoadingState";
-import { Wrench, Trash2, Heart } from "lucide-react";
+import EmptyState from "@/components/EmptyState";
+import VehicleCard from "@/components/VehicleCard";
+import { Wrench, Trash2 } from "lucide-react";
+
+import { useAuth } from "@/hooks/useAuth";
+import { useVehicles, VehicleMode } from "@/hooks/useVehicles";
+import { useFavorites } from "@/hooks/useFavorites";
+import { useDeleteVehicle } from "@/hooks/useDeleteVehicle";
 
 export default function TodosVeiculosPage() {
   const router = useRouter();
+  const { userId, loading: authLoading } = useAuth();
   const [mode, setMode] = useState<VehicleMode>("all");
-  const { vehicles, loading, error, refetch } = useVehicles(mode);
+  const { vehicles, loading: vehiclesLoading, error, refetch } = useVehicles(mode);
+  const { favorites, toggle: toggleFavorite } = useFavorites(userId);
+  const { deleteVehicle } = useDeleteVehicle(refetch);
 
-  const [favorites, setFavorites] = useState<string[]>([]);
-  const [userId, setUserId] = useState<string | null>(null);
+  const loading = authLoading || vehiclesLoading;
 
-  // carrega favoritos
-  useEffect(() => {
-    async function loadFavs() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-      setUserId(user.id);
-      const { data, error } = await supabase
-        .from("favorites")
-        .select("vehicle_id")
-        .eq("user_id", user.id);
-      if (!error && data) setFavorites(data.map((f: any) => f.vehicle_id));
-    }
-    loadFavs();
-  }, []);
+  const sorted = useMemo(
+    () =>
+      [...vehicles].sort((a, b) =>
+        `${a.brand} ${a.model}`.localeCompare(`${b.brand} ${b.model}`)
+      ),
+    [vehicles]
+  );
 
-  // toggle favorito (apenas em desejados)
-  async function toggleFavorite(id: string) {
-    if (!userId) return;
-    const isFav = favorites.includes(id);
-    if (!isFav) {
-      const { error } = await supabase
-        .from("favorites")
-        .insert({ user_id: userId, vehicle_id: id });
-      if (!error) setFavorites(f => [...f, id]);
-    } else {
-      const { error } = await supabase
-        .from("favorites")
-        .delete()
-        .eq("user_id", userId)
-        .eq("vehicle_id", id);
-      if (!error) setFavorites(f => f.filter(x => x !== id));
-    }
-  }
-
-  // delete universal
-  async function handleDelete(id: string) {
-    // remove imagens
-    const { data: imgs } = await supabase
-      .from("vehicle_images")
-      .select("image_url")
-      .eq("vehicle_id", id);
-    for (const img of imgs || []) {
-      const marker = `/public/vehicle-images/`;
-      const idx = img.image_url.indexOf(marker);
-      if (idx !== -1) {
-        const path = img.image_url.substring(idx + marker.length);
-        await supabase.storage.from("vehicle-images").remove([path]);
-      }
-    }
-    // remove veículo
-    await supabase.from("vehicles").delete().eq("id", id);
-    refetch();
-  }
-
-  // lista ordenada por "brand model"
-  const sorted = useMemo(() => {
-    return [...vehicles].sort((a, b) => {
-      const nameA = `${a.brand} ${a.model}`.toLowerCase();
-      const nameB = `${b.brand} ${b.model}`.toLowerCase();
-      return nameA.localeCompare(nameB);
-    });
-  }, [vehicles]);
+  if (loading)
+    return (
+      <div className="flex justify-center py-16">
+        <LoadingState message="Carregando veículos..." />
+      </div>
+    );
+  if (error) return <p className="p-8 text-red-500">Erro: {error}</p>;
 
   return (
     <AuthGuard>
       <EnsureProfile />
-
       <div className="px-4 py-6 max-w-4xl mx-auto space-y-6">
         {/* Filtro de modo */}
         <div className="flex justify-center mb-6">
@@ -104,8 +59,8 @@ export default function TodosVeiculosPage() {
               }}
               className="absolute top-1 h-8 w-1/3 bg-white rounded-full shadow transition-all duration-300"
             />
-            {(["all", "desire", "garage"] as VehicleMode[]).map(m => {
-              const labels = { all: "Todos", desire: "Desejado", garage: "Garagem" };
+            {(["all", "desire", "garage"] as VehicleMode[]).map((m) => {
+              const labels = { all: "Todos", desire: "Desejado", garage: "Garagem" } as const;
               return (
                 <button
                   key={m}
@@ -122,13 +77,7 @@ export default function TodosVeiculosPage() {
         </div>
 
         {/* Listagem */}
-        {loading ? (
-          <div className="flex justify-center py-16">
-            <LoadingState message="Carregando veículos..." />
-          </div>
-        ) : error ? (
-          <p className="p-8 text-red-500">Erro: {error}</p>
-        ) : sorted.length === 0 ? (
+        {sorted.length === 0 ? (
           <EmptyState
             title="Nenhum veículo encontrado"
             description="Altere o filtro acima ou adicione novos veículos."
@@ -137,19 +86,22 @@ export default function TodosVeiculosPage() {
           />
         ) : (
           <div className="grid grid-cols-1 gap-4">
-            {sorted.map(v => (
-              <div key={v.id} className="cursor-pointer">
+            {sorted.map((v) => (
+              <div
+                key={v.id}
+                className="cursor-pointer"
+                onClick={() => router.push(`/veiculos/${v.id}`)}
+              >
                 <VehicleCard
                   vehicle={v}
                   isFavorited={v.is_for_sale ? favorites.includes(v.id) : undefined}
-                  onToggleFavorite={v.is_for_sale ? toggleFavorite : undefined}
-                  onDelete={v.is_for_sale ? handleDelete : undefined}
+                  onToggleFavorite={v.is_for_sale ? () => toggleFavorite(v.id) : undefined}
+                  onDelete={v.is_for_sale ? () => deleteVehicle(v.id, userId!) : undefined}
                   extraActions={
                     !v.is_for_sale && (
-                      <div className="flex justify-end space-x-2 mt-2">
-                        {/* Navega para a página global de manutenções, já filtrada */}
+                      <div className="flex justify-between items-center mt-2">
                         <button
-                          onClick={e => {
+                          onClick={(e) => {
                             e.stopPropagation();
                             router.push(`/manutencoes?vehicleId=${v.id}`);
                           }}
@@ -159,9 +111,9 @@ export default function TodosVeiculosPage() {
                           <span className="text-sm">Manutenções</span>
                         </button>
                         <button
-                          onClick={e => {
+                          onClick={(e) => {
                             e.stopPropagation();
-                            handleDelete(v.id);
+                            deleteVehicle(v.id, userId!);
                           }}
                           className="inline-flex items-center gap-1 px-2 py-1 text-gray-600 hover:text-red-600 transition"
                         >
