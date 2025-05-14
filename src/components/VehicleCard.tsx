@@ -23,7 +23,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
   extraActions,
 }) => {
   return (
-    <div className="bg-white shadow-xl rounded-lg overflow-hidden transform transition duration-300 hover:scale-105">
+    <div className="bg-white shadow-xl rounded-lg overflow-hidden transform transition duration-100 hover:scale-102">
       {/* Imagem */}
       <div className="relative">
         {vehicle.vehicle_images && vehicle.vehicle_images.length > 1 ? (
@@ -32,7 +32,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
           <img
             src={vehicle.vehicle_images[0].image_url}
             alt={`${vehicle.brand} ${vehicle.model}`}
-            className="w-full h-56 object-contain rounded-t-lg"
+            className="w-full h-53 object-contain rounded-t-lg"
           />
         ) : (
           <div className="w-full h-56 flex items-center justify-center bg-gray-200">
