@@ -181,7 +181,7 @@ export default function AddVehiclePage() {
         selectedFiles,
         selectedOptionals
       );
-      router.push("/veiculos");
+      router.push("/todosVeiculos");
     } catch (err) {
       console.error(err);
     } finally {

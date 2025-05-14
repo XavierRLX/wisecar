@@ -18,13 +18,16 @@ import { useDeleteVehicle } from "@/hooks/useDeleteVehicle";
 export default function TodosVeiculosPage() {
   const router = useRouter();
   const { userId, loading: authLoading } = useAuth();
+
+  // modo de filtro
   const [mode, setMode] = useState<VehicleMode>("all");
+
+  // dados de veículos
   const { vehicles, loading: vehiclesLoading, error, refetch } = useVehicles(mode);
   const { favorites, toggle: toggleFavorite } = useFavorites(userId);
   const { deleteVehicle } = useDeleteVehicle(refetch);
 
-  const loading = authLoading || vehiclesLoading;
-
+  // ordenação
   const sorted = useMemo(
     () =>
       [...vehicles].sort((a, b) =>
@@ -33,19 +36,12 @@ export default function TodosVeiculosPage() {
     [vehicles]
   );
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-16">
-        <LoadingState message="Carregando veículos..." />
-      </div>
-    );
-  if (error) return <p className="p-8 text-red-500">Erro: {error}</p>;
-
   return (
     <AuthGuard>
       <EnsureProfile />
+
       <div className="px-4 py-6 max-w-4xl mx-auto space-y-6">
-        {/* Filtro de modo */}
+        {/* Filtro de modo sempre visível */}
         <div className="flex justify-center mb-6">
           <div className="relative inline-flex bg-gray-200 rounded-full p-1 h-10 w-72">
             <div
@@ -59,7 +55,7 @@ export default function TodosVeiculosPage() {
               }}
               className="absolute top-1 h-8 w-1/3 bg-white rounded-full shadow transition-all duration-300"
             />
-            {(["all", "desire", "garage"] as VehicleMode[]).map((m) => {
+            {( ["all", "desire", "garage"] as VehicleMode[] ).map((m) => {
               const labels = { all: "Todos", desire: "Desejado", garage: "Garagem" } as const;
               return (
                 <button
@@ -76,8 +72,14 @@ export default function TodosVeiculosPage() {
           </div>
         </div>
 
-        {/* Listagem */}
-        {sorted.length === 0 ? (
+        {/* Área de listagem: carregamento apenas aqui */}
+        {vehiclesLoading ? (
+          <div className="flex justify-center py-16">
+            <LoadingState message="Carregando veículos..." />
+          </div>
+        ) : error ? (
+          <p className="p-8 text-red-500">Erro: {error}</p>
+        ) : sorted.length === 0 ? (
           <EmptyState
             title="Nenhum veículo encontrado"
             description="Altere o filtro acima ou adicione novos veículos."

@@ -132,17 +132,16 @@ export default function AllMaintenanceClient() {
     <AuthGuard>
       <EnsureProfile />
       <div className="p-4 max-w-4xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h1 className="text-2xl font-bold">Todas as Manutenções</h1>
-          <button
-            onClick={() => router.push(`/manutencoes/novo`)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
-          >
-            <PlusCircle className="w-5 h-5" /> Nova
-          </button>
-        </div>
-
+       {/* Header */}
+      <div className="flex justify-between items-center gap-4">
+        <h1 className="text-2xl font-bold">Manutenções</h1>
+        <button
+          onClick={() => router.push(`/manutencoes/novo`)}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+        >
+          <PlusCircle className="w-5 h-5" /> Nova
+        </button>
+      </div>
         {/* Filtros */}
         <form className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           {/* Status Filter */}
