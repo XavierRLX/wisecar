@@ -38,6 +38,7 @@ export default function AllMaintenanceClient() {
   const typeMenuRef = useRef<HTMLDivElement>(null);
   const statusMenuRef = useRef<HTMLDivElement>(null);
 
+  // carrega veículos
   const loadVehicles = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return router.push('/login');
@@ -51,6 +52,7 @@ export default function AllMaintenanceClient() {
     setVehicles(data || []);
   }, [router]);
 
+  // carrega registros
   const loadRecords = useCallback(async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -73,14 +75,22 @@ export default function AllMaintenanceClient() {
   useEffect(() => { loadVehicles(); }, [loadVehicles]);
   useEffect(() => { if (vehicles.length) loadRecords(); }, [vehicles, loadRecords]);
 
+  // fecha dropdowns ao clicar fora
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
-      if (vehicleMenuRef.current && !vehicleMenuRef.current.contains(e.target as Node)) setShowVehicleMenu(false);
-      if (typeMenuRef.current && !typeMenuRef.current.contains(e.target as Node)) setShowTypeMenu(false);
-      if (statusMenuRef.current && !statusMenuRef.current.contains(e.target as Node)) setOpenStatusMenuId(null);
+      if (vehicleMenuRef.current && !vehicleMenuRef.current.contains(e.target as Node)) {
+        setShowVehicleMenu(false);
+      }
+      if (typeMenuRef.current && !typeMenuRef.current.contains(e.target as Node)) {
+        setShowTypeMenu(false);
+      }
+      if (statusMenuRef.current && !statusMenuRef.current.contains(e.target as Node)) {
+        setOpenStatusMenuId(null);
+      }
     }
-    document.addEventListener('mousedown', onClickOutside);
-    return () => document.removeEventListener('mousedown', onClickOutside);
+    // trocar para 'click' em vez de 'mousedown'
+    document.addEventListener('click', onClickOutside);
+    return () => document.removeEventListener('click', onClickOutside);
   }, []);
 
   const handleDelete = async (recId: string) => {
@@ -91,11 +101,18 @@ export default function AllMaintenanceClient() {
   };
 
   const handleStatusChange = async (recId: string, newStatus: MaintenanceRecord['status']) => {
-    const { error } = await supabase.from('maintenance_records').update({ status: newStatus }).eq('id', recId);
+    const { error } = await supabase
+      .from('maintenance_records')
+      .update({ status: newStatus })
+      .eq('id', recId);
     if (!error) {
-      setRecords(r => r.map(x => x.id === recId ? { ...x, status: newStatus } : x));
+      setRecords(r => r.map(x =>
+        x.id === recId ? { ...x, status: newStatus } : x
+      ));
       setOpenStatusMenuId(null);
-    } else alert('Erro: ' + error.message);
+    } else {
+      alert('Erro: ' + error.message);
+    }
   };
 
   const filtered = useMemo(() =>
@@ -115,7 +132,6 @@ export default function AllMaintenanceClient() {
     <AuthGuard>
       <EnsureProfile />
       <div className="p-4 max-w-4xl mx-auto space-y-6">
-
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h1 className="text-2xl font-bold">Todas as Manutenções</h1>
@@ -127,25 +143,19 @@ export default function AllMaintenanceClient() {
           </button>
         </div>
 
-        {/* Filtros estilizados */}
+        {/* Filtros */}
         <form className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          {/* Status */}
+          {/* Status Filter */}
           <div className="flex flex-col">
             <label htmlFor="statusFilter" className="mb-1 text-sm font-medium text-gray-700">Status</label>
-            <div
-              id="statusFilter"
-              className="relative inline-flex bg-gray-100 rounded-full p-1 h-10 w-full"
-            >
+            <div id="statusFilter" className="relative inline-flex bg-gray-100 rounded-full p-1 h-10 w-full">
               <div
                 style={{
                   left:
-                    statusFilter === ""
-                      ? "1px"
-                      : statusFilter === "A fazer"
-                        ? "calc(100%/4 + 1px)"
-                        : statusFilter === "Feito"
-                          ? "calc(2 * 100%/4 + 1px)"
-                          : "calc(3 * 100%/4 + 1px)",
+                    statusFilter === "" ? "1px"
+                    : statusFilter === "A fazer" ? "calc(100%/4 + 1px)"
+                    : statusFilter === "Feito" ? "calc(2 * 100%/4 + 1px)"
+                    : "calc(3 * 100%/4 + 1px)",
                 }}
                 className="absolute top-1 h-8 w-1/4 bg-white rounded-full shadow transition-all duration-200"
               />
@@ -164,7 +174,7 @@ export default function AllMaintenanceClient() {
             </div>
           </div>
 
-          {/* Veículo */}
+          {/* Veículo Filter */}
           <div className="flex flex-col">
             <label htmlFor="vehicleFilter" className="mb-1 text-sm font-medium text-gray-700">Veículo</label>
             <div ref={vehicleMenuRef} id="vehicleFilter" className="relative">
@@ -200,7 +210,7 @@ export default function AllMaintenanceClient() {
             </div>
           </div>
 
-          {/* Tipo */}
+          {/* Tipo Filter */}
           <div className="flex flex-col">
             <label htmlFor="typeFilter" className="mb-1 text-sm font-medium text-gray-700">Tipo</label>
             <div ref={typeMenuRef} id="typeFilter" className="relative">
@@ -238,12 +248,8 @@ export default function AllMaintenanceClient() {
         {/* Resumo */}
         {filtered.length > 0 && (
           <div className="flex justify-between bg-blue-50 p-4 rounded-lg shadow-inner">
-            <span className="text-gray-700">
-              <strong>Itens:</strong> {filtered.length}
-            </span>
-            <span className="text-gray-800 font-semibold">
-              <strong>Total:</strong> R$ {totalGasto.toFixed(2)}
-            </span>
+            <span className="text-gray-700"><strong>Itens:</strong> {filtered.length}</span>
+            <span className="text-gray-800 font-semibold"><strong>Total:</strong> R$ {totalGasto.toFixed(2)}</span>
           </div>
         )}
 
@@ -265,12 +271,15 @@ export default function AllMaintenanceClient() {
                   className="bg-white shadow rounded-lg p-4 hover:shadow-lg transition cursor-pointer"
                   onClick={() => router.push(`/manutencoes/${r.id}`)}
                 >
-                  {/* Header */}
                   <div className="flex justify-between items-center mb-2">
-                    <h2 className="text-lg font-semibold flex-1 text-center">
-                      {r.maintenance_name}
-                    </h2>
-                    <div ref={statusMenuRef} className="relative">
+                    <h2 className="text-lg font-semibold flex-1 text-center">{r.maintenance_name}</h2>
+                    <div
+                      ref={el => {
+                        // só atualiza o ref para o dropdown aberto
+                        if (openStatusMenuId === r.id) statusMenuRef.current = el;
+                      }}
+                      className="relative"
+                    >
                       <button
                         onClick={e => { e.stopPropagation(); setOpenStatusMenuId(r.id); }}
                         className={`inline-flex items-center gap-1 px-3 py-1 text-base font-medium rounded-full select-none
@@ -282,7 +291,10 @@ export default function AllMaintenanceClient() {
                         <ChevronDown className="w-4 h-4" />
                       </button>
                       {openStatusMenuId === r.id && (
-                        <ul className="absolute right-0 mt-1 w-36 bg-white border border-gray-200 rounded-md shadow-lg z-20">
+                        <ul
+                          onClick={e => e.stopPropagation()}
+                          className="absolute right-0 mt-1 w-36 bg-white border border-gray-200 rounded-md shadow-lg z-20"
+                        >
                           {["A fazer","Feito","Cancelado"].map(opt => (
                             <li
                               key={opt}
@@ -304,7 +316,7 @@ export default function AllMaintenanceClient() {
                     <div><strong>Data:</strong> {r.scheduled_date ?? "—"}</div>
                   </div>
 
-                  {/* Peças resumo */}
+                  {/* Peças */}
                   {r.maintenance_parts.length > 0 && (
                     <div className="mt-2 text-sm text-gray-700">
                       Peças: {r.maintenance_parts.length} — R$ {partsTotal.toFixed(2)}
