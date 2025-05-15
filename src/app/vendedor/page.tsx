@@ -30,14 +30,19 @@ export default function SellerPage() {
   }
 
   return (
-    <div className="p-4">
-      <h1 className="text-xl font-bold mb-4">Área do Vendedor</h1>
+    <div className="p-4 max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold mb-2">Área do Vendedor</h1>
       <p className="mb-6 text-base text-gray-600">
-        Veja os veículos adicionados por usuários comuns e entre em contato com os interessados.
+        Veja os veículos que usuários adicionaram aos seus desejos. Inicie o
+        contato com cada comprador via chat.
       </p>
+
+      {error && (
+        <p className="mb-4 text-red-500">Erro ao carregar veículos: {error}</p>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {vehicles.map((vehicle) => {
-          // Formata data no padrão DD/MM/AAAA
           const formattedDate = vehicle.created_at
             ? new Date(vehicle.created_at).toLocaleDateString("pt-BR", {
                 day: "2-digit",
@@ -57,7 +62,9 @@ export default function SellerPage() {
                       onClick={async (e) => {
                         e.stopPropagation();
                         const buyerId = vehicle.user_id;
-                        const { data: { user } } = await supabase.auth.getUser();
+                        const {
+                          data: { user },
+                        } = await supabase.auth.getUser();
                         const sellerId = user?.id;
                         if (!buyerId || !sellerId) {
                           alert("Dados insuficientes para iniciar o chat.");
@@ -70,8 +77,8 @@ export default function SellerPage() {
                             sellerId
                           );
                           router.push(`/chat/${conversation.id}`);
-                        } catch (error) {
-                          console.error("Erro ao iniciar o chat:", error);
+                        } catch (err) {
+                          console.error("Erro ao iniciar o chat:", err);
                         }
                       }}
                       className="flex items-center gap-1 text-blue-600 hover:underline"
@@ -95,7 +102,9 @@ export default function SellerPage() {
 
                     {/* Data de cadastro */}
                     {formattedDate && (
-                      <span className="text-xs text-gray-500">{formattedDate}</span>
+                      <span className="text-xs text-gray-500">
+                        {formattedDate}
+                      </span>
                     )}
                   </div>
                 }
