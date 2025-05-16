@@ -80,3 +80,14 @@ export interface MaintenanceRecord {
 }
 
 
+export interface Profile {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  avatar_url?: string;
+  username?: string;
+  is_seller?: boolean;
+  is_admin?: boolean;   
+  created_at?: string;
+}
