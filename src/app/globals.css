@@ -5,7 +5,6 @@
   --foreground: #171717;
 }
 
-@import "react-select/dist/react-select.css";
 
 @theme inline {
   --color-background: var(--background);
