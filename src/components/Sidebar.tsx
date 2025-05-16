@@ -163,6 +163,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             </Link>
             <Link
           href="/consultaFipe"
+          onClick={onClose}
           className="flex items-center gap-3 p-2 rounded hover:bg-gray-100 transition"
         >
           <ChevronsUpDown className="w-5 h-5 text-gray-600" />

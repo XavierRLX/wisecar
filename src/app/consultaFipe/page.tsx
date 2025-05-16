@@ -4,7 +4,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import AuthGuard from "@/components/AuthGuard";
-import EnsureProfile from "@/components/EnsureProfile";
 import LoadingState from "@/components/LoadingState";
 import FipeSelectors from "@/components/FipeSelectors";
 import { 
@@ -110,17 +109,10 @@ export default function ConsultaFipePage() {
 
   return (
     <AuthGuard>
-      <EnsureProfile />
       <div className="px-4 py-6 max-w-4xl mx-auto space-y-6">
         {/* Cabeçalho */}
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Consulta FIPE</h1>
-          <button
-            onClick={() => router.back()}
-            className="text-sm text-gray-500 hover:underline"
-          >
-            Voltar
-          </button>
         </div>
         <p className="text-gray-600">
           Preencha os dados abaixo para consultar a Tabela FIPE.
