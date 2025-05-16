@@ -67,20 +67,17 @@ export default function AdminUsersPage() {
               key={user.id}
               className="bg-white rounded-lg shadow-sm hover:shadow-md transition p-6"
             >
-              {/* Linha 1: avatar + nome e toggles virtuamente centralizados */}
               <div className="flex items-center justify-between">
-                {/* Avatar + Nome */}
                 <div className="flex items-center space-x-4">
                   <img
                     src={user.avatar_url ?? "/default-avatar.png"}
                     alt={`${user.first_name} avatar`}
-                    className="w-12 h-12 rounded-full object-cover bg-gray-200"
+                    className="w-8 h-8 rounded-full object-cover bg-gray-200"
                   />
-                  <div className="text-lg font-semibold text-gray-900 truncate">
+                  <div className="text-sm font-semibold text-gray-900 truncate">
                     {user.first_name} {user.last_name}
                   </div>
                 </div>
-                {/* Toggles centralizados verticalmente */}
                 <div className="flex items-center justify-center space-x-6">
                   {([
                     ["Vendedor", "is_seller"],
