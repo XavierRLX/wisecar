@@ -136,7 +136,7 @@ export default function AdminUsersPage() {
                     <div className="text-lg font-semibold text-gray-900 truncate">
                       {user.first_name} {user.last_name}
                     </div>
-                    <div className="text-sm text-gray-500 truncate">
+                    <div className="text-xs text-gray-500 truncate">
                       {user.email}
                     </div>
                   </div>
