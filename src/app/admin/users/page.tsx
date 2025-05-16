@@ -1,7 +1,7 @@
 // app/admin/users/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import AdminGuard from "@/components/AdminGuard";
 import LoadingState from "@/components/LoadingState";
@@ -19,6 +19,7 @@ interface Profile {
 export default function AdminUsersPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -54,6 +55,26 @@ export default function AdminUsersPage() {
     );
   };
 
+  // Aplica busca e ordenação
+  const displayed = useMemo(() => {
+    const term = search.toLowerCase().trim();
+    return profiles
+      .filter(p =>
+        !term ||
+        p.first_name.toLowerCase().includes(term) ||
+        p.last_name.toLowerCase().includes(term)
+      )
+      .sort((a, b) => {
+        // Admin primeiro
+        if (a.is_admin && !b.is_admin) return -1;
+        if (!a.is_admin && b.is_admin) return 1;
+        // Depois pelo nome completo
+        const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
+        const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+  }, [profiles, search]);
+
   if (loading) return <LoadingState message="Carregando usuários…" />;
 
   return (
@@ -61,13 +82,25 @@ export default function AdminUsersPage() {
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
         <h1 className="text-3xl font-bold text-gray-800">Painel de Usuários</h1>
 
+        {/* Campo de Busca */}
+        <div className="flex">
+          <input
+            type="text"
+            placeholder="Buscar por nome ou sobrenome..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
         <div className="space-y-4">
-          {profiles.map(user => (
+          {displayed.map(user => (
             <div
               key={user.id}
               className="bg-white rounded-lg shadow-sm hover:shadow-md transition p-6"
             >
               <div className="flex items-center justify-between">
+                {/* Avatar + Nome */}
                 <div className="flex items-center space-x-4">
                   <img
                     src={user.avatar_url ?? "/default-avatar.png"}
@@ -78,7 +111,9 @@ export default function AdminUsersPage() {
                     {user.first_name} {user.last_name}
                   </div>
                 </div>
-                <div className="flex items-center justify-center space-x-6">
+
+                {/* Toggles alinhados verticalmente ao centro */}
+                <div className="flex items-center space-x-6">
                   {([
                     ["Vendedor", "is_seller"],
                     ["Admin",    "is_admin"]
@@ -108,12 +143,15 @@ export default function AdminUsersPage() {
                 </div>
               </div>
 
-              {/* Linha 2: email completo */}
+              {/* Linha 2: email */}
               <div className="mt-4 text-gray-600 truncate">
                 {user.email}
               </div>
             </div>
           ))}
+          {displayed.length === 0 && (
+            <p className="text-center text-gray-500">Nenhum usuário encontrado.</p>
+          )}
         </div>
       </div>
     </AdminGuard>
