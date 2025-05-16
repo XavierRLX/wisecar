@@ -1,15 +1,26 @@
+// components/FipeSelectors.tsx
+"use client";
+
 import React from "react";
+import Select, { SingleValue } from "react-select";
+
+interface Option {
+  value: string;
+  label: string;
+}
 
 interface FipeSelectorsProps {
   category: string;
   marca: string;
   modelo: string;
   ano: string;
-  marcas: any[];
-  modelos: any[];
-  anos: any[];
+  marcas: { codigo: string; nome: string }[];
+  modelos: { codigo: string; nome: string }[];
+  anos: { codigo: string; nome: string }[];
   onChange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => void;
   onFetchFipe: () => void;
 }
@@ -25,81 +36,107 @@ export default function FipeSelectors({
   onChange,
   onFetchFipe,
 }: FipeSelectorsProps) {
+  // Opções para cada select
+  const categoryOptions: Option[] = [
+    { value: "carros", label: "Carro" },
+    { value: "motos", label: "Moto" },
+  ];
+  const marcaOptions: Option[] = marcas.map((m) => ({
+    value: m.codigo,
+    label: m.nome,
+  }));
+  const modeloOptions: Option[] = modelos.map((m) => ({
+    value: m.codigo,
+    label: m.nome,
+  }));
+  const anoOptions: Option[] = anos.map((a) => ({
+    value: a.codigo,
+    label: a.nome,
+  }));
+
   return (
     <div className="space-y-6">
+      {/* Categoria */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Categoria
         </label>
-        <select
-          name="category_id"
-          value={category}
-          onChange={onChange}
-          className="block w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="carros">Carro</option>
-          <option value="motos">Moto</option>
-        </select>
+        <Select<Option>
+          options={categoryOptions}
+          value={categoryOptions.find((o) => o.value === category) ?? null}
+          onChange={(opt: SingleValue<Option>) =>
+            onChange({ target: { name: "category_id", value: opt?.value ?? "" } } as any)
+          }
+          placeholder="Selecione categoria..."
+          className="react-select-container"
+          classNamePrefix="react-select"
+          isClearable={false}
+        />
       </div>
+
+      {/* Marca */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Marca (FIPE)
         </label>
-        <select
-          name="marca"
-          value={marca}
-          onChange={onChange}
-          className="block w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">Selecione a marca</option>
-          {marcas.map((m) => (
-            <option key={m.codigo} value={m.codigo}>
-              {m.nome}
-            </option>
-          ))}
-        </select>
+        <Select<Option>
+          options={marcaOptions}
+          value={marcaOptions.find((o) => o.value === marca) ?? null}
+          onChange={(opt: SingleValue<Option>) =>
+            onChange({ target: { name: "marca", value: opt?.value ?? "" } } as any)
+          }
+          placeholder="Digite para buscar marca..."
+          isClearable
+          className="react-select-container"
+          classNamePrefix="react-select"
+        />
       </div>
+
+      {/* Modelo */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Modelo (FIPE)
         </label>
-        <select
-          name="modelo"
-          value={modelo}
-          onChange={onChange}
-          className="block w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">Selecione o modelo</option>
-          {modelos.map((mod) => (
-            <option key={mod.codigo} value={mod.codigo}>
-              {mod.nome}
-            </option>
-          ))}
-        </select>
+        <Select<Option>
+          options={modeloOptions}
+          value={modeloOptions.find((o) => o.value === modelo) ?? null}
+          onChange={(opt: SingleValue<Option>) =>
+            onChange({ target: { name: "modelo", value: opt?.value ?? "" } } as any)
+          }
+          placeholder="Digite para buscar modelo..."
+          isClearable
+          isDisabled={!marca}
+          className="react-select-container"
+          classNamePrefix="react-select"
+        />
       </div>
+
+      {/* Ano */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Ano (FIPE)
         </label>
-        <select
-          name="ano"
-          value={ano}
-          onChange={onChange}
-          className="block w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">Selecione o ano</option>
-          {anos.map((a) => (
-            <option key={a.codigo} value={a.codigo}>
-              {a.nome}
-            </option>
-          ))}
-        </select>
+        <Select<Option>
+          options={anoOptions}
+          value={anoOptions.find((o) => o.value === ano) ?? null}
+          onChange={(opt: SingleValue<Option>) =>
+            onChange({ target: { name: "ano", value: opt?.value ?? "" } } as any)
+          }
+          placeholder="Selecione o ano..."
+          isClearable={false}
+          isDisabled={!modelo}
+          className="react-select-container"
+          classNamePrefix="react-select"
+        />
       </div>
+
+      {/* Botão de buscar detalhes FIPE */}
       <div className="flex justify-end">
         <button
           type="button"
           onClick={onFetchFipe}
-          className="text-sm text-blue-500 hover:underline focus:outline-none"
+          className="text-sm text-blue-500 hover:underline disabled:text-gray-400"
+          disabled={!marca || !modelo || !ano}
         >
           Buscar detalhes FIPE
         </button>
