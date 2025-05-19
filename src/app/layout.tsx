@@ -15,20 +15,25 @@ export const metadata: Metadata = {
   description: "Seu projeto Next.js com ShadCN e Supabase",
 };
 
+// app/layout.tsx
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR">
+      <head>
+      </head>
       <body
-        suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-100 text-gray-900`}
+        className={`overflow-x-hidden antialiased bg-gray-100 text-gray-900 ${geistSans.variable} ${geistMono.variable}`}
       >
         <Providers>
           <ClientOnly>
             <GlobalNav />
           </ClientOnly>
-          <ContentWrapper>{children}</ContentWrapper>
+          <main className="w-full">
+            {children}
+          </main>
         </Providers>
       </body>
     </html>
   );
 }
+

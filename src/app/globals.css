@@ -5,6 +5,9 @@
   --foreground: #171717;
 }
 
+html, body {
+  overflow-x: hidden;
+}
 
 @theme inline {
   --color-background: var(--background);
@@ -31,6 +34,10 @@
 
  .bkgColorPrimary{
   background-color: var(--primary);
+ }
+
+ .bkgColorSecundary{
+  background-color: var(--primary-select);
  }
 
 body {
