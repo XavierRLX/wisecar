@@ -46,7 +46,7 @@ export default function LoginPage() {
 
       {/* Card de Login */}
       <div className="relative z-10 w-full max-w-md transform rounded-2xl bg-white p-8 shadow-2xl transition-shadow hover:shadow-2xl/40">
-        <h2 className="mb-6 text-center text-3xl font-extrabold text-gray-900 TextColorPrimary">
+        <h2 className="mb-6 text-center text-2xl font-extrabold text-gray-900 TextColorPrimary">
           Bem-vindo
         </h2>
 
