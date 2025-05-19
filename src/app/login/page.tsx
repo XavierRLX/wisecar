@@ -32,8 +32,8 @@ export default function LoginPage() {
           unoptimized
           src="https://tffzmmrlohxzvjpsxkym.supabase.co/storage/v1/object/public/logowisecar/wisecarlogopng.png"
           alt="All Wheels Logo"
-          width={200}
-          height={80}
+          width={160}
+          height={40}
           className="mx-auto"
         />
         <p className="mt-4 text-base text-gray-700 TextColorPrimary">

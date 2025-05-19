@@ -11,29 +11,28 @@ const geistSans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
 
 export const metadata: Metadata = {
-  title: "WiseCar",
-  description: "Seu projeto Next.js com ShadCN e Supabase",
+  title: "All Wheels",
+  description: "Gerencie suas manutenções, desejos e consulta FIPE num só lugar",
 };
 
-// app/layout.tsx
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR">
-      <head>
-      </head>
       <body
-        className={`overflow-x-hidden antialiased bg-gray-100 text-gray-900 ${geistSans.variable} ${geistMono.variable}`}
+        suppressHydrationWarning
+        className={`
+          ${geistSans.variable} ${geistMono.variable} 
+          antialiased bg-gray-100 text-gray-900
+          overflow-x-hidden
+        `}
       >
         <Providers>
           <ClientOnly>
             <GlobalNav />
           </ClientOnly>
-          <main className="w-full">
-            {children}
-          </main>
+          <ContentWrapper>{children}</ContentWrapper>
         </Providers>
       </body>
     </html>
   );
 }
-
