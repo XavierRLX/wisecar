@@ -208,40 +208,6 @@ export default function AllMaintenanceClient() {
               )}
             </div>
           </div>
-
-          {/* Tipo Filter */}
-          <div className="flex flex-col">
-            <label htmlFor="typeFilter" className="mb-1 text-sm font-medium text-gray-700">Tipo</label>
-            <div ref={typeMenuRef} id="typeFilter" className="relative">
-              <button
-                type="button"
-                onClick={() => setShowTypeMenu(v => !v)}
-                className="w-full text-left flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md bg-white hover:border-gray-400 transition"
-              >
-                {typeFilter || "Todos os Tipos"}
-                <ChevronDown className="w-4 h-4 text-gray-500" />
-              </button>
-              {showTypeMenu && (
-                <ul className="absolute right-0 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-10">
-                  <li
-                    onClick={() => { setTypeFilter(""); setShowTypeMenu(false); }}
-                    className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                  >
-                    Todos
-                  </li>
-                  {Array.from(new Set(records.map(r => r.maintenance_type))).map(t => (
-                    <li
-                      key={t}
-                      onClick={() => { setTypeFilter(t); setShowTypeMenu(false); }}
-                      className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                    >
-                      {t}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
         </form>
 
         {/* Resumo */}

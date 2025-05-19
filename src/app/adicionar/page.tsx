@@ -192,12 +192,9 @@ export default function AddVehiclePage() {
   return (
     <AuthGuard>
       <div className="px-4 py-8 max-w-4xl mx-auto space-y-8">
-        {/* Título */}
-        {/* Subtítulo e Segmented Control Centralizados */}
           <div className="flex flex-col items-center space-y-2">
             <h1 className="text-medium text-gray-600">Escolha em qual lista adicionar</h1>
             <div className="relative inline-flex bg-gray-200 rounded-full p-1 h-10 w-64">
-              {/* Indicador animado */}
               <div
                 className={`absolute top-1 left-1 w-1/2 h-8 bg-white rounded-full shadow transition-transform duration-300
                   ${formData.is_for_sale ? "translate-x-0" : "translate-x-full"}`}
