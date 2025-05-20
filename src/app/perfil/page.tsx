@@ -1,4 +1,3 @@
-// app/perfil/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -28,27 +27,22 @@ export default function ProfilePage() {
 
   useEffect(() => {
     async function fetchProfile() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        router.push("/login");
-        return;
-      }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return router.push("/login");
+
       const { data, error } = await supabase
         .from("profiles")
         .select("first_name, last_name, username, is_admin")
         .eq("id", user.id)
         .single();
 
-      if (error) {
-        console.error("Erro ao carregar perfil:", error);
-      } else if (data) {
+      if (error) console.error("Erro ao carregar perfil:", error);
+      else if (data) {
         setProfile({
-          first_name: data.first_name || "",
-          last_name:  data.last_name  || "",
-          username:   data.username   || "",
-          is_admin:   data.is_admin   || false,
+          first_name: data.first_name  || "",
+          last_name:  data.last_name   || "",
+          username:   data.username    || "",
+          is_admin:   data.is_admin    || false,
         });
       }
       setLoading(false);
@@ -61,9 +55,7 @@ export default function ProfilePage() {
     setSaving(true);
     setMessage("");
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setMessage("Usuário não autenticado.");
       setSaving(false);
@@ -80,8 +72,8 @@ export default function ProfilePage() {
       .eq("id", user.id);
 
     if (error) {
-      setMessage("Erro ao atualizar o perfil.");
       console.error(error);
+      setMessage("Erro ao atualizar o perfil.");
     } else {
       setMessage("Perfil atualizado com sucesso!");
     }
@@ -102,58 +94,48 @@ export default function ProfilePage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-white border border-gray-200 rounded-lg shadow p-6 space-y-4">
+            {/* Nome */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nome
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
               <input
                 type="text"
                 value={profile.first_name}
-                onChange={e =>
-                  setProfile({ ...profile, first_name: e.target.value })
-                }
+                onChange={e => setProfile({ ...profile, first_name: e.target.value })}
                 className="w-full rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 p-2"
                 required
               />
             </div>
 
+            {/* Sobrenome */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Sobrenome
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Sobrenome</label>
               <input
                 type="text"
                 value={profile.last_name}
-                onChange={e =>
-                  setProfile({ ...profile, last_name: e.target.value })
-                }
+                onChange={e => setProfile({ ...profile, last_name: e.target.value })}
                 className="w-full rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 p-2"
                 required
               />
             </div>
 
+            {/* Username */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Username
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
               <input
                 type="text"
                 value={profile.username}
-                onChange={e =>
-                  setProfile({ ...profile, username: e.target.value })
-                }
+                onChange={e => setProfile({ ...profile, username: e.target.value })}
                 className="w-full rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 p-2"
                 required
               />
             </div>
 
+            {/* Botão Salvar */}
             <button
               type="submit"
               disabled={saving}
               className={`w-full flex justify-center items-center py-3 rounded-md text-white font-medium transition ${
-                saving
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-700"
+                saving ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
               }`}
             >
               {saving ? "Salvando..." : "Salvar Alterações"}
@@ -161,28 +143,20 @@ export default function ProfilePage() {
           </div>
         </form>
 
+        {/* Botão para Dashboard de Admin */}
         {profile.is_admin && (
           <div className="mt-8 text-center">
             <Link
-              href="/admin/users"
+              href="/admin"
               className="inline-flex items-center gap-2 px-5 py-3 bg-red-600 text-white rounded-md hover:bg-red-700 transition"
             >
-              {/* ícone de usuários */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M17 20h5v-2a3 3 0 00-3-3h-4m-4 0H3a3 3 0 00-3 3v2h5m4-10a4 4 0 100-8 4 4 0 000 8zm6 4v6m0 0l-2-2m2 2l2-2"
-                />
+              {/* you can replace with any icon */}
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none"
+                   viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                      d="M3 7h18M3 12h18M3 17h18" />
               </svg>
-              Gerenciar Usuários
+              Tela de Admin
             </Link>
           </div>
         )}

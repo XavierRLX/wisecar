@@ -59,7 +59,6 @@ export interface MaintenancePart {
   created_at?: string;
 }
 
-// agora a interface inclui exatamente o campo maintenance_parts
 export interface MaintenanceRecord {
   id: string;
   vehicle_id: string;
@@ -75,7 +74,6 @@ export interface MaintenanceRecord {
   notes: string | null;
   created_at?: string;
 
-  // nome igual ao do select: maintenance_parts
   maintenance_parts?: MaintenancePart[];
 }
 
@@ -89,5 +87,35 @@ export interface Profile {
   username?: string;
   is_seller?: boolean;
   is_admin?: boolean;   
+  created_at?: string;
+}
+
+
+export interface ServiceProvider {
+  id: string;
+  profile_id: string;
+  name: string;
+  address?: string;
+  phone?: string;
+  social_media?: string;
+  description?: string;
+  created_at?: string;
+  images?: ServiceProviderImage[];
+  services?: Service[];
+}
+
+export interface ServiceProviderImage {
+  id: string;
+  service_id: string;
+  image_url: string;
+  created_at?: string;
+}
+
+export interface Service {
+  id: string;
+  service_provider_id: string;
+  name: string;
+  description?: string;
+  price?: number;
   created_at?: string;
 }

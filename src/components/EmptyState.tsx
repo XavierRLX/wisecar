@@ -1,4 +1,3 @@
-// components/EmptyState.tsx
 "use client";
 
 import React from "react";
@@ -8,16 +7,28 @@ interface EmptyStateProps {
   title: string;
   description: string;
   buttonText: string;
-  redirectTo: string;
+  /** Se fornecido, executa essa função; caso contrário, faz redirect para `redirectTo`. */
+  onClick?: () => void;
+  /** Se `onClick` não for passado, faz redirect para cá. */
+  redirectTo?: string;
 }
 
 const EmptyState: React.FC<EmptyStateProps> = ({
   title,
   description,
   buttonText,
+  onClick,
   redirectTo,
 }) => {
   const router = useRouter();
+
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    } else if (redirectTo) {
+      router.push(redirectTo);
+    }
+  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[300px] bg-gray-50 p-8 rounded-lg shadow-md">
@@ -33,7 +44,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
       <h2 className="text-2xl font-semibold mt-4">{title}</h2>
       <p className="mt-2 text-gray-600 text-center">{description}</p>
       <button
-        onClick={() => router.push(redirectTo)}
+        onClick={handleClick}
         className="mt-4 px-6 py-2 bg-blue-500 text-white rounded-md shadow hover:bg-blue-600 transition"
       >
         {buttonText}
