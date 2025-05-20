@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, LogOut, User, Heart, CircleParking, Car, Rss, Ligature  } from "lucide-react"; // ← importe Car
+import { X, LogOut, User, Heart, CircleParking, Car, Rss, Ligature, Wrench  } from "lucide-react"; // ← importe Car
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -151,16 +151,16 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <CircleParking className="w-5 h-5 text-gray-600" />
                 <span className="text-gray-800">Minha Garagem</span>
               </Link>
+              <Link
+                href="/manutencoes"
+                onClick={onClose}
+                className="flex items-center gap-3 p-2 rounded hover:bg-gray-100 transition"
+              >
+                <Wrench className="w-5 h-5 text-gray-600" />
+                <span className="text-gray-800">Manutenções</span>
+              </Link>
             </li>
             <li>
-            <Link
-              href="/feed"
-              onClick={onClose}
-              className="flex items-center gap-3 p-2 rounded hover:bg-gray-100 transition"
-            >
-              <Rss className="w-5 h-5 text-gray-600" />
-              <span className="text-gray-800">Feed</span>
-            </Link>
             <Link
           href="/consultaFipe"
           onClick={onClose}
@@ -169,6 +169,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           <Ligature  className="w-5 h-5 text-gray-600" />
           <span>Consulta FIPE</span>
         </Link>
+        <Link
+              href="/feed"
+              onClick={onClose}
+              className="flex items-center gap-3 p-2 rounded hover:bg-gray-100 transition"
+            >
+              <Rss className="w-5 h-5 text-gray-600" />
+              <span className="text-gray-800">Feed</span>
+            </Link>
           </li>
           </ul>
         </nav>
