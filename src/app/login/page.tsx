@@ -40,7 +40,7 @@ export default function LoginPage() {
           <span className="inline-block text-2xl font-extrabold tracking-tight text-gray-900 TextColorPrimary">
             AW
           </span>{" "}
-           - Uma plataforma para todas as rodas.
+           - A plataforma para completar todas as rodas.
         </p>
       </div>
 
