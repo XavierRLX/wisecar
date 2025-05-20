@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Menu as MenuIcon, Car, PlusCircle, MessageSquare, Rss } from "lucide-react";
+import { Menu as MenuIcon, Car, PlusCircle, MessageSquare, Wrench } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 interface BottomNavProps {
@@ -46,22 +46,22 @@ export default function BottomNav({ onMenuClick }: BottomNavProps) {
           <span className="text-xs">Adicionar</span>
         </Link>
 
-        {/* Item Chat */}
+        {/* Item Feed */}
         <Link
+          href="/manutencoes"
+          className={`flex flex-col items-center ${activeClass("/manutencoes")} hover:text-blue-600`}
+        >
+          <Wrench className="h-6 w-6" />
+          <span className="text-xs">Manutenções</span>
+        </Link>
+
+         {/* Item Chat */}
+         <Link
           href="/chat"
           className={`flex flex-col items-center ${activeClass("/chat")} hover:text-blue-600`}
         >
           <MessageSquare className="h-6 w-6" />
           <span className="text-xs">Chat</span>
-        </Link>
-
-        {/* Item Feed */}
-        <Link
-          href="/feed"
-          className={`flex flex-col items-center ${activeClass("/feed")} hover:text-blue-600`}
-        >
-          <Rss className="h-6 w-6" />
-          <span className="text-xs">Feed</span>
         </Link>
       </div>
     </nav>
