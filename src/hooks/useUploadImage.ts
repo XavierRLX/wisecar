@@ -5,6 +5,22 @@ import { supabase } from "@/lib/supabase";
  * Faz o upload da imagem para o bucket "vehicle-images", obtém a URL pública e insere um registro na tabela "vehicle_images".
  * Retorna a URL pública ou null em caso de erro.
  */
+
+export async function uploadImage(
+  bucket: string,
+  path: string,
+  file: File
+): Promise<string | null> {
+  // ex: bucket = "service-provider-images", path = `providers/${providerId}/${file.name}`
+  const { error: upErr } = await supabase.storage.from(bucket).upload(path, file);
+  if (upErr) {
+    console.error("Erro no upload:", upErr.message);
+    return null;
+  }
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+  return data.publicUrl;
+}
+
 export async function uploadVehicleImage(
   vehicleId: string,
   file: File

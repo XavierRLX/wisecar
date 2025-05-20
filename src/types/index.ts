@@ -106,7 +106,7 @@ export interface ServiceProvider {
 
 export interface ServiceProviderImage {
   id: string;
-  service_id: string;
+  service_provider_id: string;
   image_url: string;
   created_at?: string;
 }
@@ -117,5 +117,13 @@ export interface Service {
   name: string;
   description?: string;
   price?: number;
+  created_at?: string;
+  images?: ServiceImage[];
+}
+
+export interface ServiceImage {
+  id: string;
+  service_id: string;
+  image_url: string;
   created_at?: string;
 }
