@@ -1,4 +1,3 @@
-// app/manutencoes/novo/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -12,17 +11,11 @@ import { supabase } from "@/lib/supabase";
 export default function NewMaintenancePage() {
   const router = useRouter();
 
-  // lista de carros da garagem
   const [vehicles, setVehicles] = useState<{ id: string; brand: string; model: string }[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // estado pra controlar seleção do select
-  const [selectedVehicle, setSelectedVehicle] = useState<string>("");
-
-  // spinner de submissão
   const [submitting, setSubmitting] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState("");
 
-  // carrega os veículos do usuário
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) return router.push("/login");
@@ -34,19 +27,15 @@ export default function NewMaintenancePage() {
         .order("brand", { ascending: true })
         .order("model", { ascending: true })
         .then(({ data: vs, error }) => {
-          if (error) {
-            console.error(error);
-            setVehicles([]);
-          } else {
-            setVehicles(vs || []);
-          }
+          if (error) console.error(error);
+          setVehicles(vs || []);
           setLoading(false);
         });
     });
   }, [router]);
 
   const initial: MaintenanceValues = {
-    vehicleId: "",          // não será usado diretamente
+    vehicleId: "",
     maintenanceName: "",
     status: "A fazer",
     maintenanceType: "preventiva",
@@ -61,14 +50,11 @@ export default function NewMaintenancePage() {
   };
 
   async function handleSubmit(values: MaintenanceValues) {
-    // garanta que pegamos do select controlado
     const vehicleId = selectedVehicle || values.vehicleId;
-    if (!vehicleId) {
-      throw new Error("Selecione um veículo");
-    }
-
+    if (!vehicleId) throw new Error("Selecione um veículo");
     setSubmitting(true);
-    // 1) cria o registro de manutenção
+
+    // 1) cria manutenção
     const { data, error } = await supabase
       .from("maintenance_records")
       .insert({
@@ -92,9 +78,9 @@ export default function NewMaintenancePage() {
     }
     const recordId = data.id;
 
-    // 2) insere as peças
+    // 2) insere peças
     if (values.parts.length > 0) {
-      const { error: e2 } = await supabase
+      await supabase
         .from("maintenance_parts")
         .insert(
           values.parts.map((p) => ({
@@ -102,22 +88,20 @@ export default function NewMaintenancePage() {
             name: p.name,
             brand: p.brand || null,
             purchase_place: p.purchase_place || null,
-            quantity: p.quantity,
-            price: p.price,
+            quantity: +p.quantity,
+            price: +p.price,
           }))
         );
-      if (e2) {
-        console.error(e2);
-      }
     }
 
-    // 3) atualiza o custo
-    const total =
-      values.parts.reduce((sum, p) => sum + p.price * p.quantity, 0) +
-      +values.laborCost;
+    // 3) atualiza custo total
+    const partsTotal = values.parts.reduce(
+      (sum, p) => sum + (parseFloat(p.price) || 0) * (parseInt(p.quantity) || 0),
+      0
+    );
     await supabase
       .from("maintenance_records")
-      .update({ cost: total })
+      .update({ cost: partsTotal + (parseFloat(values.laborCost) || 0) })
       .eq("id", recordId);
 
     router.push("/manutencoes");
@@ -134,6 +118,7 @@ export default function NewMaintenancePage() {
         selectedVehicle={selectedVehicle}
         onVehicleChange={setSelectedVehicle}
         onSubmit={handleSubmit}
+        onCancel={() => router.back()}
         submitting={submitting}
       />
     </AuthGuard>

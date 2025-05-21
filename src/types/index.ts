@@ -48,6 +48,30 @@ export interface SellerDetails {
   created_at?: string;
 }
 
+export type ConversationWithDetails = {
+  id: string;
+  created_at: string;
+  vehicles: {
+    brand: string;
+    model: string;
+    vehicle_images: { image_url: string }[];
+  };
+  buyer_id: string;
+  seller_id: string;
+  buyer?: { username: string };
+  seller?: { username: string };
+  messages?: { id: string }[];
+};
+
+export type MessageWithSender = {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+  sender?: { username: string };
+};
+
 export interface MaintenancePart {
   id: string;
   maintenance_record_id: string;

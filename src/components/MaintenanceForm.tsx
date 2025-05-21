@@ -1,4 +1,4 @@
-// components/MaintenanceForm.tsx
+//components/maintenanceForms
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -9,8 +9,8 @@ export interface PartForm {
   name: string;
   brand: string;
   purchase_place: string;
-  quantity: string; // agora string, para começar em branco
-  price: string;    // agora string
+  quantity: string;
+  price: string;
 }
 
 export interface MaintenanceValues {
@@ -34,6 +34,7 @@ interface MaintenanceFormProps {
   selectedVehicle?: string;
   onVehicleChange?: (id: string) => void;
   onSubmit: (values: MaintenanceValues) => Promise<void>;
+  onCancel?: () => void;
   submitting: boolean;
 }
 
@@ -43,6 +44,7 @@ export default function MaintenanceForm({
   selectedVehicle,
   onVehicleChange,
   onSubmit,
+  onCancel,
   submitting,
 }: MaintenanceFormProps) {
   const [values, setValues] = useState(initial);
@@ -56,7 +58,6 @@ export default function MaintenanceForm({
   });
   const [error, setError] = useState<string | null>(null);
 
-  // totais
   const partsTotal = useMemo(
     () =>
       parts.reduce(
@@ -79,13 +80,7 @@ export default function MaintenanceForm({
     }
     setError(null);
     setParts((arr) => [...arr, newPart]);
-    setNewPart({
-      name: "",
-      brand: "",
-      purchase_place: "",
-      quantity: "",
-      price: "",
-    });
+    setNewPart({ name: "", brand: "", purchase_place: "", quantity: "", price: "" });
   }
 
   function handleRemovePart(i: number) {
@@ -96,7 +91,6 @@ export default function MaintenanceForm({
     e.preventDefault();
     setError(null);
     try {
-      // ao submeter, converte quantity/price para números se necessário
       await onSubmit({ ...values, parts });
     } catch (err: any) {
       setError(err.message || "Erro ao salvar");
@@ -149,6 +143,7 @@ export default function MaintenanceForm({
 
       {/* Status & Tipo */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Status */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Status
@@ -165,6 +160,7 @@ export default function MaintenanceForm({
             <option>Cancelado</option>
           </select>
         </div>
+        {/* Tipo */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Tipo
@@ -292,7 +288,6 @@ export default function MaintenanceForm({
           />
         </div>
 
-        {/* Inputs da nova peça */}
         <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 bg-gray-50 p-3 rounded">
           <input
             value={newPart.name}
@@ -341,7 +336,6 @@ export default function MaintenanceForm({
           />
         </div>
 
-        {/* Botão de adicionar após os campos */}
         <div className="text-right">
           <button
             type="button"
@@ -352,7 +346,6 @@ export default function MaintenanceForm({
           </button>
         </div>
 
-        {/* Peças já adicionadas */}
         {parts.length > 0 && (
           <ul className="space-y-2">
             {parts.map((p, i) => (
@@ -378,20 +371,30 @@ export default function MaintenanceForm({
           </ul>
         )}
 
-        {/* Totais */}
         <div className="text-right font-semibold text-gray-800">
           Peças: R$ {partsTotal.toFixed(2)} — Total: R$ {totalCost.toFixed(2)}
         </div>
       </div>
 
-      {/* Botão Salvar */}
-      <button
-        type="submit"
-        disabled={submitting}
-        className="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-60"
-      >
-        {submitting ? "Salvando..." : "Salvar"}
-      </button>
+      {/* Salvar + Cancelar */}
+      <div className="flex gap-4">
+        <button
+          type="submit"
+          disabled={submitting}
+          className="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-60"
+        >
+          {submitting ? "Salvando..." : "Salvar"}
+        </button>
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 transition"
+          >
+            Cancelar
+          </button>
+        )}
+      </div>
     </form>
   );
 }
