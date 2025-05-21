@@ -1,8 +1,15 @@
+// app/components/BottomNav.tsx
 "use client";
 
 import Link from "next/link";
-import { Menu as MenuIcon, Car, PlusCircle, MessageSquare, Cog } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  Menu as MenuIcon,
+  Car,
+  PlusCircle,
+  MessageSquare,
+  Cog,
+} from "lucide-react";
 
 interface BottomNavProps {
   onMenuClick: () => void;
@@ -10,58 +17,68 @@ interface BottomNavProps {
 
 export default function BottomNav({ onMenuClick }: BottomNavProps) {
   const pathname = usePathname();
+  const router = useRouter();
 
-  // Determina classe ativa
   const activeClass = (route: string) =>
     pathname === route ? "TextColorPrimarySelect" : "TextColorPrimary";
 
+  // helper para link + scroll
+  function NavLink({
+    href,
+    children,
+  }: {
+    href: string;
+    children: React.ReactNode;
+  }) {
+    return (
+      <Link
+        href={href}
+        scroll={true}                   
+        onClick={() => window.scrollTo(0, 0)}
+        className={`flex flex-col items-center ${activeClass(
+          href
+        )} hover:text-blue-600`}
+      >
+        {children}
+      </Link>
+    );
+  }
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-md z-50">
-      {/* Usamos grid para posicionar 5 colunas de forma uniforme */}
       <div className="grid grid-cols-5 items-center py-1 px-1">
-        {/* Botão Menu */}
         <button
-          onClick={onMenuClick}
-          className={`flex flex-col items-center ${activeClass("/menu")} hover:text-blue-600`}
+          onClick={() => {
+            window.scrollTo(0, 0);
+            onMenuClick();
+          }}
+          className={`flex flex-col items-center ${activeClass(
+            "/menu"
+          )} hover:text-blue-600`}
         >
           <MenuIcon className="h-6 w-6" />
           <span className="text-xs">Menu</span>
         </button>
 
-        {/* Item Veículos */}
-        <Link
-          href="/todosVeiculos"
-          className={`flex flex-col items-center ${activeClass("/todosVeiculos")} hover:text-blue-600`}
-        >
+        <NavLink href="/todosVeiculos">
           <Car className="h-6 w-6" />
           <span className="text-xs">Veículos</span>
-        </Link>
+        </NavLink>
 
-        {/* Ícone Adicionar centralizado */}
-        <Link
-          href="/adicionar"
-          className={`flex flex-col items-center ${activeClass("/adicionar")} hover:text-blue-600`}
-        >
+        <NavLink href="/adicionar">
           <PlusCircle className="h-6 w-6" />
           <span className="text-xs">Adicionar</span>
-        </Link>
+        </NavLink>
 
-        {/* Item lojas */}
-        <Link
-          href="/lojas"
-          className={`flex flex-col items-center ${activeClass("/lojas")} hover:text-blue-600`}
-        >
+        <NavLink href="/lojas">
           <Cog className="h-6 w-6" />
           <span className="text-xs">Serviços</span>
-        </Link>
-         {/* Item Chat */}
-         <Link
-          href="/chat"
-          className={`flex flex-col items-center ${activeClass("/chat")} hover:text-blue-600`}
-        >
+        </NavLink>
+
+        <NavLink href="/chat">
           <MessageSquare className="h-6 w-6" />
           <span className="text-xs">Chat</span>
-        </Link>
+        </NavLink>
       </div>
     </nav>
   );
