@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import AuthGuard from "@/components/AuthGuard";
-import EnsureProfile from "@/components/EnsureProfile";
-import LoadingState from "@/components/LoadingState";
-import EmptyState from "@/components/EmptyState";
-import ProviderCard from "@/components/ProviderCard";
+import AuthGuard      from "@/components/AuthGuard";
+import EnsureProfile  from "@/components/EnsureProfile";
+import LoadingState   from "@/components/LoadingState";
+import EmptyState     from "@/components/EmptyState";
+import ProviderCard   from "@/components/ProviderCard";
 import { useServiceProviders } from "@/hooks/useServiceProviders";
 
 export default function ProvidersPage() {
@@ -14,20 +14,18 @@ export default function ProvidersPage() {
 
   const filtered = useMemo(() => {
     const term = search.toLowerCase();
-    return providers.filter(p =>
-      p.name.toLowerCase().includes(term) ||
-      (p.services || []).some(s => s.name.toLowerCase().includes(term))
+    return providers.filter(
+      p =>
+        p.name.toLowerCase().includes(term) ||
+        p.services?.some(s => s.name.toLowerCase().includes(term))
     );
   }, [providers, search]);
 
   return (
     <AuthGuard>
       <EnsureProfile />
-
       <div className="px-4 py-6 max-w-4xl mx-auto space-y-6">
         <h1 className="text-2xl font-bold">Oficinas & Serviços</h1>
-
-        {/* Busca */}
         <input
           type="text"
           placeholder="Buscar por nome ou serviço..."
@@ -50,11 +48,7 @@ export default function ProvidersPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {filtered.map(p => (
-              <ProviderCard
-                key={p.id}
-                provider={p}
-                onClick={() => {/* router.push(`/providers/${p.id}`) */}}
-              />
+              <ProviderCard key={p.id} provider={p} />
             ))}
           </div>
         )}

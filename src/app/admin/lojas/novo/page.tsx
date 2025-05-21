@@ -7,7 +7,6 @@ import AuthGuard from "@/components/AuthGuard";
 import EnsureProfile from "@/components/EnsureProfile";
 import LoadingState from "@/components/LoadingState";
 import { supabase } from "@/lib/supabase";
-import { ServiceProvider, Service } from "@/types";
 import { PlusCircle, Trash2 } from "lucide-react";
 
 interface ServiceForm {

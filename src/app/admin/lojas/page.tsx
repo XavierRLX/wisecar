@@ -2,19 +2,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import AdminGuard from "@/components/AdminGuard";
+import AdminGuard   from "@/components/AdminGuard";
 import LoadingState from "@/components/LoadingState";
-import EmptyState from "@/components/EmptyState";
+import EmptyState   from "@/components/EmptyState";
 import { supabase } from "@/lib/supabase";
-import Link from "next/link";
+import Link         from "next/link";
+
+// 1) defina o formato que você espera da query
+type RawStoreRow = {
+  id: string;
+  name: string;
+  address: string;
+  phone: string;
+  social_media: string;
+  service_provider_images?: { image_url: string }[];
+};
 
 interface Store {
   id:        string;
   name:      string;
   address:   string;
   phone:     string;
-  social:    string;      // agora vai vir de social_media
-  cover_url?: string;     // URL da primeira imagem, se houver
+  social:    string;
+  cover_url?: string;
 }
 
 export default function AdminStoresPage() {
@@ -23,7 +33,7 @@ export default function AdminStoresPage() {
 
   useEffect(() => {
     (async () => {
-      // 1) Busca na tabela correta, puxando também as imagens relacionadas
+      // 2) retire o <RawStoreRow> de dentro do select
       const { data, error } = await supabase
         .from("service_providers")
         .select(`
@@ -32,52 +42,49 @@ export default function AdminStoresPage() {
           address,
           phone,
           social_media,
-          service_provider_images ( image_url )
+          service_provider_images(image_url)
         `);
 
       if (error) {
         console.error("Erro ao carregar lojas:", error);
         setStores([]);
       } else if (data) {
-        // 2) Mapeia cada provedor num objeto Store
-        const mapped: Store[] = data.map((row: any) => ({
+        // 3) faça o cast aqui
+        const rows = data as RawStoreRow[];
+        const mapped: Store[] = rows.map(row => ({
           id:        row.id,
           name:      row.name,
           address:   row.address,
           phone:     row.phone,
           social:    row.social_media,
-          cover_url: row.service_provider_images?.[0]?.image_url ?? undefined,
+          cover_url: row.service_provider_images?.[0]?.image_url,
         }));
         setStores(mapped);
       }
+
       setLoading(false);
     })();
   }, []);
 
-  if (loading) return <LoadingState message="Carregando Serviços..." />;
+  if (loading) return <LoadingState message="Carregando serviços…" />;
 
   return (
     <AdminGuard>
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-800">Gerenciar Lojas</h1>
+          <h1 className="text-3xl font-bold">Gerenciar Lojas</h1>
           <Link
             href="/admin/lojas/novo"
-            className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none"
-                 viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M12 4v16m8-8H4" />
-            </svg>
-            Nova Loja
+            + Nova Loja
           </Link>
         </div>
 
         {stores.length === 0 ? (
           <EmptyState
             title="Nenhuma loja cadastrada"
-            description="Cadastre sua primeira loja para começar a oferecer serviços."
+            description="Cadastre sua primeira loja para começar."
             buttonText="Criar Loja"
             redirectTo="/admin/lojas/novo"
           />
@@ -95,16 +102,13 @@ export default function AdminStoresPage() {
                   <div className="w-20 h-20 bg-gray-200 rounded" />
                 )}
                 <div className="flex-1">
-                  <h2 className="text-lg font-semibold text-gray-900">{store.name}</h2>
-                  <p className="text-sm text-gray-600">{store.address}</p>
-                  <p className="text-sm text-gray-600">{store.phone}</p>
-                  <p className="text-sm text-gray-600">{store.social}</p>
+                  <h2 className="font-semibold">{store.name}</h2>
+                  <p className="text-sm">{store.address}</p>
+                  <p className="text-sm">{store.phone}</p>
+                  <p className="text-sm">{store.social}</p>
                 </div>
                 <div className="flex flex-col justify-end space-y-2">
-                  <Link
-                    href={`/admin/lojas/${store.id}/editar`}
-                    className="text-blue-600 hover:underline"
-                  >
+                  <Link href={`/admin/lojas/${store.id}/editar`} className="text-blue-600">
                     Editar
                   </Link>
                   <button
@@ -117,7 +121,7 @@ export default function AdminStoresPage() {
                       if (error) alert("Erro: " + error.message);
                       else setStores(prev => prev.filter(s => s.id !== store.id));
                     }}
-                    className="text-red-600 hover:underline"
+                    className="text-red-600"
                   >
                     Excluir
                   </button>
