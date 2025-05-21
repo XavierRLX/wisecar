@@ -54,7 +54,7 @@ export default function AdminStoresPage() {
     })();
   }, []);
 
-  if (loading) return <LoadingState message="Carregando lojas..." />;
+  if (loading) return <LoadingState message="Carregando Serviços..." />;
 
   return (
     <AdminGuard>

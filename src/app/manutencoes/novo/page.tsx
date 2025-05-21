@@ -11,30 +11,42 @@ import { supabase } from "@/lib/supabase";
 
 export default function NewMaintenancePage() {
   const router = useRouter();
+
+  // lista de carros da garagem
   const [vehicles, setVehicles] = useState<{ id: string; brand: string; model: string }[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // estado pra controlar seleção do select
+  const [selectedVehicle, setSelectedVehicle] = useState<string>("");
+
+  // spinner de submissão
   const [submitting, setSubmitting] = useState(false);
 
-  // load user’s garage vehicles
+  // carrega os veículos do usuário
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) return router.push("/login");
       supabase
         .from("vehicles")
-        .select("id,brand,model")
+        .select("id, brand, model")
         .eq("owner_id", data.user.id)
         .eq("is_for_sale", false)
-        .order("brand")
-        .order("model")
-        .then(({ data: vs }) => {
-          setVehicles(vs || []);
+        .order("brand", { ascending: true })
+        .order("model", { ascending: true })
+        .then(({ data: vs, error }) => {
+          if (error) {
+            console.error(error);
+            setVehicles([]);
+          } else {
+            setVehicles(vs || []);
+          }
           setLoading(false);
         });
     });
   }, [router]);
 
   const initial: MaintenanceValues = {
-    vehicleId: "",
+    vehicleId: "",          // não será usado diretamente
     maintenanceName: "",
     status: "A fazer",
     maintenanceType: "preventiva",
@@ -48,15 +60,19 @@ export default function NewMaintenancePage() {
     parts: [],
   };
 
-  const handleSubmit = async (values: MaintenanceValues) => {
-    if (!values.vehicleId) throw new Error("Selecione um veículo");
-    setSubmitting(true);
+  async function handleSubmit(values: MaintenanceValues) {
+    // garanta que pegamos do select controlado
+    const vehicleId = selectedVehicle || values.vehicleId;
+    if (!vehicleId) {
+      throw new Error("Selecione um veículo");
+    }
 
-    // insert maintenance
+    setSubmitting(true);
+    // 1) cria o registro de manutenção
     const { data, error } = await supabase
       .from("maintenance_records")
       .insert({
-        vehicle_id: values.vehicleId,
+        vehicle_id: vehicleId,
         maintenance_name: values.maintenanceName,
         status: values.status,
         maintenance_type: values.maintenanceType,
@@ -70,12 +86,14 @@ export default function NewMaintenancePage() {
       })
       .select("id")
       .single();
-    if (error || !data.id) throw error || new Error("Erro ao criar");
-
+    if (error || !data?.id) {
+      setSubmitting(false);
+      throw error || new Error("Erro ao criar manutenção");
+    }
     const recordId = data.id;
 
-    // insert parts
-    if (values.parts.length) {
+    // 2) insere as peças
+    if (values.parts.length > 0) {
       const { error: e2 } = await supabase
         .from("maintenance_parts")
         .insert(
@@ -88,18 +106,22 @@ export default function NewMaintenancePage() {
             price: p.price,
           }))
         );
-      if (e2) throw e2;
+      if (e2) {
+        console.error(e2);
+      }
     }
 
-    // update cost
-    const total = values.parts.reduce((s, p) => s + p.price * p.quantity, 0) + +values.laborCost;
+    // 3) atualiza o custo
+    const total =
+      values.parts.reduce((sum, p) => sum + p.price * p.quantity, 0) +
+      +values.laborCost;
     await supabase
       .from("maintenance_records")
       .update({ cost: total })
       .eq("id", recordId);
 
     router.push("/manutencoes");
-  };
+  }
 
   if (loading) return <LoadingState message="Carregando veículos…" />;
 
@@ -109,8 +131,8 @@ export default function NewMaintenancePage() {
       <MaintenanceForm
         initial={initial}
         vehicles={vehicles}
-        selectedVehicle={initial.vehicleId}
-        onVehicleChange={(id) => (initial.vehicleId = id)}
+        selectedVehicle={selectedVehicle}
+        onVehicleChange={setSelectedVehicle}
         onSubmit={handleSubmit}
         submitting={submitting}
       />
