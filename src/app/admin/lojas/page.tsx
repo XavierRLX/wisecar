@@ -51,7 +51,7 @@ export default function AdminProvidersPage() {
             Gerenciar Lojas
           </h1>
           <button
-            onClick={() => router.push("/admin/lojas/novo")}
+            onClick={() => router.push("/lojas/novo")}
             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
           >
             + Nova Loja

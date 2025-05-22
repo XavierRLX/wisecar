@@ -5,21 +5,20 @@ import type { Provider, Service } from "@/types";
 
 // busca com filtros de categoria e região
 export async function fetchProviders(filters?: {
-  categoryId?: number;
-  state?: string;
-  city?: string;
-  neighborhood?: string;
-  search?: string;
-}): Promise<Provider[]> {
-  let query = supabase
-    .from("service_providers")
-    .select(`
-      *,
-      provider_images(*),
-      services(service_images(*)),
-      service_provider_categories!inner(category:service_categories(name))
-    `);
-
+    categoryId?: number;
+    state?: string;
+    city?: string;
+    neighborhood?: string;
+    search?: string;
+  }): Promise<Provider[]> {
+    let query = supabase
+      .from("service_providers")
+      .select(`
+        *,
+        provider_images(*),
+        services(*, service_images(*)),
+        service_provider_categories!inner(category:service_categories(name))
+      `);
   if (filters?.categoryId) {
     query = query.eq("service_provider_categories.category_id", filters.categoryId);
   }
@@ -42,19 +41,20 @@ export async function fetchProviders(filters?: {
 }
 
 export async function fetchProviderById(id: string): Promise<Provider> {
-  const { data, error } = await supabase
-    .from("service_providers")
-    .select(`
-      *,
-      provider_images(*),
-      services(service_images(*)),
-      service_provider_categories!inner(category:service_categories(name))
-    `)
-    .eq("id", id)
-    .single();
-  if (error) throw new Error(error.message);
-  return data;
-}
+    const { data, error } = await supabase
+      .from("service_providers")
+      .select(`
+        *,
+        provider_images(*),
+        services(*, service_images(*)),
+        service_provider_categories!inner(category:service_categories(name))
+      `)
+      .eq("id", id)
+      .single();
+  
+    if (error) throw new Error(error.message);
+    return data;
+  }
 
 export async function submitProviderData(
   userId: string,
@@ -121,7 +121,7 @@ export async function submitServiceData(
   form: { name: string; details: string; price: number },
   files: File[]
 ): Promise<Service> {
-  // (permanece idêntico à versão anterior)
+  // insere o serviço
   const { data, error } = await supabase
     .from("services")
     .insert({ provider_id: providerId, ...form })
@@ -129,6 +129,7 @@ export async function submitServiceData(
     .single();
   if (error) throw new Error(error.message);
 
+  // upload das imagens do serviço
   await Promise.all(
     files.map(async (file) => {
       const url = await uploadImage("service-images", "services", data.id, file);
@@ -140,6 +141,7 @@ export async function submitServiceData(
     })
   );
 
+  // retorna o serviço completo com imagens
   const { data: full, error: fetchErr } = await supabase
     .from("services")
     .select("*, service_images(*)")
