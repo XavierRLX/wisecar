@@ -1,41 +1,18 @@
-// src/components/ProviderCard.tsx
-"use client";
+// components/ProviderCard.tsx
+import React from "react";
+import type { Provider } from "@/types";
+import Carousel from "./Carousel";
 
-import Image from "next/image";
-import { ServiceProvider } from "@/types";
-
-interface ProviderCardProps {
-  provider: ServiceProvider;
-  onClick?: () => void;
-}
-
-export default function ProviderCard({ provider, onClick }: ProviderCardProps) {
+export default function ProviderCard({ provider }: { provider: Provider }) {
   return (
-    <div
-      onClick={onClick}
-      className="bg-white rounded-lg shadow hover:shadow-md transition p-4 cursor-pointer"
-    >
-      {provider.images?.[0] ? (
-        <div className="w-full h-40 relative mb-3">
-          <Image
-            src={provider.images[0].image_url}
-            alt={provider.name}
-            fill
-            unoptimized
-            className="object-cover rounded-lg"
-          />
-        </div>
+    <div className="bg-white rounded-lg shadow p-4 cursor-pointer hover:shadow-lg transition">
+      {provider.provider_images?.length ? (
+        <Carousel images={provider.provider_images} />
       ) : (
-        <div className="w-full h-40 bg-gray-200 mb-3 rounded-lg" />
+        <div className="h-48 bg-gray-200 flex items-center justify-center">Sem imagem</div>
       )}
-
-      <h2 className="text-lg font-semibold">{provider.name}</h2>
-      {provider.description && (
-        <p className="text-sm text-gray-600 truncate my-1">
-          {provider.description}
-        </p>
-      )}
-      <p className="text-sm text-gray-500">{provider.address}</p>
+      <h3 className="mt-2 text-lg font-semibold">{provider.name}</h3>
+      <p className="text-sm text-gray-600">{provider.address}</p>
     </div>
   );
 }

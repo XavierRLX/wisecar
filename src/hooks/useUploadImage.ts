@@ -6,21 +6,6 @@ import { supabase } from "@/lib/supabase";
  * Retorna a URL pública ou null em caso de erro.
  */
 
-export async function uploadImage(
-  bucket: string,
-  path: string,
-  file: File
-): Promise<string | null> {
-  // ex: bucket = "service-provider-images", path = `providers/${providerId}/${file.name}`
-  const { error: upErr } = await supabase.storage.from(bucket).upload(path, file);
-  if (upErr) {
-    console.error("Erro no upload:", upErr.message);
-    return null;
-  }
-  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-  return data.publicUrl;
-}
-
 export async function uploadVehicleImage(
   vehicleId: string,
   file: File
@@ -60,4 +45,25 @@ export async function uploadVehicleImage(
   }
   
   return publicUrl;
+}
+
+export async function uploadImage(
+  bucket: string,
+  folder: string,
+  recordId: string,
+  file: File
+): Promise<string | null> {
+  const filePath = `${bucket}/${folder}/${recordId}/${file.name}`;
+  const { error: uploadError } = await supabase.storage
+    .from(bucket)
+    .upload(filePath, file);
+  if (uploadError) {
+    console.error("Upload falhou:", uploadError.message);
+    return null;
+  }
+
+  const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
+  if (!data.publicUrl) return null;
+
+  return data.publicUrl;
 }

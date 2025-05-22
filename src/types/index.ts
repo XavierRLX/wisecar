@@ -114,35 +114,11 @@ export interface Profile {
   created_at?: string;
 }
 
-
-export interface ServiceProvider {
+export interface ProviderImage {
   id: string;
-  profile_id: string;
-  name: string;
-  address?: string;
-  phone?: string;
-  social_media?: string;
-  description?: string;
-  created_at?: string;
-  images?: ServiceProviderImage[];
-  services?: Service[];
-}
-
-export interface ServiceProviderImage {
-  id: string;
-  service_provider_id: string;
+  provider_id: string;
   image_url: string;
   created_at?: string;
-}
-
-export interface Service {
-  id: string;
-  service_provider_id: string;
-  name: string;
-  description?: string;
-  price?: number;
-  created_at?: string;
-  images?: ServiceImage[];
 }
 
 export interface ServiceImage {
@@ -150,4 +126,25 @@ export interface ServiceImage {
   service_id: string;
   image_url: string;
   created_at?: string;
+}
+
+export interface Service {
+  id: string;
+  provider_id: string;
+  name: string;
+  details?: string;
+  price?: number;
+  created_at?: string;
+  service_images?: ServiceImage[];
+}
+
+export interface Provider {
+  id: string;
+  user_id: string;
+  name: string;
+  address?: string;
+  description?: string;
+  created_at?: string;
+  provider_images?: ProviderImage[];
+  services?: Service[];
 }
