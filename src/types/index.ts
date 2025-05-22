@@ -136,6 +136,18 @@ export interface Service {
   price?: number;
   created_at?: string;
   service_images?: ServiceImage[];
+  categories?: ServiceCategory[];
+}
+
+export interface ServiceCategory {
+  id: number;
+  name: string;
+}
+
+export interface ProviderCategory {
+  provider_id: string;
+  category_id: number;
+  category: ServiceCategory;
 }
 
 export interface Provider {
@@ -144,7 +156,14 @@ export interface Provider {
   name: string;
   address?: string;
   description?: string;
+  phone?: string;
+  social_media?: Record<string, string>;
+  state?: string;
+  city?: string;
+  neighborhood?: string;
   created_at?: string;
   provider_images?: ProviderImage[];
   services?: Service[];
+  categories?: ServiceCategory[];
+  provider_categories?: ProviderCategory[];
 }
