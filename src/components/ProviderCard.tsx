@@ -1,15 +1,22 @@
-"use client";
+// components/ProviderCard.tsx
+'use client';
 
-import React from "react";
-import type { Provider } from "@/types";
-import Carousel from "./Carousel";
+import React from 'react';
+import type { Provider } from '@/types';
+import Carousel from './Carousel';
 
 export default function ProviderCard({ provider }: { provider: Provider }) {
   return (
     <div className="flex flex-col bg-white rounded-xl shadow p-4 hover:shadow-lg transition">
-      {/* Imagem/Carrossel */}
+      {/* Logo ou Galeria */}
       <div className="h-48 w-full overflow-hidden rounded-lg">
-        {provider.provider_images?.length ? (
+        {provider.logo_url ? (
+          <img
+            src={provider.logo_url}
+            alt={`Logo de ${provider.name}`}
+            className="h-full w-full object-contain"
+          />
+        ) : provider.provider_images?.length ? (
           <Carousel images={provider.provider_images} />
         ) : (
           <div className="w-full h-full bg-gray-200 flex items-center justify-center">
@@ -50,6 +57,7 @@ export default function ProviderCard({ provider }: { provider: Provider }) {
       {/* Ação */}
       <button
         className="mt-4 w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+        onClick={() => {}}
       >
         Ver detalhes
       </button>

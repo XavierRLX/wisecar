@@ -1,14 +1,16 @@
 // app/lojas/[id]/page.tsx
-"use client";
+'use client';
 
-import { useParams } from "next/navigation";
-import { useProvider } from "@/hooks/useProvider";
-import LoadingState from "@/components/LoadingState";
-import ServiceCard from "@/components/ServiceCard";
-import Carousel from "@/components/Carousel";
-import { Phone, MapPin, Globe, Instagram, Facebook } from "lucide-react";
+import React from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { useProvider } from '@/hooks/useProvider';
+import LoadingState from '@/components/LoadingState';
+import Carousel from '@/components/Carousel';
+import ServiceCard from '@/components/ServiceCard';
+import { Phone, MapPin, Globe, Instagram, Facebook } from 'lucide-react';
 
 export default function LojaDetailPage() {
+  const router = useRouter();
   const { id: rawId } = useParams();
   const id = Array.isArray(rawId) ? rawId[0]! : rawId!;
   const { provider, loading, error } = useProvider(id);
@@ -17,8 +19,7 @@ export default function LojaDetailPage() {
   if (error || !provider)
     return <p className="text-red-500 text-center mt-8">Erro ao carregar loja</p>;
 
-  // garante que não sejam undefined
-  const images = provider.provider_images ?? [];
+  const gallery = provider.provider_images ?? [];
   const categories = provider.provider_categories ?? [];
   const services = provider.services ?? [];
 
@@ -26,9 +27,7 @@ export default function LojaDetailPage() {
     <div className="max-w-5xl mx-auto p-6 space-y-8">
       {/* HEADER */}
       <header className="space-y-3">
-        <h1 className="text-4xl font-extrabold text-gray-900">
-          {provider.name}
-        </h1>
+        <h1 className="text-4xl font-extrabold text-gray-900">{provider.name}</h1>
         <div className="flex flex-wrap gap-4 text-gray-600">
           {provider.address && (
             <span className="flex items-center gap-1">
@@ -73,10 +72,10 @@ export default function LojaDetailPage() {
         </div>
       </header>
 
-      {/* CAROUSEL */}
-      {images.length > 0 && (
+      {/* CAROUSEL DE IMAGENS */}
+      {gallery.length > 0 && (
         <div className="rounded-lg overflow-hidden shadow">
-          <Carousel images={images} />
+          <Carousel images={gallery} />
         </div>
       )}
 
@@ -105,18 +104,26 @@ export default function LojaDetailPage() {
         </section>
       )}
 
-      {/* SERVIÇOS */}
-      <section className="space-y-4">
+      {/* SERVIÇOS E ITENS */}
+      <section className="space-y-8">
         <h2 className="text-2xl font-semibold">Serviços</h2>
-        {services.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {services.map((s) => (
-              <ServiceCard key={s.id} service={s} />
-            ))}
-          </div>
-        ) : (
+        {services.length === 0 && (
           <p className="text-gray-500">Nenhum serviço cadastrado.</p>
         )}
+        {services.map((s) => (
+          <div key={s.id} className="space-y-4">
+            <h3 className="text-xl font-semibold">{s.name}</h3>
+            {s.service_items && s.service_items.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {s.service_items.map((item) => (
+                  <ServiceCard key={item.id} item={item} />
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500">Nenhum item para este serviço.</p>
+            )}
+          </div>
+        ))}
       </section>
     </div>
   );

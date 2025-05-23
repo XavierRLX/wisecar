@@ -1,20 +1,19 @@
-"use client";
+// app/lojas/page.tsx
+'use client';
 
-import React from "react";
-import { useRouter } from "next/navigation";
-import { useProviders } from "@/hooks/useProviders";
-import LoadingState from "@/components/LoadingState";
-import EmptyState from "@/components/EmptyState";
-import ProviderCard from "@/components/ProviderCard";
+import React from 'react';
+import { useRouter } from 'next/navigation';
+import { useProviders } from '@/hooks/useProviders';
+import LoadingState from '@/components/LoadingState';
+import EmptyState from '@/components/EmptyState';
+import ProviderCard from '@/components/ProviderCard';
 
 export default function LojasPage() {
   const router = useRouter();
   const { providers, loading, error } = useProviders();
 
-  if (loading) 
-    return <LoadingState message="Carregando lojas..." />;
-  if (error) 
-    return <p className="text-red-500 text-center">{error}</p>;
+  if (loading) return <LoadingState message="Carregando lojas..." />;
+  if (error) return <p className="text-red-500 text-center">{error}</p>;
   if (providers.length === 0) {
     return (
       <EmptyState

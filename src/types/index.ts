@@ -121,24 +121,6 @@ export interface ProviderImage {
   created_at?: string;
 }
 
-export interface ServiceImage {
-  id: string;
-  service_id: string;
-  image_url: string;
-  created_at?: string;
-}
-
-export interface Service {
-  id: string;
-  provider_id: string;
-  name: string;
-  details?: string;
-  price?: number;
-  created_at?: string;
-  service_images?: ServiceImage[];
-  categories?: ServiceCategory[];
-}
-
 export interface ServiceCategory {
   id: number;
   name: string;
@@ -148,6 +130,32 @@ export interface ProviderCategory {
   provider_id: string;
   category_id: number;
   category: ServiceCategory;
+}
+
+export interface ServiceItemImage {
+  id: string;
+  service_item_id: string;
+  image_url: string;
+  created_at?: string;
+}
+
+export interface ServiceItem {
+  id: string;
+  service_id: string;
+  name: string;
+  details?: string;
+  price?: number;
+  created_at?: string;
+  item_images?: ServiceItemImage[];
+}
+
+export interface Service {
+  id: string;
+  provider_id: string;
+  category_id?: number;
+  name: string;
+  created_at?: string;
+  service_items?: ServiceItem[];
 }
 
 export interface Provider {
@@ -161,9 +169,9 @@ export interface Provider {
   state?: string;
   city?: string;
   neighborhood?: string;
+  logo_url?: string;
   created_at?: string;
   provider_images?: ProviderImage[];
   services?: Service[];
-  categories?: ServiceCategory[];
   provider_categories?: ProviderCategory[];
 }

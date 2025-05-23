@@ -48,12 +48,15 @@ export async function uploadVehicleImage(
 }
 
 export async function uploadImage(
-  bucket: string,
-  folder: string,
+  bucket: string,       // ex: "provider-images" ou "service-item-images"
+  folder: string,       // ex: "providers-logo", "gallery", "service-items"
   recordId: string,
   file: File
 ): Promise<string | null> {
-  const filePath = `${bucket}/${folder}/${recordId}/${file.name}`;
+  // monta só a parte da pasta + id + nome do arquivo
+  const filePath = `${folder}/${recordId}/${file.name}`;
+
+  // faz o upload
   const { error: uploadError } = await supabase.storage
     .from(bucket)
     .upload(filePath, file);
@@ -62,8 +65,8 @@ export async function uploadImage(
     return null;
   }
 
+  // gera a URL pública
   const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
-  if (!data.publicUrl) return null;
-
-  return data.publicUrl;
+  return data.publicUrl || null;
 }
+

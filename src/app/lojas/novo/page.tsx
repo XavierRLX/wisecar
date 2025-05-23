@@ -1,14 +1,15 @@
-"use client";
+// app/lojas/novo/page.tsx
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import AuthGuard from "@/components/AdminGuard";
-import EnsureProfile from "@/components/EnsureProfile";
-import { supabase } from "@/lib/supabase";
-import { submitProviderData, submitServiceData } from "@/lib/providerService";
-import type { ServiceCategory } from "@/types";
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import AuthGuard from '@/components/AdminGuard';
+import EnsureProfile from '@/components/EnsureProfile';
+import { supabase } from '@/lib/supabase';
+import { submitProviderData, submitServiceData } from '@/lib/providerService';
+import type { ServiceCategory } from '@/types';
 
-interface ServiceForm {
+interface ItemForm {
   name: string;
   details: string;
   price: string;
@@ -16,101 +17,138 @@ interface ServiceForm {
   previewUrls: string[];
 }
 
+interface ServiceForm {
+  name: string;
+  categoryId: number;
+  items: ItemForm[];
+}
+
 export default function NewProviderPage() {
   const router = useRouter();
 
-  // --- Provider fields ---
-  const [name, setName] = useState("");
-  const [address, setAddress] = useState("");
-  const [description, setDescription] = useState("");
-  const [phone, setPhone] = useState("");
-  const [socialMedia, setSocialMedia] = useState({ instagram: "", facebook: "" });
-  const [state, setState] = useState("");
-  const [city, setCity] = useState("");
-  const [neighborhood, setNeighborhood] = useState("");
+  // --- Loja ---
+  const [name, setName] = useState('');
+  const [address, setAddress] = useState('');
+  const [description, setDescription] = useState('');
+  const [phone, setPhone] = useState('');
+  const [socialMedia, setSocialMedia] = useState({ instagram: '', facebook: '' });
+  const [state, setState] = useState('');
+  const [city, setCity] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
 
-  // --- Categories (provider) ---
+  // logo + galeria
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState('');
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
+  const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
+
+  // categorias da loja
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
 
-  // --- Provider images ---
-  const [providerFiles, setProviderFiles] = useState<File[]>([]);
-  const [providerPreviews, setProviderPreviews] = useState<string[]>([]);
-
-  // --- Dynamic Services ---
+  // serviços dinâmicos
   const [services, setServices] = useState<ServiceForm[]>([]);
 
-  // --- Loading ---
   const [loading, setLoading] = useState(false);
 
-  // Carregar categorias
+  // carrega categorias
   useEffect(() => {
-    supabase.from("service_categories").select("id,name").then(({ data }) => {
-      if (data) setCategories(data);
-    });
+    supabase
+      .from('service_categories')
+      .select('id,name')
+      .then(({ data }) => {
+        if (data) setCategories(data);
+      });
   }, []);
 
-  // Preview imagens da loja
+  // preview logo
   useEffect(() => {
-    const urls = providerFiles.map((f) => URL.createObjectURL(f));
-    setProviderPreviews(urls);
-    return () => urls.forEach((u) => URL.revokeObjectURL(u));
-  }, [providerFiles]);
+    if (!logoFile) return;
+    const url = URL.createObjectURL(logoFile);
+    setLogoPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [logoFile]);
 
-  // Adiciona um novo serviço
+  // preview galeria
+  useEffect(() => {
+    const urls = galleryFiles.map((f) => URL.createObjectURL(f));
+    setGalleryPreviews(urls);
+    return () => urls.forEach((u) => URL.revokeObjectURL(u));
+  }, [galleryFiles]);
+
+  // adiciona serviço
   const addService = () => {
     setServices((prev) => [
       ...prev,
-      { name: "", details: "", price: "", files: [], previewUrls: [] },
+      { name: '', categoryId: categories[0]?.id || 0, items: [] },
     ]);
   };
 
-  // Remove um serviço
-  const removeService = (idx: number) => {
-    setServices((prev) => prev.filter((_, i) => i !== idx));
+  // remove serviço
+  const removeService = (sIdx: number) => {
+    setServices((prev) => prev.filter((_, i) => i !== sIdx));
   };
 
-  // Atualiza campos de texto do serviço
-  const handleServiceChange = (
-    idx: number,
-    field: keyof Omit<ServiceForm, 'files' | 'previewUrls'>,
-    value: string
+  // atualiza campo do serviço
+  const handleServiceField = (
+    sIdx: number,
+    field: keyof Omit<ServiceForm, 'items'>,
+    value: any
   ) => {
     setServices((prev) => {
       const copy = [...prev];
-      copy[idx] = { ...copy[idx], [field]: value };
+      (copy[sIdx] as any)[field] = value;
       return copy;
     });
   };
 
-  // Upload e preview para arquivos de serviço
-  const handleServiceFileChange = (
-    idx: number,
-    e: React.ChangeEvent<HTMLInputElement>
+  // adiciona item
+  const addItem = (sIdx: number) => {
+    setServices((prev) => {
+      const copy = [...prev];
+      copy[sIdx].items.push({ name: '', details: '', price: '', files: [], previewUrls: [] });
+      return copy;
+    });
+  };
+
+  // remove item
+  const removeItem = (sIdx: number, iIdx: number) => {
+    setServices((prev) => {
+      const copy = [...prev];
+      copy[sIdx].items = copy[sIdx].items.filter((_, i) => i !== iIdx);
+      return copy;
+    });
+  };
+
+  // atualiza campo do item
+  const handleItemField = (
+    sIdx: number,
+    iIdx: number,
+    field: keyof ItemForm,
+    value: any
   ) => {
-    if (!e.target.files) return;
-    const files = Array.from(e.target.files).slice(0, 5);
-    const previews = files.map((f) => URL.createObjectURL(f));
     setServices((prev) => {
       const copy = [...prev];
-      copy[idx] = { ...copy[idx], files, previewUrls: previews };
+      (copy[sIdx].items[iIdx] as any)[field] = value;
       return copy;
     });
   };
 
-  // Remove imagem de um serviço
-  const handleRemoveServiceFile = (sIdx: number, fIdx: number) => {
+  // troca arquivos do item
+  const handleItemFiles = (
+    sIdx: number,
+    iIdx: number,
+    files: File[]
+  ) => {
     setServices((prev) => {
       const copy = [...prev];
-      const svc = { ...copy[sIdx] };
-      svc.files = svc.files.filter((_, i) => i !== fIdx);
-      svc.previewUrls = svc.previewUrls.filter((_, i) => i !== fIdx);
-      copy[sIdx] = svc;
+      copy[sIdx].items[iIdx].files = files;
+      copy[sIdx].items[iIdx].previewUrls = files.map((f) => URL.createObjectURL(f));
       return copy;
     });
   };
 
-  // Submissão geral: Loja + Serviços
+  // envio
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -118,9 +156,9 @@ export default function NewProviderPage() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
+      if (!user) throw new Error('Usuário não autenticado');
 
-      // Cria a loja com categorias e imagens
+      // cria loja
       const provider = await submitProviderData(
         user.id,
         {
@@ -134,24 +172,30 @@ export default function NewProviderPage() {
           neighborhood,
           categoryIds: selectedCategories,
         },
-        providerFiles
+        logoFile,
+        galleryFiles
       );
 
-      // Cria cada serviço associado
+      // cria serviços + itens
       await Promise.all(
-        services.map((s) =>
-          submitServiceData(
-            provider.id,
-            { name: s.name, details: s.details, price: parseFloat(s.price) },
-            s.files
-          )
+        services.map((svc) =>
+          submitServiceData(provider.id, {
+            name: svc.name,
+            categoryId: svc.categoryId,
+            items: svc.items.map((it) => ({
+              name: it.name,
+              details: it.details,
+              price: parseFloat(it.price),
+              files: it.files,
+            })),
+          })
         )
       );
 
-      router.push("/lojas");
+      router.push('/lojas');
     } catch (err: any) {
       console.error(err);
-      alert("Erro ao criar loja e serviços: " + err.message);
+      alert('Erro ao criar loja e serviços: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -163,6 +207,19 @@ export default function NewProviderPage() {
       <div className="max-w-4xl mx-auto p-6 bg-white shadow rounded space-y-6">
         <h1 className="text-2xl font-bold">Cadastrar Nova Loja e Serviços</h1>
         <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Logo da Loja */}
+          <div>
+            <label className="block font-medium mb-1">Logo da Loja</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+            />
+            {logoPreview && (
+              <img src={logoPreview} alt="Logo preview" className="h-24 mt-2" />
+            )}
+          </div>
+
           {/* Dados da Loja */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input
@@ -180,7 +237,6 @@ export default function NewProviderPage() {
               className="w-full border rounded p-2"
             />
           </div>
-
           <input
             type="text"
             placeholder="Endereço"
@@ -188,7 +244,6 @@ export default function NewProviderPage() {
             onChange={(e) => setAddress(e.target.value)}
             className="w-full border rounded p-2"
           />
-
           <textarea
             placeholder="Descrição"
             value={description}
@@ -243,32 +298,33 @@ export default function NewProviderPage() {
             />
           </div>
 
-          {/* Categorias de Serviço (Provider) */}
+          {/* Categorias da Loja */}
           <div>
-                <label className="block font-medium mb-2">Categorias</label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {categories.map((c) => (
-                    <label key={c.id} className="inline-flex items-center space-x-2">
-                        <input
-                        type="checkbox"
-                        value={c.id}
-                        checked={selectedCategories.includes(c.id)}
-                        onChange={(e) => {
-                            const id = c.id;
-                            setSelectedCategories((prev) =>
-                            e.target.checked
-                                ? [...prev, id]      // adiciona
-                                : prev.filter((x) => x !== id) // remove
-                            );
-                        }}
-                        className="form-checkbox h-4 w-4 text-blue-600"
-                        />
-                        <span className="text-gray-700">{c.name}</span>
-                    </label>
-                    ))}
-                </div>
-                </div>
-          {/* Imagens da Loja */}
+            <label className="block font-medium mb-2">Categorias</label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {categories.map((c) => (
+                <label key={c.id} className="inline-flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    value={c.id}
+                    checked={selectedCategories.includes(c.id)}
+                    onChange={(e) => {
+                      const id = c.id;
+                      setSelectedCategories((prev) =>
+                        e.target.checked
+                          ? [...prev, id]
+                          : prev.filter((x) => x !== id)
+                      );
+                    }}
+                    className="form-checkbox h-4 w-4 text-blue-600"
+                  />
+                  <span className="text-gray-700">{c.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Galeria Loja */}
           <div>
             <label className="block font-medium mb-1">Imagens da Loja (máx.5)</label>
             <input
@@ -276,20 +332,19 @@ export default function NewProviderPage() {
               accept="image/*"
               multiple
               onChange={(e) =>
-                setProviderFiles(Array.from(e.target.files || []).slice(0, 5))
+                setGalleryFiles(Array.from(e.target.files || []).slice(0, 5))
               }
               className="block w-full"
             />
-            {providerPreviews.length > 0 && (
+            {galleryPreviews.length > 0 && (
               <div className="grid grid-cols-2 gap-4 mt-2">
-                {providerPreviews.map((url, i) => (
-                  <div key={i} className="relative">
-                    <img
-                      src={url}
-                      alt={`Preview loja ${i + 1}`}
-                      className="h-24 w-full object-cover rounded" 
-                    />
-                  </div>
+                {galleryPreviews.map((url, i) => (
+                  <img
+                    key={i}
+                    src={url}
+                    alt={`Preview loja ${i + 1}`}
+                    className="h-24 w-full object-cover rounded"
+                  />
                 ))}
               </div>
             )}
@@ -308,71 +363,145 @@ export default function NewProviderPage() {
               </button>
             </div>
 
-            {services.map((svc, idx) => (
-              <div key={idx} className="border rounded p-4 mb-4 space-y-4">
+            {services.map((svc, sIdx) => (
+              <div key={sIdx} className="border rounded p-4 mb-4 space-y-4">
                 <div className="flex justify-between items-center">
-                  <h3 className="font-medium">Serviço {idx + 1}</h3>
+                  <h3 className="font-medium">Serviço {sIdx + 1}</h3>
                   <button
                     type="button"
-                    onClick={() => removeService(idx)}
+                    onClick={() => removeService(sIdx)}
                     className="text-red-600"
                   >
                     Remover
                   </button>
                 </div>
 
+                {/* Nome e Categoria */}
                 <input
                   type="text"
                   placeholder="Nome do Serviço"
                   value={svc.name}
-                  onChange={(e) => handleServiceChange(idx, 'name', e.target.value)}
+                  onChange={(e) =>
+                    handleServiceField(sIdx, 'name', e.target.value)
+                  }
                   className="w-full border rounded p-2"
                 />
-                <textarea
-                  placeholder="Detalhes"
-                  value={svc.details}
-                  onChange={(e) => handleServiceChange(idx, 'details', e.target.value)}
+                <select
+                  value={svc.categoryId}
+                  onChange={(e) =>
+                    handleServiceField(sIdx, 'categoryId', parseInt(e.target.value))
+                  }
                   className="w-full border rounded p-2"
-                />
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="Preço"
-                  value={svc.price}
-                  onChange={(e) => handleServiceChange(idx, 'price', e.target.value)}
-                  className="w-full border rounded p-2"
-                />
+                >
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
 
+                {/* Itens */}
                 <div>
-                  <label className="block font-medium mb-1">Imagens (máx.5)</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={(e) => handleServiceFileChange(idx, e)}
-                    className="block w-full"
-                  />
-                  {svc.previewUrls.length > 0 && (
-                    <div className="grid grid-cols-2 gap-4 mt-2">
-                      {svc.previewUrls.map((url, j) => (
-                        <div key={j} className="relative">
-                          <img
-                            src={url}
-                            alt={`Preview serviço ${idx + 1} img ${j + 1}`}
-                            className="h-24 w-full object-cover rounded"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveServiceFile(idx, j)}
-                            className="absolute top-1 right-1 bg-black text-white rounded-full p-1"
-                            aria-label="Remover imagem do serviço"
-                          >
-                            X
-                          </button>
-                        </div>
-                      ))}
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="font-semibold">Itens</h4>
+                    <button
+                      type="button"
+                      onClick={() => addItem(sIdx)}
+                      className="text-sm text-blue-600"
+                    >
+                      + Item
+                    </button>
+                  </div>
+
+                  {svc.items.map((item, iIdx) => (
+                    <div
+                      key={iIdx}
+                      className="mt-2 p-2 border rounded space-y-2"
+                    >
+                      <div className="flex justify-between items-center">
+                        <span>Item {iIdx + 1}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeItem(sIdx, iIdx)}
+                          className="text-red-600"
+                        >
+                          X
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Nome do item"
+                        value={item.name}
+                        onChange={(e) =>
+                          handleItemField(sIdx, iIdx, 'name', e.target.value)
+                        }
+                        className="w-full border rounded p-2"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Detalhes do item"
+                        value={item.details}
+                        onChange={(e) =>
+                          handleItemField(sIdx, iIdx, 'details', e.target.value)
+                        }
+                        className="w-full border rounded p-2"
+                      />
+                      <input
+                        type="number"
+                        step="0.01"
+                        placeholder="Preço do item"
+                        value={item.price}
+                        onChange={(e) =>
+                          handleItemField(sIdx, iIdx, 'price', e.target.value)
+                        }
+                        className="w-full border rounded p-2"
+                      />
+
+                      <div>
+                        <label className="block mb-1">Imagens do Item</label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={(e) =>
+                            handleItemFiles(
+                              sIdx,
+                              iIdx,
+                              Array.from(e.target.files || []).slice(0, 5)
+                            )
+                          }
+                          className="block w-full"
+                        />
+                        {item.previewUrls.length > 0 && (
+                          <div className="flex gap-2 mt-2">
+                            {item.previewUrls.map((url, fIdx) => (
+                              <div key={fIdx} className="relative">
+                                <img
+                                  src={url}
+                                  alt={`Item ${iIdx + 1} img ${fIdx + 1}`}
+                                  className="h-16 w-16 object-cover rounded"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleItemField(
+                                      sIdx,
+                                      iIdx,
+                                      'files',
+                                      item.files.filter((_, i) => i !== fIdx)
+                                    )
+                                  }
+                                  className="absolute top-0 right-0 bg-black text-white rounded-full text-xs p-1"
+                                >
+                                  X
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
+                  ))}
                 </div>
               </div>
             ))}
@@ -383,7 +512,7 @@ export default function NewProviderPage() {
             disabled={loading}
             className="w-full py-3 bg-blue-600 text-white rounded"
           >
-            {loading ? "Salvando..." : "Criar Loja e Serviços"}
+            {loading ? 'Salvando...' : 'Criar Loja e Serviços'}
           </button>
         </form>
       </div>

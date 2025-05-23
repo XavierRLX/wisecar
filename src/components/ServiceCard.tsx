@@ -1,16 +1,20 @@
-"use client";
+// components/ServiceCard.tsx
+'use client';
 
-import React from "react";
-import type { Service } from "@/types";
+import React from 'react';
+import type { ServiceItem } from '@/types';
 
-export default function ServiceCard({ service }: { service: Service }) {
+export default function ServiceCard({ item }: { item: ServiceItem }) {
+  // pega primeira imagem do item, ou fallback
+  const imgUrl = item.item_images?.[0]?.image_url;
+
   return (
     <div className="flex flex-col bg-white rounded-lg shadow p-4 hover:shadow-lg transition">
-      {/* Imagem do serviço */}
-      {service.service_images?.[0] ? (
+      {/* Imagem do Item */}
+      {imgUrl ? (
         <img
-          src={service.service_images[0].image_url}
-          alt={`Foto do serviço ${service.name}`}
+          src={imgUrl}
+          alt={`Foto do item ${item.name}`}
           className="h-40 w-full object-cover rounded-md mb-4"
         />
       ) : (
@@ -22,20 +26,20 @@ export default function ServiceCard({ service }: { service: Service }) {
       {/* Nome e preço */}
       <div className="flex justify-between items-center mb-2">
         <h3 className="text-lg font-semibold text-gray-800 truncate">
-          {service.name}
+          {item.name}
         </h3>
         <span className="text-green-600 font-bold">
-          {service.price?.toLocaleString("pt-BR", {
-            style: "currency",
-            currency: "BRL",
+          {item.price?.toLocaleString('pt-BR', {
+            style: 'currency',
+            currency: 'BRL',
           })}
         </span>
       </div>
 
       {/* Detalhes */}
-      {service.details && (
+      {item.details && (
         <p className="text-gray-600 text-sm line-clamp-3">
-          {service.details}
+          {item.details}
         </p>
       )}
     </div>
