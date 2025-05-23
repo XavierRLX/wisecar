@@ -1,4 +1,3 @@
-// app/lojas/page.tsx
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -29,7 +28,7 @@ export default function LojasPage() {
   }, [providers, searchTerm]);
 
   if (loading) return <LoadingState message="Carregando lojas..." />;
-  if (error) return <p className="text-red-500 text-center">{error}</p>;
+  if (error) return <p className="text-red-600">{error}</p>;
   if (providers.length === 0) {
     return (
       <EmptyState
@@ -42,41 +41,42 @@ export default function LojasPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
       {/* Cabeçalho + Busca */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <h1 className="text-3xl font-extrabold text-gray-900">
-          Nossas Lojas
-        </h1>
-        <div className="w-full sm:w-auto relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <h1 className="text-3xl font-bold text-gray-900">Nossas Lojas</h1>
+        <div className="relative w-full md:w-64">
+          <Search className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             placeholder="Buscar lojas ou serviços..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
       </div>
 
-      {/* Caso nenhuma loja/serviço encontre */}
+      {/* Resultado da busca */}
       {filtered.length === 0 ? (
-        <div className="text-center py-16">
-          <p className="text-gray-500">
-            Nenhuma loja ou serviço encontrado para “
-            <span className="font-medium text-gray-700">{searchTerm}</span>
-            ”
+        <div className="text-center text-gray-600 text-lg">
+          <p>
+            Nenhuma loja ou serviço encontrado para&nbsp;
+            <span className="font-semibold text-indigo-600">“{searchTerm}”</span>
           </p>
         </div>
       ) : (
-        /* Grid de cards */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filtered.map((p) => (
             <div
               key={p.id}
-              className="cursor-pointer transform hover:scale-[1.02] transition-transform"
               onClick={() => router.push(`/lojas/${p.id}`)}
+              className="cursor-pointer"
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') router.push(`/lojas/${p.id}`);
+              }}
             >
               <ProviderCard provider={p} />
             </div>
