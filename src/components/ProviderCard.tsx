@@ -1,66 +1,54 @@
-// components/ProviderCard.tsx
 'use client';
 
 import React from 'react';
 import type { Provider } from '@/types';
 import Carousel from './Carousel';
+import { ImageIcon, MapPin } from 'lucide-react'; // use algum ícone de placeholder
 
 export default function ProviderCard({ provider }: { provider: Provider }) {
   return (
-    <div className="flex flex-col bg-white rounded-xl shadow p-4 hover:shadow-lg transition">
+    <div className="flex flex-col bg-white rounded-xl shadow hover:shadow-xl transition overflow-hidden">
       {/* Logo ou Galeria */}
-      <div className="h-48 w-full overflow-hidden rounded-lg">
+      <div className="h-40 w-full bg-gray-50 flex items-center justify-center overflow-hidden">
         {provider.logo_url ? (
           <img
             src={provider.logo_url}
             alt={`Logo de ${provider.name}`}
-            className="h-full w-full object-contain"
+            className="h-full object-contain"
           />
         ) : provider.provider_images?.length ? (
           <Carousel images={provider.provider_images} />
         ) : (
-          <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-            <span className="text-gray-500">Sem imagem</span>
+          <div className="flex flex-col items-center text-gray-400">
+            <ImageIcon className="w-8 h-8 mb-1" />
+            <span>Sem imagem</span>
           </div>
         )}
       </div>
 
       {/* Conteúdo */}
-      <div className="mt-4 flex-1 flex flex-col">
-        <h3 className="text-xl font-semibold text-gray-900 truncate">
+      <div className="p-5 flex-1 flex flex-col">
+        <h3 className="text-xl font-semibold text-gray-900 truncate mb-2">
           {provider.name}
         </h3>
         {provider.address && (
-          <p className="text-gray-600 text-sm mt-1 truncate">
-            📍 {provider.address}
-          </p>
-        )}
-        {provider.phone && (
-          <p className="text-gray-600 text-sm mt-1 truncate">
-            📞 {provider.phone}
+          <p className="flex items-center text-gray-600 text-sm mb-3">
+            <MapPin className="w-4 h-4 mr-2 text-blue-500" /> {provider.address}
           </p>
         )}
 
         {/* Categorias */}
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-auto flex flex-wrap gap-2">
           {provider.provider_categories?.map((pc) => (
             <span
               key={pc.category_id}
-              className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full"
+              className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full"
             >
               {pc.category.name}
             </span>
           ))}
         </div>
       </div>
-
-      {/* Ação */}
-      <button
-        className="mt-4 w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-        onClick={() => {}}
-      >
-        Ver detalhes
-      </button>
     </div>
   );
 }

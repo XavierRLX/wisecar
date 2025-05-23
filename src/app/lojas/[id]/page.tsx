@@ -22,13 +22,11 @@ export default function LojaDetailPage() {
   const services = provider.services ?? [];
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-8">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-10">
       {/* HEADER */}
-      <header className="space-y-3">
-        <h1 className="text-4xl font-extrabold text-gray-900">
-          {provider.name}
-        </h1>
-        <div className="flex flex-wrap gap-4 text-gray-600">
+      <header className="space-y-4">
+        <h1 className="text-4xl font-bold text-gray-900">{provider.name}</h1>
+        <div className="flex flex-wrap gap-6 text-gray-600 text-sm">
           {provider.address && (
             <span className="flex items-center gap-1">
               <MapPin className="w-5 h-5 text-blue-500" /> {provider.address}
@@ -72,30 +70,30 @@ export default function LojaDetailPage() {
         </div>
       </header>
 
-      {/* CAROUSEL DE IMAGENS */}
+      {/* CARROSSEL */}
       {gallery.length > 0 && (
-        <div className="rounded-lg overflow-hidden shadow">
+        <div className="rounded-lg overflow-hidden shadow-lg">
           <Carousel images={gallery} />
         </div>
       )}
 
       {/* SOBRE */}
       {provider.description && (
-        <section className="bg-gray-50 p-4 rounded-lg">
+        <section className="bg-gray-50 p-6 rounded-lg shadow">
           <h2 className="text-2xl font-semibold mb-2">Sobre</h2>
-          <p className="text-gray-700">{provider.description}</p>
+          <p className="text-gray-700 leading-relaxed">{provider.description}</p>
         </section>
       )}
 
       {/* CATEGORIAS */}
       {categories.length > 0 && (
         <section>
-          <h2 className="text-2xl font-semibold mb-2">Categorias</h2>
-          <div className="flex flex-wrap gap-2">
+          <h2 className="text-2xl font-semibold mb-3">Categorias</h2>
+          <div className="flex flex-wrap gap-3">
             {categories.map((pc) => (
               <span
                 key={pc.category_id}
-                className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
+                className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
               >
                 {pc.category.name}
               </span>
@@ -110,20 +108,22 @@ export default function LojaDetailPage() {
         {services.length === 0 && (
           <p className="text-gray-500">Nenhum serviço cadastrado.</p>
         )}
-        {services.map((s) => (
-          <div key={s.id} className="space-y-4">
-            <h3 className="text-xl font-semibold">{s.name}</h3>
-            {s.service_items && s.service_items.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {s.service_items.map((item) => (
-                  <ServiceCard key={item.id} item={item} />
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500">Nenhum item para este serviço.</p>
-            )}
-          </div>
-        ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {services.map((s) => (
+            <div key={s.id} className="space-y-4">
+              <h3 className="text-xl font-medium">{s.name}</h3>
+              {s.service_items && s.service_items.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {s.service_items.map((item) => (
+                    <ServiceCard key={item.id} item={item} />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">Nenhum item para este serviço.</p>
+              )}
+            </div>
+          ))}
+        </div>
       </section>
     </div>
   );
