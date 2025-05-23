@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
@@ -27,7 +27,9 @@ export default function ProfilePage() {
 
   useEffect(() => {
     async function fetchProfile() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return router.push("/login");
 
       const { data, error } = await supabase
@@ -36,8 +38,9 @@ export default function ProfilePage() {
         .eq("id", user.id)
         .single();
 
-      if (error) console.error("Erro ao carregar perfil:", error);
-      else if (data) {
+      if (error) {
+        console.error("Erro ao carregar perfil:", error);
+      } else if (data) {
         setProfile({
           first_name: data.first_name  || "",
           last_name:  data.last_name   || "",
@@ -55,7 +58,9 @@ export default function ProfilePage() {
     setSaving(true);
     setMessage("");
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       setMessage("Usuário não autenticado.");
       setSaving(false);
@@ -81,82 +86,122 @@ export default function ProfilePage() {
     setSaving(false);
   }
 
-  if (loading) return <LoadingState message="Carregando perfil..." />;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <LoadingState message="Carregando perfil..." />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-lg mx-auto">
-        <h1 className="text-4xl font-extrabold text-gray-900 mb-6">Meu Perfil</h1>
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-6 text-center">
+          Meu Perfil
+        </h1>
 
         {message && (
-          <p className="mb-4 text-center text-green-600">{message}</p>
+          <div
+            className={`mb-6 text-center ${
+              message.includes("erro") || message.includes("Erro")
+                ? "text-red-600"
+                : "text-green-600"
+            }`}
+          >
+            {message}
+          </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-white border border-gray-200 rounded-lg shadow p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <div className="bg-white border border-gray-200 rounded-2xl shadow-lg p-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
             {/* Nome */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nome
+              </label>
               <input
                 type="text"
                 value={profile.first_name}
-                onChange={e => setProfile({ ...profile, first_name: e.target.value })}
-                className="w-full rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 p-2"
+                onChange={(e) =>
+                  setProfile({ ...profile, first_name: e.target.value })
+                }
+                className="w-full rounded-md border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 p-3"
                 required
               />
             </div>
 
             {/* Sobrenome */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Sobrenome</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Sobrenome
+              </label>
               <input
                 type="text"
                 value={profile.last_name}
-                onChange={e => setProfile({ ...profile, last_name: e.target.value })}
-                className="w-full rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 p-2"
+                onChange={(e) =>
+                  setProfile({ ...profile, last_name: e.target.value })
+                }
+                className="w-full rounded-md border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 p-3"
                 required
               />
             </div>
 
-            {/* Username */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+            {/* Username (full width) */}
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Username
+              </label>
               <input
                 type="text"
                 value={profile.username}
-                onChange={e => setProfile({ ...profile, username: e.target.value })}
-                className="w-full rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 p-2"
+                onChange={(e) =>
+                  setProfile({ ...profile, username: e.target.value })
+                }
+                className="w-full rounded-md border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 p-3"
                 required
               />
             </div>
 
-            {/* Botão Salvar */}
-            <button
-              type="submit"
-              disabled={saving}
-              className={`w-full flex justify-center items-center py-3 rounded-md text-white font-medium transition ${
-                saving ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-              }`}
-            >
-              {saving ? "Salvando..." : "Salvar Alterações"}
-            </button>
+            {/* Botão Salvar (full width) */}
+            <div className="sm:col-span-2">
+              <button
+                type="submit"
+                disabled={saving}
+                className={`w-full flex justify-center items-center py-3 rounded-xl text-white font-semibold transition ${
+                  saving
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-indigo-600 hover:bg-indigo-700"
+                }`}
+              >
+                {saving ? "Salvando..." : "Salvar Alterações"}
+              </button>
+            </div>
           </div>
         </form>
 
         {/* Botão para Dashboard de Admin */}
         {profile.is_admin && (
-          <div className="mt-8 text-center">
+          <div className="mt-8 flex justify-center">
             <Link
               href="/admin"
-              className="inline-flex items-center gap-2 px-5 py-3 bg-red-600 text-white rounded-md hover:bg-red-700 transition"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition"
             >
-              {/* you can replace with any icon */}
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none"
-                   viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                      d="M3 7h18M3 12h18M3 17h18" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 7h18M3 12h18M3 17h18"
+                />
               </svg>
-              Tela de Admin
+              Dashboard Admin
             </Link>
           </div>
         )}
