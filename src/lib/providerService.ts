@@ -1,8 +1,9 @@
+// lib/providerService.ts
 import { supabase } from "@/lib/supabase";
 import { uploadImage } from "@/hooks/useUploadImage";
 import type { Provider, Service } from "@/types";
 
-// Fetch de todas as lojas com serviços e itens
+// Fetch de todas as lojas com serviços e itens (com alias em item_images)
 export async function fetchProviders(filters?: {
   categoryId?: number;
   state?: string;
@@ -12,22 +13,30 @@ export async function fetchProviders(filters?: {
 }): Promise<Provider[]> {
   let query = supabase
     .from("service_providers")
-    .select(
-      `*,
+    .select(`
+      *,
       provider_images(*),
+      service_provider_categories!inner(
+        category:service_categories(name)
+      ),
       services(
         id,
         provider_id,
         category_id,
         name,
         created_at,
-        service_items(*, service_item_images(*))
-      ),
-      service_provider_categories!inner(category:service_categories(name))`
-    );
+        service_items(
+          *,
+          item_images:service_item_images(*)
+        )
+      )
+    `);
 
   if (filters?.categoryId) {
-    query = query.eq("service_provider_categories.category_id", filters.categoryId);
+    query = query.eq(
+      "service_provider_categories.category_id",
+      filters.categoryId
+    );
   }
   if (filters?.state) {
     query = query.eq("state", filters.state);
@@ -47,23 +56,28 @@ export async function fetchProviders(filters?: {
   return data;
 }
 
-// Fetch individual de uma loja
+// Fetch individual de uma loja (com alias em item_images)
 export async function fetchProviderById(id: string): Promise<Provider> {
   const { data, error } = await supabase
     .from("service_providers")
-    .select(
-      `*,
+    .select(`
+      *,
       provider_images(*),
+      service_provider_categories!inner(
+        category:service_categories(name)
+      ),
       services(
         id,
         provider_id,
         category_id,
         name,
         created_at,
-        service_items(*, service_item_images(*))
-      ),
-      service_provider_categories!inner(category:service_categories(name))`
-    )
+        service_items(
+          *,
+          item_images:service_item_images(*)
+        )
+      )
+    `)
     .eq("id", id)
     .single();
 
@@ -207,7 +221,7 @@ export async function submitServiceData(
     })
   );
 
-  // 3️⃣ Retorna o serviço completo
+  // 3️⃣ Retorna o serviço completo (com alias em item_images)
   const { data: full, error: fullErr } = await supabase
     .from("services")
     .select(`
@@ -216,10 +230,14 @@ export async function submitServiceData(
       category_id,
       name,
       created_at,
-      service_items(*, service_item_images(*))
+      service_items(
+        *,
+        item_images:service_item_images(*)
+      )
     `)
     .eq("id", svc.id)
     .single();
   if (fullErr) throw new Error(fullErr.message);
+
   return full;
 }

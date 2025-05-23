@@ -1,11 +1,10 @@
-// components/ServiceCard.tsx
 'use client';
 
 import React from 'react';
 import type { ServiceItem } from '@/types';
 
 export default function ServiceCard({ item }: { item: ServiceItem }) {
-  // pega primeira imagem do item, ou fallback
+  // aqui pegamos a primeira imagem de item_images
   const imgUrl = item.item_images?.[0]?.image_url;
 
   return (
@@ -38,9 +37,7 @@ export default function ServiceCard({ item }: { item: ServiceItem }) {
 
       {/* Detalhes */}
       {item.details && (
-        <p className="text-gray-600 text-sm line-clamp-3">
-          {item.details}
-        </p>
+        <p className="text-gray-600 text-sm line-clamp-3">{item.details}</p>
       )}
     </div>
   );

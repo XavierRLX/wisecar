@@ -1,8 +1,7 @@
-// app/lojas/[id]/page.tsx
 'use client';
 
 import React from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useProvider } from '@/hooks/useProvider';
 import LoadingState from '@/components/LoadingState';
 import Carousel from '@/components/Carousel';
@@ -10,7 +9,6 @@ import ServiceCard from '@/components/ServiceCard';
 import { Phone, MapPin, Globe, Instagram, Facebook } from 'lucide-react';
 
 export default function LojaDetailPage() {
-  const router = useRouter();
   const { id: rawId } = useParams();
   const id = Array.isArray(rawId) ? rawId[0]! : rawId!;
   const { provider, loading, error } = useProvider(id);
@@ -27,7 +25,9 @@ export default function LojaDetailPage() {
     <div className="max-w-5xl mx-auto p-6 space-y-8">
       {/* HEADER */}
       <header className="space-y-3">
-        <h1 className="text-4xl font-extrabold text-gray-900">{provider.name}</h1>
+        <h1 className="text-4xl font-extrabold text-gray-900">
+          {provider.name}
+        </h1>
         <div className="flex flex-wrap gap-4 text-gray-600">
           {provider.address && (
             <span className="flex items-center gap-1">
