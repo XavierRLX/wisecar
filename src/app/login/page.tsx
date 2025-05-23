@@ -38,9 +38,9 @@ export default function LoginPage() {
         />
         <p className="mt-4 text-base text-gray-700 TextColorPrimary">
           <span className="inline-block text-2xl font-extrabold tracking-tight text-gray-900 TextColorPrimary">
-            AW
+            AWX
           </span>{" "}
-           - A plataforma para completar todas as rodas.
+           Conectando você a todas as experiências sobre rodas.
         </p>
       </div>
 
