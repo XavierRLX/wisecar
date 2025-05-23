@@ -6,15 +6,16 @@ import { useProviders } from '@/hooks/useProviders';
 import LoadingState from '@/components/LoadingState';
 import EmptyState from '@/components/EmptyState';
 import ProviderCard from '@/components/ProviderCard';
-import { Search } from 'lucide-react';
+import ServiceSearchCard, { ServiceSearchCardProps } from '@/components/ServiceSearchCard';
 
 export default function LojasPage() {
   const router = useRouter();
   const { providers, loading, error } = useProviders();
+  const [mode, setMode] = useState<'lojas' | 'servicos'>('lojas');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // filtra por nome da loja ou nome de qualquer serviço
-  const filtered = useMemo(() => {
+  // 1) filtra providers
+  const filteredProviders = useMemo(() => {
     const term = searchTerm.toLowerCase().trim();
     if (!term) return providers;
     return providers.filter((p) => {
@@ -27,13 +28,39 @@ export default function LojasPage() {
     });
   }, [providers, searchTerm]);
 
-  if (loading) return <LoadingState message="Carregando lojas..." />;
-  if (error) return <p className="text-red-600">{error}</p>;
-  if (providers.length === 0) {
+  // 2) achata todos os services e guarda também logo da loja
+  const allServices = useMemo<ServiceSearchCardProps[]>(() => {
+    return providers.flatMap((p) =>
+      (p.services ?? []).map((s) => ({
+        ...s,
+        providerName: p.name,
+        providerId: p.id,
+        providerLogoUrl:
+          p.logo_url ?? p.provider_images?.[0]?.image_url,
+      }))
+    );
+  }, [providers]);
+
+  // 3) filtra services
+  const filteredServices = useMemo(() => {
+    const term = searchTerm.toLowerCase().trim();
+    if (!term) return allServices;
+    return allServices.filter((s) =>
+      s.name.toLowerCase().includes(term)
+    );
+  }, [allServices, searchTerm]);
+
+  if (loading) {
+    return <LoadingState message="Carregando lojas e serviços..." />;
+  }
+  if (error) {
+    return <p className="p-8 text-red-500">Erro: {error}</p>;
+  }
+  if (!providers.length) {
     return (
       <EmptyState
         title="Nenhuma loja encontrada"
-        description="Cadastre a primeira loja!"
+        description="Cadastre a primeira loja para começar."
         buttonText="Adicionar Loja"
         redirectTo="/lojas/novo"
       />
@@ -42,46 +69,105 @@ export default function LojasPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
-      {/* Cabeçalho + Busca */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold text-gray-900">Nossas Lojas</h1>
-        <div className="relative w-full md:w-64">
-          <Search className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Buscar lojas ou serviços..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
+      {/* Toggle Lojas / Serviços */}
+      <div className="flex justify-center space-x-2">
+        <button
+          onClick={() => setMode('lojas')}
+          className={`px-4 py-2 rounded-full font-medium transition ${
+            mode === 'lojas'
+              ? 'bg-indigo-600 text-white'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          Lojas
+        </button>
+        <button
+          onClick={() => setMode('servicos')}
+          className={`px-4 py-2 rounded-full font-medium transition ${
+            mode === 'servicos'
+              ? 'bg-indigo-600 text-white'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          Serviços
+        </button>
       </div>
 
-      {/* Resultado da busca */}
-      {filtered.length === 0 ? (
-        <div className="text-center text-gray-600 text-lg">
-          <p>
+      {/* Busca */}
+      <div className="flex justify-center">
+        <input
+          type="text"
+          placeholder={
+            mode === 'lojas'
+              ? 'Buscar lojas ou serviços...'
+              : 'Buscar serviços...'
+          }
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full max-w-md pl-4 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+      </div>
+
+      {/* Lista */}
+      {mode === 'lojas' ? (
+        filteredProviders.length === 0 ? (
+          <div className="text-center text-gray-600 text-lg py-16">
             Nenhuma loja ou serviço encontrado para&nbsp;
-            <span className="font-semibold text-indigo-600">“{searchTerm}”</span>
-          </p>
-        </div>
+            <span className="font-semibold text-indigo-600">
+              “{searchTerm}”
+            </span>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {filteredProviders.map((p) => (
+              <div
+                key={p.id}
+                onClick={() => router.push(`/lojas/${p.id}`)}
+                className="cursor-pointer"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') router.push(`/lojas/${p.id}`);
+                }}
+              >
+                <ProviderCard provider={p} />
+              </div>
+            ))}
+          </div>
+        )
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filtered.map((p) => (
-            <div
-              key={p.id}
-              onClick={() => router.push(`/lojas/${p.id}`)}
-              className="cursor-pointer"
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') router.push(`/lojas/${p.id}`);
-              }}
-            >
-              <ProviderCard provider={p} />
+        // modo SERVIÇOS
+        <>
+          {allServices.length === 0 ? (
+            <EmptyState
+              title="Nenhum serviço disponível"
+              description="Cadastre serviços nas lojas para que apareçam aqui."
+              buttonText="Adicionar Serviço"
+              redirectTo="/lojas/novo"
+            />
+          ) : filteredServices.length === 0 ? (
+            <div className="text-center text-gray-600 text-lg py-16">
+              Nenhum serviço encontrado para&nbsp;
+              <span className="font-semibold text-indigo-600">
+                “{searchTerm}”
+              </span>
             </div>
-          ))}
-        </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {filteredServices.map((svc) => (
+                <div
+                  key={`${svc.providerId}-${svc.id}`}
+                  className="cursor-pointer"
+                  onClick={() =>
+                    router.push(`/lojas/${svc.providerId}`)
+                  }
+                >
+                  <ServiceSearchCard {...svc} />
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
