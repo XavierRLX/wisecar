@@ -1,12 +1,12 @@
 // app/admin/lojas/page.tsx
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
-import AdminGuard from "@/components/AdminGuard";
-import LoadingState from "@/components/LoadingState";
-import type { Provider } from "@/types";
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import AdminGuard from '@/components/AdminGuard';
+import LoadingState from '@/components/LoadingState';
+import type { Provider } from '@/types';
 
 export default function AdminProvidersPage() {
   const router = useRouter();
@@ -14,12 +14,12 @@ export default function AdminProvidersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Carrega as lojas
+  // Carrega as lojas, agora incluindo logo_url
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase
-        .from("service_providers")
-        .select("id, name, address, provider_images(*)");
+        .from('service_providers')
+        .select('id, name, address, logo_url, provider_images(*)');
       if (error) setError(error.message);
       else setProviders(data as Provider[]);
       setLoading(false);
@@ -28,13 +28,13 @@ export default function AdminProvidersPage() {
 
   // Excluir loja
   const handleDelete = async (id: string) => {
-    if (!confirm("Deseja realmente excluir esta loja?")) return;
+    if (!confirm('Deseja realmente excluir esta loja?')) return;
     const { error } = await supabase
-      .from("service_providers")
+      .from('service_providers')
       .delete()
-      .eq("id", id);
+      .eq('id', id);
     if (error) {
-      alert("Erro ao excluir loja: " + error.message);
+      alert('Erro ao excluir loja: ' + error.message);
     } else {
       setProviders((prev) => prev.filter((p) => p.id !== id));
     }
@@ -51,7 +51,7 @@ export default function AdminProvidersPage() {
             Gerenciar Lojas
           </h1>
           <button
-            onClick={() => router.push("/lojas/novo")}
+            onClick={() => router.push('/lojas/novo')}
             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
           >
             + Nova Loja
@@ -65,7 +65,13 @@ export default function AdminProvidersPage() {
               className="bg-white rounded-lg shadow p-6 flex flex-col"
             >
               <div className="flex-1">
-                {p.provider_images?.[0] ? (
+                {p.logo_url ? (
+                  <img
+                    src={p.logo_url}
+                    alt={`Logo da loja ${p.name}`}
+                    className="h-32 w-full object-contain rounded mb-4"
+                  />
+                ) : p.provider_images?.[0] ? (
                   <img
                     src={p.provider_images[0].image_url}
                     alt={`Imagem da loja ${p.name}`}
