@@ -1,7 +1,8 @@
+// components/ProviderCard.tsx
 'use client';
 
 import React from 'react';
-import type { Provider } from '@/types';
+import type { Provider, ProviderImage, ServiceItemImage } from '@/types';
 import Carousel from './Carousel';
 import { ImageIcon, MapPin } from 'lucide-react';
 
@@ -12,16 +13,19 @@ export default function ProviderCard({ provider }: { provider: Provider }) {
     .filter(Boolean)
     .join(', ');
 
-  // extrai categorias únicas a partir dos serviços
-  const serviceCategories = Array.from(
-    new Set(
-      provider.services?.map(svc => svc.category?.name).filter(Boolean)
-    )
-  );
+  // prepara todas as imagens (logo + galeria + itens de serviço)
+  const carouselImages: (ProviderImage | ServiceItemImage)[] = [
+    ...(provider.logo_url ? [{ id: 'logo', image_url: provider.logo_url }] as any : []),
+    ...(provider.provider_images ?? []),
+    ...(provider.services
+      ?.flatMap(s =>
+        s.service_items?.flatMap(it => it.item_images ?? [])
+      ) ?? []),
+  ];
 
   return (
     <div
-      className="bg-white shadow-md rounded-lg overflow-hidden cursor-pointer hover:shadow-xl transition-shadow duration-300 flex flex-col md:flex-row gap-4 p-4"
+      className="bg-white shadow-md rounded-lg overflow-hidden cursor-pointer hover:shadow-xl transition-shadow duration-300"
       role="button"
       tabIndex={0}
       onKeyDown={e => {
@@ -31,18 +35,18 @@ export default function ProviderCard({ provider }: { provider: Provider }) {
       }}
       onClick={() => (window.location.href = `/lojas/${provider.id}`)}
     >
-      {/* Imagem ou Galeria */}
-      <div className="flex-shrink-0 w-full md:w-48 h-48 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
-        {provider.logo_url ? (
+      {/* Carousel de Imagens */}
+      <div className="w-full h-56 bg-gray-100">
+        {carouselImages.length > 1 ? (
+          <Carousel images={carouselImages} />
+        ) : carouselImages.length === 1 ? (
           <img
-            src={provider.logo_url}
-            alt={`Logo de ${provider.name}`}
-            className="object-contain w-full h-full"
+            src={carouselImages[0].image_url}
+            alt={provider.name}
+            className="w-full h-full object-cover"
           />
-        ) : provider.provider_images?.length ? (
-          <Carousel images={provider.provider_images} />
         ) : (
-          <div className="flex flex-col items-center text-gray-400">
+          <div className="w-full h-full flex items-center justify-center text-gray-400">
             <ImageIcon className="w-12 h-12 mb-2" />
             <span>Sem imagem</span>
           </div>
@@ -50,7 +54,7 @@ export default function ProviderCard({ provider }: { provider: Provider }) {
       </div>
 
       {/* Conteúdo */}
-      <div className="flex flex-col justify-between flex-grow">
+      <div className="p-4 flex flex-col justify-between">
         <h3 className="text-xl font-semibold text-gray-900 mb-1">
           {provider.name}
         </h3>
@@ -63,9 +67,13 @@ export default function ProviderCard({ provider }: { provider: Provider }) {
         )}
 
         {/* Categorias derivadas dos serviços */}
-        {serviceCategories.length > 0 && (
+        {provider.services && (
           <div className="flex flex-wrap gap-2 mb-2">
-            {serviceCategories.map((catName) => (
+            {Array.from(
+              new Set(
+                provider.services.map(svc => svc.category?.name).filter(Boolean)
+              )
+            ).map(catName => (
               <span
                 key={catName}
                 className="bg-indigo-100 text-indigo-700 text-xs font-medium px-2 py-1 rounded-full"
@@ -76,10 +84,10 @@ export default function ProviderCard({ provider }: { provider: Provider }) {
           </div>
         )}
 
-        {/* Lista de serviços (sem título) */}
-        {provider.services && provider.services.length > 0 && (
+        {/* Lista de serviços */}
+        {provider.services && (
           <div className="flex flex-wrap gap-2">
-            {provider.services.map((svc) => (
+            {provider.services.map(svc => (
               <span
                 key={svc.id}
                 className="bg-gray-100 text-gray-700 text-xs font-medium px-2 py-1 rounded-full"
@@ -91,5 +99,5 @@ export default function ProviderCard({ provider }: { provider: Provider }) {
         )}
       </div>
     </div>
-  );
+);
 }
