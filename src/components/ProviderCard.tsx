@@ -12,12 +12,19 @@ export default function ProviderCard({ provider }: { provider: Provider }) {
     .filter(Boolean)
     .join(', ');
 
+  // extrai categorias únicas a partir dos serviços
+  const serviceCategories = Array.from(
+    new Set(
+      provider.services?.map(svc => svc.category?.name).filter(Boolean)
+    )
+  );
+
   return (
     <div
       className="bg-white shadow-md rounded-lg overflow-hidden cursor-pointer hover:shadow-xl transition-shadow duration-300 flex flex-col md:flex-row gap-4 p-4"
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => {
+      onKeyDown={e => {
         if (e.key === 'Enter') {
           window.location.href = `/lojas/${provider.id}`;
         }
@@ -55,17 +62,19 @@ export default function ProviderCard({ provider }: { provider: Provider }) {
           </p>
         )}
 
-        {/* Categorias */}
-        <div className="flex flex-wrap gap-2 mb-2">
-          {provider.provider_categories?.map((pc) => (
-            <span
-              key={pc.category_id}
-              className="bg-indigo-100 text-indigo-700 text-xs font-medium px-2 py-1 rounded-full"
-            >
-              {pc.category.name}
-            </span>
-          ))}
-        </div>
+        {/* Categorias derivadas dos serviços */}
+        {serviceCategories.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-2">
+            {serviceCategories.map((catName) => (
+              <span
+                key={catName}
+                className="bg-indigo-100 text-indigo-700 text-xs font-medium px-2 py-1 rounded-full"
+              >
+                {catName}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Lista de serviços (sem título) */}
         {provider.services && provider.services.length > 0 && (
@@ -82,5 +91,5 @@ export default function ProviderCard({ provider }: { provider: Provider }) {
         )}
       </div>
     </div>
-);
+  );
 }
