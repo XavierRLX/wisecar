@@ -1,9 +1,13 @@
 // lib/providerService.ts
 import { supabase } from "@/lib/supabase";
 import { uploadImage } from "@/hooks/useUploadImage";
-import type { Provider, Service } from "@/types";
+import type { Provider, Service, ServiceCategory } from "@/types";
 
-// Fetch de todas as lojas com serviços e itens (com alias em item_images)
+type RawService = Omit<Service, "category"> & {
+  category: ServiceCategory[];
+};
+
+// Fetch de todas as lojas com serviços e itens
 export async function fetchProviders(filters?: {
   categoryId?: number;
   state?: string;
@@ -16,27 +20,23 @@ export async function fetchProviders(filters?: {
     .select(`
       *,
       provider_images(*),
-      service_provider_categories!inner(
-        category:service_categories(name)
-      ),
       services(
         id,
         provider_id,
         category_id,
+        price,
         name,
         created_at,
         service_items(
           *,
           item_images:service_item_images(*)
-        )
+        ),
+        category:service_categories(id,name)
       )
     `);
 
   if (filters?.categoryId) {
-    query = query.eq(
-      "service_provider_categories.category_id",
-      filters.categoryId
-    );
+    query = query.eq("services.category_id", filters.categoryId);
   }
   if (filters?.state) {
     query = query.eq("state", filters.state);
@@ -53,36 +53,57 @@ export async function fetchProviders(filters?: {
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);
-  return data;
+  if (!data) return [];
+
+  // transforma RawService.category: ServiceCategory[] → ServiceCategory
+  const providers = (data as any[]).map((p) => ({
+    ...p,
+    services: (p.services as RawService[]).map((svc) => ({
+      ...svc,
+      category: svc.category[0] as ServiceCategory,
+    })),
+  }));
+
+  return providers as Provider[];
 }
 
-// Fetch individual de uma loja (com alias em item_images)
+// Fetch individual de uma loja
 export async function fetchProviderById(id: string): Promise<Provider> {
   const { data, error } = await supabase
     .from("service_providers")
     .select(`
       *,
       provider_images(*),
-      service_provider_categories!inner(
-        category:service_categories(name)
-      ),
       services(
         id,
         provider_id,
         category_id,
+        price,
         name,
         created_at,
         service_items(
           *,
           item_images:service_item_images(*)
-        )
+        ),
+        category:service_categories(id,name)
       )
     `)
     .eq("id", id)
     .single();
 
   if (error) throw new Error(error.message);
-  return data;
+  if (!data) throw new Error("Loja não encontrada");
+
+  // mapeia cada serviço para category único
+  const mappedServices = (data.services as RawService[]).map((svc) => ({
+    ...svc,
+    category: svc.category[0] as ServiceCategory,
+  }));
+
+  return {
+    ...data,
+    services: mappedServices,
+  } as Provider;
 }
 
 // Criação de loja com logo e galeria
@@ -97,12 +118,11 @@ export async function submitProviderData(
     state: string;
     city: string;
     neighborhood: string;
-    categoryIds: number[];
   },
   logoFile: File | null,
   galleryFiles: File[]
 ): Promise<Provider> {
-  // 1️⃣ Cria a loja
+  // 1️⃣ cria a loja
   const { data: provider, error } = await supabase
     .from("service_providers")
     .insert({
@@ -135,19 +155,7 @@ export async function submitProviderData(
       .eq("id", provider.id);
   }
 
-  // 3️⃣ Vincula categorias
-  if (form.categoryIds.length) {
-    const rows = form.categoryIds.map((cid) => ({
-      provider_id: provider.id,
-      category_id: cid,
-    }));
-    const { error: catErr } = await supabase
-      .from("service_provider_categories")
-      .insert(rows);
-    if (catErr) throw new Error(catErr.message);
-  }
-
-  // 4️⃣ Upload da galeria extra
+  // 3️⃣ Upload da galeria extra
   await Promise.all(
     galleryFiles.map(async (file) => {
       const url = await uploadImage(
@@ -167,28 +175,30 @@ export async function submitProviderData(
   return fetchProviderById(provider.id);
 }
 
-// Criação de serviço + itens + imagens de itens
+// Criação de serviço + preço + itens + imagens de itens
 export async function submitServiceData(
   providerId: string,
   form: {
     name: string;
     categoryId: number;
+    price: number;
     items: { name: string; details: string; price: number; files: File[] }[];
   }
 ): Promise<Service> {
-  // 1️⃣ Cria o serviço (sem price/details)
+  // 1️⃣ cria o serviço com preço
   const { data: svc, error: svcErr } = await supabase
     .from("services")
     .insert({
       provider_id: providerId,
       name: form.name,
       category_id: form.categoryId,
+      price: form.price,
     })
     .select()
     .single();
   if (svcErr) throw new Error(svcErr.message);
 
-  // 2️⃣ Para cada item, cria e faz upload
+  // 2️⃣ cria itens e faz upload das imagens
   await Promise.all(
     form.items.map(async (item) => {
       const { data: it, error: itErr } = await supabase
@@ -221,23 +231,32 @@ export async function submitServiceData(
     })
   );
 
-  // 3️⃣ Retorna o serviço completo (com alias em item_images)
+  // 3️⃣ retorna o serviço completo
   const { data: full, error: fullErr } = await supabase
     .from("services")
     .select(`
       id,
       provider_id,
       category_id,
+      price,
       name,
       created_at,
       service_items(
         *,
         item_images:service_item_images(*)
-      )
+      ),
+      category:service_categories(id,name)
     `)
     .eq("id", svc.id)
     .single();
   if (fullErr) throw new Error(fullErr.message);
+  if (!full) throw new Error("Erro ao buscar serviço recém-criado");
 
-  return full;
+  // mapeia category array → objeto único
+  const result: Service = {
+    ...full,
+    category: (full.category as ServiceCategory[])[0],
+  };
+
+  return result;
 }

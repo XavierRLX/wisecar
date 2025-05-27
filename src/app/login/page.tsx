@@ -40,7 +40,7 @@ export default function LoginPage() {
           <span className="inline-block text-2xl font-extrabold tracking-tight text-gray-900 TextColorPrimary">
             AWX
           </span>{" "}
-           Conectando você a todas as experiências sobre rodas.
+           - Conectando você a todas as experiências sobre rodas.
         </p>
       </div>
 

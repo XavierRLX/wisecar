@@ -101,7 +101,6 @@ export interface MaintenanceRecord {
   maintenance_parts?: MaintenancePart[];
 }
 
-
 export interface Profile {
   id: string;
   first_name: string;
@@ -126,12 +125,6 @@ export interface ServiceCategory {
   name: string;
 }
 
-export interface ProviderCategory {
-  provider_id: string;
-  category_id: number;
-  category: ServiceCategory;
-}
-
 export interface ServiceItemImage {
   id: string;
   service_item_id: string;
@@ -154,8 +147,10 @@ export interface Service {
   provider_id: string;
   category_id?: number;
   name: string;
+  price?: number;               
   created_at?: string;
   service_items?: ServiceItem[];
+  category?: ServiceCategory;  
 }
 
 export interface Provider {
@@ -173,5 +168,4 @@ export interface Provider {
   created_at?: string;
   provider_images?: ProviderImage[];
   services?: Service[];
-  provider_categories?: ProviderCategory[];
 }
