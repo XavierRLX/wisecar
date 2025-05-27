@@ -75,7 +75,7 @@ export default function LoginPage() {
 
       {/* Rodapé */}
       <footer className="absolute bottom-4 left-1/2 w-full max-w-xs -translate-x-1/2 text-center text-xs text-gray-500 TextColorPrimary ">
-        © {new Date().getFullYear()} All Wheels. Todos os direitos reservados.
+        © {new Date().getFullYear()} All Wheels Expirience. Todos os direitos reservados.
       </footer>
     </div>
   );

@@ -1,14 +1,14 @@
-// app/components/BottomNav.tsx
+// components/BottomNav.tsx
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Menu as MenuIcon,
-  Car,
-  PlusCircle,
-  MessageSquare,
-  Cog,
+  Car as CarIcon,
+  PlusCircle as AddIcon,
+  MessageSquare as ChatIcon,
+  Cog as ServicesIcon,
 } from "lucide-react";
 
 interface BottomNavProps {
@@ -17,68 +17,61 @@ interface BottomNavProps {
 
 export default function BottomNav({ onMenuClick }: BottomNavProps) {
   const pathname = usePathname();
-  const router = useRouter();
 
-  const activeClass = (route: string) =>
-    pathname === route ? "text-blue-600" : "TextColorPrimary";
+  const isActive = (route: string) => pathname === route;
 
-  // helper para link + scroll
-  function NavLink({
-    href,
-    children,
-  }: {
-    href: string;
-    children: React.ReactNode;
-  }) {
-    return (
-      <Link
-        href={href}
-        scroll={true}                   
-        onClick={() => window.scrollTo(0, 0)}
-        className={`flex flex-col items-center ${activeClass(
-          href
-        )} hover:text-blue-600`}
-      >
-        {children}
-      </Link>
-    );
-  }
+  const navItems: {
+    href?: string;
+    label: string;
+    Icon: React.ComponentType<{ className?: string }>;
+    onClick?: () => void;
+  }[] = [
+    {
+      label: "Menu",
+      Icon: MenuIcon,
+      onClick: () => {
+        window.scrollTo(0, 0);
+        onMenuClick();
+      },
+    },
+    { href: "/todosVeiculos", label: "Veículos", Icon: CarIcon },
+    { href: "/adicionar", label: "Adicionar", Icon: AddIcon },
+    { href: "/lojas", label: "Serviços", Icon: ServicesIcon },
+    { href: "/chat", label: "Chat", Icon: ChatIcon },
+  ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-md z-50">
-      <div className="grid grid-cols-5 items-center py-1 px-1">
-        <button
-          onClick={() => {
-            window.scrollTo(0, 0);
-            onMenuClick();
-          }}
-          className={`flex flex-col items-center ${activeClass(
-            "/menu"
-          )} hover:text-blue-600`}
-        >
-          <MenuIcon className="h-6 w-6" />
-          <span className="text-xs">Menu</span>
-        </button>
+    <nav
+      className="fixed bottom-0 inset-x-0 bg-white border-t border-gray-200 shadow-md z-50"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
+      <div className="flex justify-around items-center h-16 px-4">
+        {navItems.map(({ href, label, Icon, onClick }) => {
+          const active = href ? isActive(href) : false;
+          const colorClass = active ? "text-blue-500" : "TextColorPrimary";
 
-        <NavLink href="/todosVeiculos">
-          <Car className="h-6 w-6" />
-          <span className="text-xs">Veículos</span>
-        </NavLink>
+          const commonProps = {
+            className: `flex flex-col items-center justify-center ${colorClass} hover:text-secondary transition`,
+            "aria-label": label,
+          };
 
-        <NavLink href="/adicionar">
-          <PlusCircle className="h-6 w-6" />
-          <span className="text-xs">Adicionar</span>
-        </NavLink>
-
-        <NavLink href="/lojas">
-          <Cog className="h-6 w-6" />
-          <span className="text-xs">Serviços</span>
-        </NavLink>
-
-        <NavLink href="/chat">
-          <MessageSquare className="h-6 w-6" />
-          <span className="text-xs">Chat</span>
-        </NavLink>
+          return href ? (
+            <Link key={label} href={href} {...commonProps}>
+              <Icon className="h-6 w-6 mb-1" />
+              <span className="text-xs">{label}</span>
+            </Link>
+          ) : (
+            <button
+              key={label}
+              onClick={onClick}
+              {...commonProps}
+              type="button"
+            >
+              <Icon className="h-6 w-6 mb-1" />
+              <span className="text-xs">{label}</span>
+            </button>
+          );
+        })}
       </div>
     </nav>
   );
