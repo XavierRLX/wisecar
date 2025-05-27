@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import AuthGuard from "@/components/AuthGuard";
 import { fetchFipeAtualizado } from "@/lib/fipe";
 import { Vehicle } from "@/types";
+import BackButton from "@/components/BackButton";
 import {
   Calendar,
   DollarSign,
@@ -108,6 +109,7 @@ export default function VehicleDetailsPage() {
       <div className="max-w-4xl mx-auto space-y-6 p-4">
         {/* Imagens */}
         <section className="mb-4">
+        <BackButton className="mb-2"/>
           {vehicle.vehicle_images && vehicle.vehicle_images.length > 0 ? (
             <Carousel images={vehicle.vehicle_images} />
           ) : (

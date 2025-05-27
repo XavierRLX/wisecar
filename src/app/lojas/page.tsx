@@ -85,7 +85,7 @@ export default function LojasPage() {
                 onClick={() => setMode(m)}
                 className={`relative z-10 flex-1 text-sm font-medium transition-colors ${
                   mode === m
-                    ? 'text-indigo-600'
+                    ? 'text-blue-600'
                     : 'text-gray-600 hover:text-gray-800'
                 }`}
               >

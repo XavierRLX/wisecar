@@ -20,7 +20,7 @@ export default function BottomNav({ onMenuClick }: BottomNavProps) {
   const router = useRouter();
 
   const activeClass = (route: string) =>
-    pathname === route ? "TextColorPrimarySelect" : "TextColorPrimary";
+    pathname === route ? "text-blue-600" : "TextColorPrimary";
 
   // helper para link + scroll
   function NavLink({

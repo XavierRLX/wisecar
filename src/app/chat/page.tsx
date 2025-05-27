@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import LoadingState from "@/components/LoadingState";
 import Link from "next/link";
+import BackButton from "@/components/BackButton";
 
 export default function ChatListPage() {
   const router = useRouter();
@@ -53,6 +54,7 @@ export default function ChatListPage() {
 
   return (
     <div className="py-8 px-2 max-w-4xl mx-auto">
+      <BackButton className='mb-2'/>
        <h1 className="text-xl font-bold mb-2">Mensagens</h1>
       {conversations.length === 0 ? (
         <p className="text-gray-600 text-center">Nenhuma conversa encontrada.</p>

@@ -10,6 +10,7 @@ import EnsureProfile from "@/components/EnsureProfile";
 import LoadingState from "@/components/LoadingState";
 import { supabase } from "@/lib/supabase";
 import { MaintenanceRecord, MaintenancePart, Vehicle } from "@/types";
+import BackButton from "@/components/BackButton";
 
 interface MaintenanceDetail extends MaintenanceRecord {
   maintenance_parts: MaintenancePart[];
@@ -99,7 +100,7 @@ export default function MaintenanceDetailPage() {
     <AuthGuard>
       <EnsureProfile />
       <div className="max-w-3xl mx-auto p-6 space-y-6">
-
+      <BackButton className='mb-2'/>
         {/* Header e Ações */}
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">

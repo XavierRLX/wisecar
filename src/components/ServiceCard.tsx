@@ -25,8 +25,7 @@ export default function ServiceCard({ item }: { item: ServiceItem }) {
       {/* Conteúdo */}
       <div className="flex flex-col flex-grow">
         <h4 className="text-lg font-semibold text-gray-900">{item.name}</h4>
-        <div className="flex items-center gap-2 text-indigo-600 font-semibold mt-1">
-          <Tag className="w-5 h-5" />
+        <div className="flex items-center gap-2 text-blue-600 font-semibold mt-1">
           <span>
             {item.price?.toLocaleString('pt-BR', {
               style: 'currency',
@@ -36,7 +35,7 @@ export default function ServiceCard({ item }: { item: ServiceItem }) {
         </div>
         {item.details && (
           <p className="flex items-start gap-2 text-gray-600 mt-2 text-sm">
-            <Info className="w-4 h-4 mt-[3px] text-indigo-500 flex-shrink-0" />
+            <Info className="w-4 h-4 mt-[3px] text-blue-600 flex-shrink-0" />
             {item.details}
           </p>
         )}

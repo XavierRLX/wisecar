@@ -10,6 +10,7 @@ import LoadingState from '@/components/LoadingState';
 import EmptyState from '@/components/EmptyState';
 import { supabase } from '@/lib/supabase';
 import { MaintenanceRecord, MaintenancePart, Vehicle } from '@/types';
+import BackButton from '@/components/BackButton';
 
 type MaintenanceWithVehicle = MaintenanceRecord & {
   maintenance_parts: MaintenancePart[];
@@ -132,6 +133,7 @@ export default function AllMaintenanceClient() {
     <AuthGuard>
       <EnsureProfile />
       <div className="p-4 max-w-4xl mx-auto space-y-6">
+      <BackButton className='mb-2'/>
        {/* Header */}
       <div className="flex justify-between items-center gap-4">
         <h1 className="text-2xl font-bold">Manutenções</h1>

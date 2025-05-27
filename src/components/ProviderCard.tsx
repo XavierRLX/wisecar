@@ -61,7 +61,7 @@ export default function ProviderCard({ provider }: { provider: Provider }) {
 
         {fullAddress && (
           <p className="flex items-center text-gray-600 text-sm mb-2">
-            <MapPin className="w-5 h-5 mr-1 text-indigo-500" />
+            <MapPin className="w-5 h-5 mr-1 text-blue-600" />
             {fullAddress}
           </p>
         )}

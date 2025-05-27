@@ -7,7 +7,9 @@ import { useProvider } from '@/hooks/useProvider';
 import LoadingState from '@/components/LoadingState';
 import Carousel from '@/components/Carousel';
 import ServiceCard from '@/components/ServiceCard';
+import BackButton from '@/components/BackButton';
 import { Phone, MapPin, Globe, Instagram, Facebook, ListChecks } from 'lucide-react';
+import type { ServiceCategory } from '@/types';
 
 export default function LojaDetailPage() {
   const router = useRouter();
@@ -31,23 +33,31 @@ export default function LojaDetailPage() {
     social_media,
     logo_url,
     provider_images,
-    provider_categories,
     services = [],
   } = provider;
 
   const fullAddress = `${address}${address ? ', ' : ''}${neighborhood}, ${city} - ${state}`;
   const mapsUrl = `https://maps.google.com/?q=${encodeURIComponent(fullAddress)}`;
 
-  // garantir arrays
-  const categories = provider_categories ?? [];
-  const withItems = services.filter(s => s.service_items?.length);
-  const withoutItems = services.filter(s => !s.service_items?.length);
+  // extrai categorias únicas a partir dos serviços
+  const categories: ServiceCategory[] = services
+    .map(s => s.category)
+    .filter((c): c is ServiceCategory => Boolean(c))
+    .reduce<ServiceCategory[]>((acc, cat) => {
+      if (!acc.find(x => x.id === cat.id)) acc.push(cat);
+      return acc;
+    }, []);
+
+  // separa serviços com e sem itens
+  const withItems = services.filter(s => s.service_items && s.service_items.length > 0);
+  const withoutItems = services.filter(s => !s.service_items || s.service_items.length === 0);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-12">
       {/* HEADER */}
       <section className="flex flex-col md:flex-row items-start gap-8">
         <div className="w-full md:w-1/3 space-y-4">
+      <BackButton/>
           {logo_url ? (
             <img
               src={logo_url}
@@ -72,13 +82,13 @@ export default function LojaDetailPage() {
               href={mapsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 text-indigo-600 hover:underline"
+              className="flex items-center gap-1 hover:underline"
             >
-              <MapPin className="w-5 h-5" /> {fullAddress}
+              <MapPin className="w-5 h-5 text-blue-600" /> {fullAddress}
             </a>
             {phone && (
               <span className="flex items-center gap-1">
-                <Phone className="w-5 h-5 text-indigo-500" /> {phone}
+                <Phone className="w-5 h-5 text-blue-600" /> {phone}
               </span>
             )}
             {social_media?.instagram && (
@@ -86,9 +96,9 @@ export default function LojaDetailPage() {
                 href={social_media.instagram}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 text-indigo-600 hover:underline"
+                className="flex items-center gap-1 hover:underline"
               >
-                <Instagram className="w-5 h-5" /> Instagram
+                <Instagram className="w-5 h-5 text-blue-600" /> Instagram
               </a>
             )}
             {social_media?.facebook && (
@@ -128,12 +138,12 @@ export default function LojaDetailPage() {
         <section className="space-y-2">
           <h2 className="text-2xl font-semibold text-gray-900">Categorias</h2>
           <div className="flex flex-wrap gap-3">
-            {categories.map(pc => (
+            {categories.map(cat => (
               <span
-                key={pc.category_id}
+                key={cat.id}
                 className="bg-indigo-100 text-indigo-700 text-sm font-medium px-3 py-1 rounded-full"
               >
-                {pc.category.name}
+                {cat.name}
               </span>
             ))}
           </div>
