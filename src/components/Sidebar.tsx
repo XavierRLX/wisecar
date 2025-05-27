@@ -210,7 +210,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* Footer profissional */}
         <footer className="px-4 py-4 border-t border-gray-200 text-center text-xs text-gray-500">
-          <p>All Wheels © 2025</p>
+          <p>All Wheels Experience © 2025</p>
           <div className="mt-2 space-x-2">
             <Link
               href="/termos"
