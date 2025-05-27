@@ -6,10 +6,17 @@ import { useParams, useRouter } from 'next/navigation';
 import { useProvider } from '@/hooks/useProvider';
 import LoadingState from '@/components/LoadingState';
 import Carousel from '@/components/Carousel';
-import ServiceCard from '@/components/ServiceCard';
 import BackButton from '@/components/BackButton';
-import { Phone, MapPin, Globe, Instagram, Facebook, ListChecks } from 'lucide-react';
-import type { ServiceCategory } from '@/types';
+import ServiceCard from '@/components/ServiceCard';
+import {
+  Phone,
+  MapPin,
+  Globe,
+  Instagram,
+  Facebook,
+  ListChecks
+} from 'lucide-react';
+import type { ServiceCategory, ServiceItemImage } from '@/types';
 
 export default function LojaDetailPage() {
   const router = useRouter();
@@ -19,7 +26,11 @@ export default function LojaDetailPage() {
 
   if (loading) return <LoadingState message="Carregando loja..." />;
   if (error || !provider) {
-    return <div className="py-16 text-center text-red-600">Erro ao carregar loja.</div>;
+    return (
+      <div className="py-16 text-center text-red-600">
+        Erro ao carregar loja.
+      </div>
+    );
   }
 
   const {
@@ -32,7 +43,7 @@ export default function LojaDetailPage() {
     description,
     social_media,
     logo_url,
-    provider_images,
+    provider_images = [],
     services = [],
   } = provider;
 
@@ -49,27 +60,57 @@ export default function LojaDetailPage() {
     }, []);
 
   // separa serviços com e sem itens
-  const withItems = services.filter(s => s.service_items && s.service_items.length > 0);
-  const withoutItems = services.filter(s => !s.service_items || s.service_items.length === 0);
+  const withItems = services.filter(
+    s => s.service_items && s.service_items.length > 0
+  );
+  const withoutItems = services.filter(
+    s => !s.service_items || s.service_items.length === 0
+  );
+
+  // monta todas as imagens para o carousel do header:
+  const carouselImages: ServiceItemImage[] = [
+    // logo primeiro, se houver
+    ...(logo_url
+      ? [{ id: 'logo', service_item_id: id, image_url: logo_url }]
+      : []),
+    // galeria da loja
+    ...provider_images.map(img => ({
+      id: `prov-${img.id}`,
+      service_item_id: id,
+      image_url: img.image_url
+    })),
+    // todas as imagens dos itens de serviço
+    ...services.flatMap(svc =>
+      svc.service_items?.flatMap(item =>
+        (item.item_images ?? []).map(img => ({
+          id: `item-${img.id}`,
+          service_item_id: item.id,
+          image_url: img.image_url
+        }))
+      ) ?? []
+    ),
+  ];
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-12">
-      {/* HEADER */}
+      {/* Voltar */}
+      <BackButton fallbackHref="/lojas" className="mb-4" />
+
+      {/* HEADER com Carousel */}
       <section className="flex flex-col md:flex-row items-start gap-8">
         <div className="w-full md:w-1/3 space-y-4">
-      <BackButton/>
-          {logo_url ? (
-            <img
-              src={logo_url}
-              alt={`Logo de ${name}`}
-              className="w-full h-48 object-contain bg-white rounded-lg shadow"
-            />
-          ) : provider_images?.length ? (
-            <div className="h-48 rounded-lg shadow overflow-hidden">
-              <Carousel images={provider_images} />
+          {carouselImages.length > 1 ? (
+            <div className="h-56 rounded-lg shadow overflow-hidden">
+              <Carousel images={carouselImages} />
             </div>
+          ) : carouselImages.length === 1 ? (
+            <img
+              src={carouselImages[0].image_url}
+              alt={name}
+              className="w-full h-56 object-cover rounded-lg shadow"
+            />
           ) : (
-            <div className="w-full h-48 bg-gray-100 flex items-center justify-center rounded-lg shadow text-gray-400">
+            <div className="w-full h-56 bg-gray-100 flex items-center justify-center rounded-lg shadow text-gray-400">
               Sem imagens
             </div>
           )}
@@ -106,9 +147,9 @@ export default function LojaDetailPage() {
                 href={social_media.facebook}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 text-indigo-600 hover:underline"
+                className="flex items-center gap-1 hover:underline"
               >
-                <Facebook className="w-5 h-5" /> Facebook
+                <Facebook className="w-5 h-5 text-blue-600" /> Facebook
               </a>
             )}
             {social_media?.website && (
@@ -116,9 +157,9 @@ export default function LojaDetailPage() {
                 href={social_media.website}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 text-indigo-600 hover:underline"
+                className="flex items-center gap-1 hover:underline"
               >
-                <Globe className="w-5 h-5" /> Site
+                <Globe className="w-5 h-5 text-blue-600" /> Site
               </a>
             )}
           </div>
@@ -157,11 +198,26 @@ export default function LojaDetailPage() {
           <div className="space-y-8">
             {withItems.map(svc => (
               <div key={svc.id}>
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">{svc.name}</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                  {svc.name}
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {svc.service_items!.map(item => (
-                    <ServiceCard key={item.id} item={item} />
-                  ))}
+                  {svc.service_items!.map(item => {
+                    // se não houver imagens no item, usa logo como fallback
+                    const itemImages: ServiceItemImage[] =
+                      item.item_images && item.item_images.length > 0
+                        ? item.item_images
+                        : logo_url
+                        ? [{ id: `fallback-${item.id}`, service_item_id: item.id, image_url: logo_url }]
+                        : [];
+
+                    return (
+                      <ServiceCard
+                        key={item.id}
+                        item={{ ...item, item_images: itemImages }}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -181,7 +237,9 @@ export default function LojaDetailPage() {
                 className="flex items-center gap-2 p-4 bg-indigo-50 hover:bg-indigo-100 rounded-lg cursor-pointer transition"
               >
                 <ListChecks className="w-5 h-5 text-indigo-500" />
-                <span className="font-medium text-gray-800 truncate">{svc.name}</span>
+                <span className="font-medium text-gray-800 truncate">
+                  {svc.name}
+                </span>
               </div>
             ))}
           </div>
