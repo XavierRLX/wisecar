@@ -47,6 +47,7 @@ export default function MaintenanceDetailPage() {
     Cancelado: "bg-red-100 text-red-800",
   } as const;
 
+  // Busca os dados completos da manutenção, incluindo docs
   const fetchRecord = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -72,6 +73,7 @@ export default function MaintenanceDetailPage() {
     fetchRecord();
   }, [fetchRecord]);
 
+  // Fecha dropdown de status ao clicar fora
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -82,6 +84,7 @@ export default function MaintenanceDetailPage() {
     return () => document.removeEventListener("click", onClickOutside);
   }, []);
 
+  // Atualiza o status da manutenção
   const updateStatus = async (newStatus: MaintenanceRecord["status"]) => {
     if (!record) return;
     const { error } = await supabase
@@ -96,6 +99,7 @@ export default function MaintenanceDetailPage() {
     }
   };
 
+  // Exclui a manutenção inteira
   const handleDelete = async () => {
     if (!confirm("Confirmar exclusão desta manutenção?")) return;
     const { error } = await supabase
@@ -106,10 +110,30 @@ export default function MaintenanceDetailPage() {
     else alert("Erro ao excluir: " + error.message);
   };
 
+  // Exclui um documento específico
+  const handleDeleteDoc = async (docId: string) => {
+    if (!confirm("Excluir este documento?")) return;
+    // deleta do banco
+    const { error } = await supabase
+      .from("maintenance_docs")
+      .delete()
+      .eq("id", docId);
+    if (error) {
+      alert("Erro ao excluir documento: " + error.message);
+    } else if (record) {
+      // atualiza o state para remover da lista exibida
+      setRecord({
+        ...record,
+        maintenance_docs: record.maintenance_docs.filter((d) => d.id !== docId),
+      });
+    }
+  };
+
   if (loading || !record) {
     return <LoadingState message="Carregando detalhes…" />;
   }
 
+  // total de custo de peças
   const partsTotal = record.maintenance_parts.reduce(
     (sum, p) => sum + p.price * p.quantity,
     0
@@ -154,19 +178,15 @@ export default function MaintenanceDetailPage() {
           </button>
           {statusMenuOpen && (
             <ul className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-md shadow-lg z-10">
-              {(["A fazer", "Feito", "Cancelado"] as const).map((opt) => (
+              {( ["A fazer", "Feito", "Cancelado"] as const ).map((opt) => (
                 <li
                   key={opt}
                   onClick={() => updateStatus(opt)}
                   className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
                 >
-                  {opt === "Feito" ? (
-                    <Check className="w-4 h-4 text-green-600" />
-                  ) : opt === "Cancelado" ? (
-                    <Trash2 className="w-4 h-4 text-red-600" />
-                  ) : (
-                    <Calendar className="w-4 h-4 text-yellow-600" />
-                  )}
+                  {opt === "Feito" ? <Check className="w-4 h-4 text-green-600" />
+                   : opt === "Cancelado" ? <Trash2 className="w-4 h-4 text-red-600" />
+                   : <Calendar className="w-4 h-4 text-yellow-600" />}
                   {opt}
                 </li>
               ))}
@@ -248,19 +268,31 @@ export default function MaintenanceDetailPage() {
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {record.maintenance_docs.map((doc) => (
                 <li key={doc.id} className="space-y-2">
+                  {/* Título */}
                   <p className="text-sm font-medium">{doc.title}</p>
+                  {/* Thumbnail reduzida */}
                   <img
                     src={doc.file_url}
                     alt={doc.title}
-                    className="w-full h-auto rounded border"
+                    className="w-32 h-auto rounded border"
                   />
-                  <a
-                    href={doc.file_url}
-                    target="_blank"
-                    className="text-blue-600 hover:underline text-sm"
-                  >
-                    Ver em tamanho real
-                  </a>
+                  {/* Ações: ver / excluir */}
+                  <div className="flex items-center gap-4">
+                    <a
+                      href={doc.file_url}
+                      target="_blank"
+                      className="text-blue-600 hover:underline text-sm flex items-center gap-1"
+                    >
+                      <Paperclip className="w-4 h-4" /> Ver
+                    </a>
+                    <button
+                      onClick={() => handleDeleteDoc(doc.id)}
+                      className="text-red-600 hover:text-red-800"
+                      title="Excluir documento"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
