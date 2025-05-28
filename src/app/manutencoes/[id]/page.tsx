@@ -3,17 +3,33 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { Trash2, Check, Edit2, ChevronDown,  Calendar, List, ClipboardList, DollarSign, Cog,
+import {
+  Trash2,
+  Check,
+  Edit2,
+  ChevronDown,
+  Calendar,
+  List,
+  ClipboardList,
+  DollarSign,
+  Cog,
+  Paperclip,
 } from "lucide-react";
 import AuthGuard from "@/components/AuthGuard";
 import EnsureProfile from "@/components/EnsureProfile";
 import LoadingState from "@/components/LoadingState";
 import { supabase } from "@/lib/supabase";
-import { MaintenanceRecord, MaintenancePart, Vehicle } from "@/types";
+import {
+  MaintenanceRecord,
+  MaintenancePart,
+  MaintenanceDoc,
+  Vehicle,
+} from "@/types";
 import BackButton from "@/components/BackButton";
 
 interface MaintenanceDetail extends MaintenanceRecord {
   maintenance_parts: MaintenancePart[];
+  maintenance_docs: MaintenanceDoc[];
   vehicle: Pick<Vehicle, "brand" | "model">;
 }
 
@@ -25,33 +41,37 @@ export default function MaintenanceDetailPage() {
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // cores por status
   const STATUS_STYLE = {
     "A fazer": "bg-yellow-100 text-yellow-800",
     Feito: "bg-green-100 text-green-800",
     Cancelado: "bg-red-100 text-red-800",
   } as const;
 
-  // busca o registro
   const fetchRecord = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("maintenance_records")
-      .select(`*, maintenance_parts(*), vehicle:vehicles(brand,model)`)
+      .select(`
+        *,
+        maintenance_parts(*),
+        maintenance_docs(*),
+        vehicle:vehicles(brand,model)
+      `)
       .eq("id", id)
       .single();
-    if (error) {
+
+    if (error || !data) {
       console.error(error);
-      router.back();
-    } else {
-      setRecord(data as MaintenanceDetail);
+      return router.back();
     }
+    setRecord(data as MaintenanceDetail);
     setLoading(false);
   }, [id, router]);
 
-  useEffect(() => { fetchRecord(); }, [fetchRecord]);
+  useEffect(() => {
+    fetchRecord();
+  }, [fetchRecord]);
 
-  // fecha menu ao clicar fora
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -62,7 +82,6 @@ export default function MaintenanceDetailPage() {
     return () => document.removeEventListener("click", onClickOutside);
   }, []);
 
-  // atualiza status
   const updateStatus = async (newStatus: MaintenanceRecord["status"]) => {
     if (!record) return;
     const { error } = await supabase
@@ -77,7 +96,6 @@ export default function MaintenanceDetailPage() {
     }
   };
 
-  // deleta
   const handleDelete = async () => {
     if (!confirm("Confirmar exclusão desta manutenção?")) return;
     const { error } = await supabase
@@ -88,9 +106,10 @@ export default function MaintenanceDetailPage() {
     else alert("Erro ao excluir: " + error.message);
   };
 
-  if (loading || !record) return <LoadingState message="Carregando detalhes…" />;
+  if (loading || !record) {
+    return <LoadingState message="Carregando detalhes…" />;
+  }
 
-  // total de peças
   const partsTotal = record.maintenance_parts.reduce(
     (sum, p) => sum + p.price * p.quantity,
     0
@@ -100,7 +119,8 @@ export default function MaintenanceDetailPage() {
     <AuthGuard>
       <EnsureProfile />
       <div className="max-w-3xl mx-auto p-6 space-y-6">
-      <BackButton className='mb-2'/>
+        <BackButton className="mb-2" />
+
         {/* Header e Ações */}
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
@@ -126,7 +146,7 @@ export default function MaintenanceDetailPage() {
         {/* Status */}
         <div ref={menuRef} className="relative">
           <button
-            onClick={() => setStatusMenuOpen(o => !o)}
+            onClick={() => setStatusMenuOpen((o) => !o)}
             className={`inline-flex items-center gap-1 px-4 py-2 rounded-full font-medium ${STATUS_STYLE[record.status]}`}
           >
             <List className="w-5 h-5" /> {record.status}
@@ -134,16 +154,19 @@ export default function MaintenanceDetailPage() {
           </button>
           {statusMenuOpen && (
             <ul className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-md shadow-lg z-10">
-              {(["A fazer", "Feito", "Cancelado"] as const).map(opt => (
+              {(["A fazer", "Feito", "Cancelado"] as const).map((opt) => (
                 <li
                   key={opt}
                   onClick={() => updateStatus(opt)}
                   className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
                 >
-                  {opt === "Feito" ? <Check className="w-4 h-4 text-green-600" />
-                    : opt === "Cancelado" ? <Trash2 className="w-4 h-4 text-red-600" />
-                    : <Calendar className="w-4 h-4 text-yellow-600" />
-                  }
+                  {opt === "Feito" ? (
+                    <Check className="w-4 h-4 text-green-600" />
+                  ) : opt === "Cancelado" ? (
+                    <Trash2 className="w-4 h-4 text-red-600" />
+                  ) : (
+                    <Calendar className="w-4 h-4 text-yellow-600" />
+                  )}
                   {opt}
                 </li>
               ))}
@@ -154,15 +177,29 @@ export default function MaintenanceDetailPage() {
         {/* Detalhes principais */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-white rounded-lg shadow p-6">
           <div className="space-y-3">
-            <p className="text-sm"><strong>Veículo:</strong> {record.vehicle.brand} {record.vehicle.model}</p>
-            <p className="text-sm"><strong>Tipo:</strong> {record.maintenance_type}</p>
-            <p className="text-sm"><strong>Agendada:</strong> {record.scheduled_date || '—'}</p>
-            <p className="text-sm"><strong>KM Agendada:</strong> {record.scheduled_km ?? '—'} km</p>
+            <p className="text-sm">
+              <strong>Veículo:</strong> {record.vehicle.brand} {record.vehicle.model}
+            </p>
+            <p className="text-sm">
+              <strong>Tipo:</strong> {record.maintenance_type}
+            </p>
+            <p className="text-sm">
+              <strong>Agendada:</strong> {record.scheduled_date || "—"}
+            </p>
+            <p className="text-sm">
+              <strong>KM Agendada:</strong> {record.scheduled_km ?? "—"} km
+            </p>
           </div>
           <div className="space-y-3">
-            <p className="text-sm"><strong>Concluída:</strong> {record.completed_date || '—'}</p>
-            <p className="text-sm"><strong>KM Concluída:</strong> {record.completed_km ?? '—'} km</p>
-            <p className="text-sm"><strong>Fornecedor:</strong> {record.provider || '—'}</p>
+            <p className="text-sm">
+              <strong>Concluída:</strong> {record.completed_date || "—"}
+            </p>
+            <p className="text-sm">
+              <strong>KM Concluída:</strong> {record.completed_km ?? "—"} km
+            </p>
+            <p className="text-sm">
+              <strong>Fornecedor:</strong> {record.provider || "—"}
+            </p>
             <p className="text-sm flex items-center gap-1">
               <DollarSign className="w-4 h-4" />
               <strong>Custo:</strong> R$ {(record.cost ?? 0).toFixed(2)}
@@ -187,9 +224,11 @@ export default function MaintenanceDetailPage() {
               <List className="w-5 h-5" /> Peças
             </h2>
             <ul className="divide-y divide-gray-200">
-              {record.maintenance_parts.map(p => (
+              {record.maintenance_parts.map((p) => (
                 <li key={p.id} className="py-2 flex justify-between items-center text-sm">
-                  <span>{p.name} <em>×{p.quantity}</em></span>
+                  <span>
+                    {p.name} <em>×{p.quantity}</em>
+                  </span>
                   <span>R$ {(p.price * p.quantity).toFixed(2)}</span>
                 </li>
               ))}
@@ -200,6 +239,33 @@ export default function MaintenanceDetailPage() {
           </div>
         )}
 
+        {/* Documentos & Imagens */}
+        {record.maintenance_docs.length > 0 && (
+          <div className="bg-white rounded-lg shadow p-4 space-y-4">
+            <h2 className="font-semibold text-gray-800 flex items-center gap-1">
+              <Paperclip className="w-5 h-5" /> Documentos
+            </h2>
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {record.maintenance_docs.map((doc) => (
+                <li key={doc.id} className="space-y-2">
+                  <p className="text-sm font-medium">{doc.title}</p>
+                  <img
+                    src={doc.file_url}
+                    alt={doc.title}
+                    className="w-full h-auto rounded border"
+                  />
+                  <a
+                    href={doc.file_url}
+                    target="_blank"
+                    className="text-blue-600 hover:underline text-sm"
+                  >
+                    Ver em tamanho real
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </AuthGuard>
   );

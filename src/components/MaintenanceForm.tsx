@@ -1,9 +1,10 @@
-//components/maintenanceForms
+// components/MaintenanceForm.tsx
 "use client";
 
 import React, { useState, useMemo } from "react";
 import { PlusCircle, Trash2 } from "lucide-react";
 
+// ---- Forms interfaces ----
 export interface PartForm {
   id?: string;
   name: string;
@@ -11,6 +12,11 @@ export interface PartForm {
   purchase_place: string;
   quantity: string;
   price: string;
+}
+
+export interface DocForm {
+  title: string;
+  file: File | null;
 }
 
 export interface MaintenanceValues {
@@ -26,6 +32,7 @@ export interface MaintenanceValues {
   notes: string;
   laborCost: string;
   parts: PartForm[];
+  docs: DocForm[];
 }
 
 interface MaintenanceFormProps {
@@ -38,6 +45,7 @@ interface MaintenanceFormProps {
   submitting: boolean;
 }
 
+// ---- Component ----
 export default function MaintenanceForm({
   initial,
   vehicles,
@@ -49,6 +57,7 @@ export default function MaintenanceForm({
 }: MaintenanceFormProps) {
   const [values, setValues] = useState(initial);
   const [parts, setParts] = useState<PartForm[]>(initial.parts);
+  const [docs, setDocs] = useState<DocForm[]>(initial.docs);
   const [newPart, setNewPart] = useState<PartForm>({
     name: "",
     brand: "",
@@ -56,14 +65,15 @@ export default function MaintenanceForm({
     quantity: "",
     price: "",
   });
+  const [newDoc, setNewDoc] = useState<DocForm>({ title: "", file: null });
   const [error, setError] = useState<string | null>(null);
 
+  // calculate totals
   const partsTotal = useMemo(
     () =>
       parts.reduce(
         (sum, p) =>
-          sum +
-          (parseFloat(p.price) || 0) * (parseInt(p.quantity) || 0),
+          sum + (parseFloat(p.price) || 0) * (parseInt(p.quantity) || 0),
         0
       ),
     [parts]
@@ -73,6 +83,7 @@ export default function MaintenanceForm({
     [partsTotal, values.laborCost]
   );
 
+  // handlers for parts
   function handleAddPart() {
     if (!newPart.name.trim()) {
       setError("Informe o nome da peça");
@@ -82,16 +93,30 @@ export default function MaintenanceForm({
     setParts((arr) => [...arr, newPart]);
     setNewPart({ name: "", brand: "", purchase_place: "", quantity: "", price: "" });
   }
-
   function handleRemovePart(i: number) {
     setParts((arr) => arr.filter((_, idx) => idx !== i));
   }
 
+  // handlers for docs
+  function handleAddDoc() {
+    if (!newDoc.title.trim() || !newDoc.file) {
+      setError("Informe título e selecione o arquivo");
+      return;
+    }
+    setError(null);
+    setDocs((arr) => [...arr, newDoc]);
+    setNewDoc({ title: "", file: null });
+  }
+  function handleRemoveDoc(i: number) {
+    setDocs((arr) => arr.filter((_, idx) => idx !== i));
+  }
+
+  // submit
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     try {
-      await onSubmit({ ...values, parts });
+      await onSubmit({ ...values, parts, docs });
     } catch (err: any) {
       setError(err.message || "Erro ao salvar");
     }
@@ -143,7 +168,6 @@ export default function MaintenanceForm({
 
       {/* Status & Tipo */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Status */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Status
@@ -160,7 +184,6 @@ export default function MaintenanceForm({
             <option>Cancelado</option>
           </select>
         </div>
-        {/* Tipo */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Tipo
@@ -271,6 +294,53 @@ export default function MaintenanceForm({
         </div>
       </div>
 
+       {/* ==== Documentos ==== */}
+       <div className="space-y-2">
+        <h3 className="text-lg font-medium">Documentos</h3>
+
+        {docs.map((d, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <span className="flex-1">{d.title}</span>
+            <a
+              href={URL.createObjectURL(d.file!)}
+              target="_blank"
+              className="text-blue-600 hover:underline"
+            >
+              Ver
+            </a>
+            <button
+              type="button"
+              onClick={() => handleRemoveDoc(i)}
+              className="text-red-600"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          </div>
+        ))}
+
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            type="text"
+            placeholder="Título do documento"
+            value={newDoc.title}
+            onChange={(e) => setNewDoc((nd) => ({ ...nd, title: e.target.value }))}
+            className="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <input
+            type="file"
+            onChange={(e) => setNewDoc((nd) => ({ ...nd, file: e.target.files?.[0] ?? null }))}
+            className="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={handleAddDoc}
+          className="inline-flex items-center gap-1 text-green-600 hover:text-green-800"
+        >
+          <PlusCircle className="w-5 h-5" /> Adicionar Documento
+        </button>
+      </div>
+
       {/* Custo & Peças */}
       <div className="space-y-4">
         <div>
@@ -288,6 +358,7 @@ export default function MaintenanceForm({
           />
         </div>
 
+        {/* novoPart inputs */}
         <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 bg-gray-50 p-3 rounded">
           <input
             value={newPart.name}
@@ -335,7 +406,6 @@ export default function MaintenanceForm({
             className="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-
         <div className="text-right">
           <button
             type="button"
@@ -375,6 +445,8 @@ export default function MaintenanceForm({
           Peças: R$ {partsTotal.toFixed(2)} — Total: R$ {totalCost.toFixed(2)}
         </div>
       </div>
+
+     
 
       {/* Salvar + Cancelar */}
       <div className="flex gap-4">

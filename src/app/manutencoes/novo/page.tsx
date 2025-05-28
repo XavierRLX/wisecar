@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -47,6 +47,7 @@ export default function NewMaintenancePage() {
     notes: "",
     laborCost: "",
     parts: [],
+    docs: [],           // ← adiciona docs aqui
   };
 
   async function handleSubmit(values: MaintenanceValues) {
@@ -72,6 +73,7 @@ export default function NewMaintenancePage() {
       })
       .select("id")
       .single();
+
     if (error || !data?.id) {
       setSubmitting(false);
       throw error || new Error("Erro ao criar manutenção");
@@ -103,6 +105,37 @@ export default function NewMaintenancePage() {
       .from("maintenance_records")
       .update({ cost: partsTotal + (parseFloat(values.laborCost) || 0) })
       .eq("id", recordId);
+
+    // 4) faz upload dos docs e insere em maintenance_docs
+    if (values.docs.length > 0) {
+      await Promise.all(
+        values.docs.map(async (doc) => {
+          const path = `${recordId}/${doc.file!.name}`;
+          // upload para o bucket "maintenance-docs"
+          const { error: uploadErr } = await supabase
+            .storage
+            .from("maintenance-docs")
+            .upload(path, doc.file!);
+          if (uploadErr) throw uploadErr;
+
+          // recupera URL pública
+          const { data: { publicUrl } } = supabase
+            .storage
+            .from("maintenance-docs")
+            .getPublicUrl(path);
+
+          // insere metadados no banco
+          const { error: dbErr } = await supabase
+            .from("maintenance_docs")
+            .insert({
+              maintenance_record_id: recordId,
+              title: doc.title,
+              file_url: publicUrl,
+            });
+          if (dbErr) throw dbErr;
+        })
+      );
+    }
 
     router.push("/manutencoes");
   }

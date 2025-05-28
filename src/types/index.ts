@@ -101,6 +101,14 @@ export interface MaintenanceRecord {
   maintenance_parts?: MaintenancePart[];
 }
 
+export interface MaintenanceDoc {
+  id: string;
+  maintenance_record_id: string;
+  title: string;
+  file_url: string;
+  uploaded_at?: string;
+}
+
 export interface Profile {
   id: string;
   first_name: string;
@@ -112,7 +120,6 @@ export interface Profile {
   is_admin?: boolean;   
   created_at?: string;
 }
-
 export interface ProviderImage {
   id: string;
   provider_id: string;
