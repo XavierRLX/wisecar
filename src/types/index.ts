@@ -18,8 +18,9 @@ export interface Vehicle {
   id: string;
   user_id: string;
   category_id: number | null;
-  owner_id?: string;      
+  owner_id?: string | null;      
   is_for_sale?: boolean; 
+  is_wishlist?:boolean;
   brand: string;
   model: string;
   year: number;

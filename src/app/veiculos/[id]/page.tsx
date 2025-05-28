@@ -1,4 +1,3 @@
-// app/veiculos/[id]/page.tsx
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -28,9 +27,10 @@ export default function VehicleDetailsPage() {
   const router = useRouter();
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [loading, setLoading] = useState(true);
-  const [moving, setMoving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fipeAtual, setFipeAtual] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [togglingSale, setTogglingSale] = useState(false);
 
   const fetchVehicle = useCallback(async () => {
     setLoading(true);
@@ -45,14 +45,20 @@ export default function VehicleDetailsPage() {
       .eq("id", id)
       .single();
 
-    if (error) setError(error.message);
-    else setVehicle(data);
+    if (error) {
+      setError(error.message);
+    } else {
+      setVehicle(data);
+    }
     setLoading(false);
   }, [id]);
 
   useEffect(() => {
-    if (id) fetchVehicle();
-  }, [id, fetchVehicle]);
+    fetchVehicle();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setCurrentUser(user);
+    });
+  }, [fetchVehicle]);
 
   const handleCompararFipe = async () => {
     if (!vehicle?.fipe_info) return;
@@ -74,43 +80,61 @@ export default function VehicleDetailsPage() {
     }
   };
 
-  const handleMoveToGarage = async () => {
+  const handleToggleSale = async () => {
     if (!vehicle) return;
-    setMoving(true);
+    setTogglingSale(true);
+
     const {
       data: { user },
       error: authErr,
     } = await supabase.auth.getUser();
     if (authErr || !user) {
-      setMoving(false);
+      setTogglingSale(false);
       return router.push("/login");
     }
+
+    const updates: Partial<Vehicle> = {};
+    if (vehicle.is_for_sale) {
+      // Retirar da venda → volta pra garagem
+      updates.is_for_sale = false;
+      updates.owner_id = user.id;
+    } else {
+      // Colocar à venda → tira da garagem e remove wishlist
+      updates.is_for_sale = true;
+      updates.owner_id = null;
+      updates.is_wishlist = false;
+    }
+
     const { error: updErr } = await supabase
       .from("vehicles")
-      .update({
-        is_for_sale: false,
-        owner_id: user.id,
-      })
+      .update(updates)
       .eq("id", vehicle.id);
-    setMoving(false);
+
+    setTogglingSale(false);
     if (updErr) {
-      alert("Não foi possível mover para a garagem: " + updErr.message);
+      alert(
+        `Não foi possível ${
+          vehicle.is_for_sale ? "retirar da venda" : "colocar à venda"
+        }: ${updErr.message}`
+      );
       return;
     }
-    router.push("/minhaGaragem");
+    fetchVehicle();
   };
 
   if (loading) return <LoadingState message="Carregando veículo..." />;
   if (error) return <p className="p-8 text-red-500">Erro: {error}</p>;
   if (!vehicle) return <p className="p-8">Veículo não encontrado</p>;
 
+  const isOwner = currentUser?.id === vehicle.user_id;
+
   return (
     <AuthGuard>
       <div className="max-w-4xl mx-auto space-y-6 p-4">
         {/* Imagens */}
         <section className="mb-4">
-        <BackButton className="mb-2"/>
-          {vehicle.vehicle_images && vehicle.vehicle_images.length > 0 ? (
+          <BackButton className="mb-2" />
+          {vehicle.vehicle_images?.length ? (
             <Carousel images={vehicle.vehicle_images} />
           ) : (
             <div className="w-full h-64 bg-gray-200 flex items-center justify-center rounded-lg shadow-lg">
@@ -119,21 +143,23 @@ export default function VehicleDetailsPage() {
           )}
         </section>
 
-        {/* Título com botão de editar no canto direito */}
+        {/* Título e editar */}
         <header className="mb-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold">
             {vehicle.brand} {vehicle.model}
           </h1>
-          <button
-            onClick={() => router.push(`/veiculos/${vehicle.id}/editar`)}
-            aria-label="Editar veículo"
-            className="p-2 text-gray-500 hover:text-gray-800 transition"
-          >
-            <Edit2 className="w-6 h-6" />
-          </button>
+          {isOwner && (
+            <button
+              onClick={() => router.push(`/veiculos/${vehicle.id}/editar`)}
+              aria-label="Editar veículo"
+              className="p-2 text-gray-500 hover:text-gray-800 transition"
+            >
+              <Edit2 className="w-6 h-6" />
+            </button>
+          )}
         </header>
 
-
+        {/* Dados do veículo */}
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-gray-500" />
@@ -176,26 +202,38 @@ export default function VehicleDetailsPage() {
           <strong>Observações:</strong> {vehicle.notes || "Sem observações"}
         </p>
 
-        {/* Botões de Ação Modernos */}
+        {/* Botões de Ação */}
         <div className="flex justify-around flex-wrap gap-4 mb-4">
+          <button
+            onClick={handleCompararFipe}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition"
+          >
+            <RefreshCw className="w-5 h-5" />
+            <span>Comparar FIPE</span>
+          </button>
+          {isOwner && (
             <button
-              onClick={handleCompararFipe}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition"
+              onClick={handleToggleSale}
+              disabled={togglingSale}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded transition disabled:opacity-50 ${
+                vehicle.is_for_sale
+                  ? "bg-red-600 text-white hover:bg-red-700"
+                  : "bg-green-600 text-white hover:bg-green-700"
+              }`}
             >
-              <RefreshCw className="w-5 h-5" />
-              <span>Comparar FIPE</span>
+              <CheckCircle className="w-5 h-5" />
+              <span>
+                {togglingSale
+                  ? vehicle.is_for_sale
+                    ? "Retirando..."
+                    : "Colocando..."
+                  : vehicle.is_for_sale
+                  ? "Retirar da Venda"
+                  : "Colocar à Venda"}
+              </span>
             </button>
-            {vehicle.is_for_sale && (
-              <button
-                onClick={handleMoveToGarage}
-                disabled={moving}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50"
-              >
-                <CheckCircle className="w-5 h-5" />
-                <span>{moving ? "Movendo..." : "Mover para Garagem"}</span>
-              </button>
-            )}
-          </div>
+          )}
+        </div>
 
         {/* FIPE Atualizado */}
         {fipeAtual && (
@@ -215,7 +253,7 @@ export default function VehicleDetailsPage() {
           </div>
         )}
 
-        {/* Detalhes do Vendedor e Opcionais */}
+        {/* Detalhes do vendedor e opcionais */}
         <div className="bg-white p-4 rounded shadow space-y-4">
           <SellerDetails seller={vehicle.seller_details!} />
           <OptionalList vehicleOptionals={vehicle.vehicle_optionals} />

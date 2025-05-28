@@ -38,15 +38,15 @@ export function useVehicles(mode: VehicleMode = "desire") {
     if (mode === "desire") {
       query = query
         .eq("user_id", user.id)
-        .eq("is_for_sale", true);
+        .eq("is_wishlist", true);
     } else if (mode === "garage") {
       query = query
         .eq("owner_id", user.id)
-        .eq("is_for_sale", false);
-    } else {
-      // mode === "all": combine desejados e garagem
+        .eq("is_for_sale", false)
+        .eq("is_wishlist", false);
+    } else /* all */ {
       query = query.or(
-        `and(user_id.eq.${user.id},is_for_sale.eq.true),and(owner_id.eq.${user.id},is_for_sale.eq.false)`
+        `and(user_id.eq.${user.id},is_wishlist.eq.true),and(owner_id.eq.${user.id},is_for_sale.eq.false)`
       );
     }
 

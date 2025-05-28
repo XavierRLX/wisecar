@@ -21,8 +21,9 @@ export async function submitVehicleData(
   // Monta os dados do veículo incluindo as novas flags
   const vehicleData = {
     user_id: user.id,
-    owner_id: formData.is_for_sale ? null : user.id, // Só preenche se for garagem
-    is_for_sale: formData.is_for_sale,               // Desejado x Minha Garagem
+    owner_id: formData.is_wishlist || formData.is_for_sale ? null : user.id,
+    is_wishlist: !!formData.is_wishlist,
+    is_for_sale: !!formData.is_for_sale,    
     category_id: formData.category_id === "carros" ? 1 : 2,
     fipe_info: fipeInfo ? JSON.stringify(fipeInfo) : null,
     brand: brandName,
@@ -100,11 +101,10 @@ export async function updateVehicleData(
   selectedOptionals: number[]
 ) {
   // Recupera o user para atribuir owner_id, se necessário
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const ownerId = formData.is_for_sale ? null : user?.id || null;
+  const { data: { user } } = await supabase.auth.getUser();
+  const ownerId = formData.is_wishlist || formData.is_for_sale
+    ? null
+    : user?.id;
 
   // 1. Atualiza os dados principais
   const { error: updateError } = await supabase
@@ -120,7 +120,8 @@ export async function updateVehicleData(
       notes: formData.observacoes,
       // Novos campos:
       owner_id: ownerId,
-      is_for_sale: formData.is_for_sale,
+      is_wishlist: !!formData.is_wishlist,
+      is_for_sale: !!formData.is_for_sale,
     })
     .eq("id", vehicleId);
   if (updateError) {
