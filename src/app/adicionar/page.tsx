@@ -22,6 +22,7 @@ import { submitVehicleData } from "@/lib/vehicleService";
 
 interface VehicleFormData {
   category_id: "carros" | "motos";
+  is_wishlist: boolean;
   is_for_sale: boolean;
   marca: string;
   modelo: string;
@@ -47,7 +48,8 @@ export default function AddVehiclePage() {
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [formData, setFormData] = useState<VehicleFormData>({
     category_id: "carros",
-    is_for_sale: true,
+    is_wishlist: true,
+    is_for_sale: false,
     marca: "",
     modelo: "",
     ano: "",
@@ -106,7 +108,11 @@ export default function AddVehiclePage() {
     async function loadAnos() {
       if (!formData.marca || !formData.modelo) return setAnos([]);
       try {
-        const data = await fetchAnos(formData.category_id, formData.marca, formData.modelo);
+        const data = await fetchAnos(
+          formData.category_id,
+          formData.marca,
+          formData.modelo
+        );
         setAnos(data);
       } catch {
         console.error("Erro ao carregar anos");
@@ -144,7 +150,9 @@ export default function AddVehiclePage() {
   }
 
   function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -169,7 +177,9 @@ export default function AddVehiclePage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return setLoading(false);
     try {
       await submitVehicleData(
@@ -192,33 +202,51 @@ export default function AddVehiclePage() {
   return (
     <AuthGuard>
       <div className="px-4 py-8 max-w-4xl mx-auto space-y-8">
-          <div className="flex flex-col items-center space-y-2">
-            <h1 className="text-medium text-gray-600">Escolha em qual lista adicionar</h1>
-            <div className="relative inline-flex bg-gray-200 rounded-full p-1 h-10 w-64">
-              <div
-                className={`absolute top-1 left-1 w-1/2 h-8 bg-white rounded-full shadow transition-transform duration-300
-                  ${formData.is_for_sale ? "translate-x-0" : "translate-x-full"}`}
-              />
+        <div className="flex flex-col items-center space-y-2">
+          <h1 className="text-medium text-gray-600">
+            Escolha em qual lista adicionar
+          </h1>
+          <div className="relative inline-flex bg-gray-200 rounded-full p-1 h-10 w-64">
+            <div
+              className={`absolute top-1 left-1 w-1/2 h-8 bg-white rounded-full shadow transition-transform duration-300 ${
+                formData.is_wishlist ? "translate-x-0" : "translate-x-full"
+              }`}
+            />
 
-              <button
-                type="button"
-                onClick={() => setFormData((f) => ({ ...f, is_for_sale: true }))}
-                className={`relative z-10 flex-1 text-sm font-medium transition-colors
-                  ${formData.is_for_sale ? "text-blue-600" : "text-gray-600"}`}
-              >
-                Lista de Desejo
-              </button>
+            <button
+              type="button"
+              onClick={() =>
+                setFormData((f) => ({
+                  ...f,
+                  is_wishlist: true,
+                  is_for_sale: false,
+                }))
+              }
+              className={`relative z-10 flex-1 text-sm font-medium transition-colors ${
+                formData.is_wishlist ? "text-blue-600" : "text-gray-600"
+              }`}
+            >
+              Lista de Desejo
+            </button>
 
-              <button
-                type="button"
-                onClick={() => setFormData((f) => ({ ...f, is_for_sale: false }))}
-                className={`relative z-10 flex-1 text-sm font-medium transition-colors
-                  ${!formData.is_for_sale ? "text-blue-600" : "text-gray-600"}`}
-              >
-                Minha Garagem
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() =>
+                setFormData((f) => ({
+                  ...f,
+                  is_wishlist: false,
+                  is_for_sale: false,
+                }))
+              }
+              className={`relative z-10 flex-1 text-sm font-medium transition-colors ${
+                !formData.is_wishlist ? "text-blue-600" : "text-gray-600"
+              }`}
+            >
+              Minha Garagem
+            </button>
           </div>
+        </div>
+
         {/* Formulário */}
         <div className="bg-white shadow-md rounded-lg p-8">
           <form onSubmit={handleSubmit} className="space-y-8">

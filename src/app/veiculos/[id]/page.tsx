@@ -1,3 +1,4 @@
+// app/veiculos/[id]/page.tsx
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -30,7 +31,7 @@ export default function VehicleDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const [fipeAtual, setFipeAtual] = useState<any>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [togglingSale, setTogglingSale] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const fetchVehicle = useCallback(async () => {
     setLoading(true);
@@ -80,43 +81,68 @@ export default function VehicleDetailsPage() {
     }
   };
 
-  const handleToggleSale = async () => {
+  const handleAddToGarage = async () => {
     if (!vehicle) return;
-    setTogglingSale(true);
-
+    setActionLoading(true);
     const {
       data: { user },
       error: authErr,
     } = await supabase.auth.getUser();
     if (authErr || !user) {
-      setTogglingSale(false);
+      setActionLoading(false);
       return router.push("/login");
     }
-
-    const updates: Partial<Vehicle> = {};
-    if (vehicle.is_for_sale) {
-      // Retirar da venda → volta pra garagem
-      updates.is_for_sale = false;
-      updates.owner_id = user.id;
-    } else {
-      // Colocar à venda → tira da garagem e remove wishlist
-      updates.is_for_sale = true;
-      updates.owner_id = null;
-      updates.is_wishlist = false;
-    }
-
     const { error: updErr } = await supabase
       .from("vehicles")
-      .update(updates)
+      .update({
+        is_wishlist: false,
+        owner_id: user.id,
+      })
       .eq("id", vehicle.id);
-
-    setTogglingSale(false);
+    setActionLoading(false);
     if (updErr) {
-      alert(
-        `Não foi possível ${
-          vehicle.is_for_sale ? "retirar da venda" : "colocar à venda"
-        }: ${updErr.message}`
-      );
+      alert("Erro ao adicionar à garagem: " + updErr.message);
+      return;
+    }
+    fetchVehicle();
+  };
+
+  const handlePutForSale = async () => {
+    if (!vehicle) return;
+    setActionLoading(true);
+    const { error: updErr } = await supabase
+      .from("vehicles")
+      .update({ is_for_sale: true })
+      .eq("id", vehicle.id);
+    setActionLoading(false);
+    if (updErr) {
+      alert("Erro ao colocar à venda: " + updErr.message);
+      return;
+    }
+    fetchVehicle();
+  };
+
+  const handleRemoveSale = async () => {
+    if (!vehicle) return;
+    setActionLoading(true);
+    const {
+      data: { user },
+      error: authErr,
+    } = await supabase.auth.getUser();
+    if (authErr || !user) {
+      setActionLoading(false);
+      return router.push("/login");
+    }
+    const { error: updErr } = await supabase
+      .from("vehicles")
+      .update({
+        is_for_sale: false,
+        owner_id: user.id,
+      })
+      .eq("id", vehicle.id);
+    setActionLoading(false);
+    if (updErr) {
+      alert("Erro ao retirar da venda: " + updErr.message);
       return;
     }
     fetchVehicle();
@@ -203,36 +229,52 @@ export default function VehicleDetailsPage() {
         </p>
 
         {/* Botões de Ação */}
-        <div className="flex justify-around flex-wrap gap-4 mb-4">
-          <button
+         <div className="flex justify-around flex-wrap gap-4 mb-4">
+        <button
             onClick={handleCompararFipe}
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition"
           >
             <RefreshCw className="w-5 h-5" />
             <span>Comparar FIPE</span>
           </button>
-          {isOwner && (
-            <button
-              onClick={handleToggleSale}
-              disabled={togglingSale}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded transition disabled:opacity-50 ${
-                vehicle.is_for_sale
-                  ? "bg-red-600 text-white hover:bg-red-700"
-                  : "bg-green-600 text-white hover:bg-green-700"
-              }`}
-            >
-              <CheckCircle className="w-5 h-5" />
-              <span>
-                {togglingSale
-                  ? vehicle.is_for_sale
-                    ? "Retirando..."
-                    : "Colocando..."
-                  : vehicle.is_for_sale
-                  ? "Retirar da Venda"
-                  : "Colocar à Venda"}
-              </span>
-            </button>
-          )}
+        {isOwner && (
+          <div className="flex justify-around flex-wrap gap-4 mb-4">
+            {vehicle.is_wishlist ? (
+              <button
+                onClick={handleAddToGarage}
+                disabled={actionLoading}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 transition"
+              >
+                <CheckCircle className="w-5 h-5" />
+                <span>
+                  {actionLoading ? "Adicionando..." : "Adicionar à Garagem"}
+                </span>
+              </button>
+            ) : vehicle.is_for_sale ? (
+              <button
+                onClick={handleRemoveSale}
+                disabled={actionLoading}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 transition"
+              >
+                <CheckCircle className="w-5 h-5" />
+                <span>
+                  {actionLoading ? "Retirando..." : "Retirar da Venda"}
+                </span>
+              </button>
+            ) : (
+              <button
+                onClick={handlePutForSale}
+                disabled={actionLoading}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition"
+              >
+                <CheckCircle className="w-5 h-5" />
+                <span>
+                  {actionLoading ? "Processando..." : "Colocar à Venda"}
+                </span>
+              </button>
+            )}
+          </div>
+        )}
         </div>
 
         {/* FIPE Atualizado */}
