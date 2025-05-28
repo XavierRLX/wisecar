@@ -1,16 +1,18 @@
 // app/manutencoes/AllMaintenanceClient.tsx
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Trash2, PlusCircle, ChevronDown } from 'lucide-react';
 import AuthGuard from '@/components/AuthGuard';
 import EnsureProfile from '@/components/EnsureProfile';
 import LoadingState from '@/components/LoadingState';
 import EmptyState from '@/components/EmptyState';
-import { supabase } from '@/lib/supabase';
-import { MaintenanceRecord, MaintenancePart, Vehicle } from '@/types';
 import BackButton from '@/components/BackButton';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useVehicles } from '@/hooks/useVehicles';
+import { useMaintenance } from '@/hooks/useMaintenance';
+import type { Vehicle, MaintenancePart, MaintenanceRecord } from '@/types';
 
 type MaintenanceWithVehicle = MaintenanceRecord & {
   maintenance_parts: MaintenancePart[];
@@ -22,141 +24,91 @@ export default function AllMaintenanceClient() {
   const searchParams = useSearchParams();
   const presetVehicleId = searchParams.get('vehicleId') ?? '';
 
-  const [records, setRecords] = useState<MaintenanceWithVehicle[]>([]);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [loading, setLoading] = useState(true);
+  // 👉 useCurrentUser agora retorna { userId, loading }
+  const { userId, loading: loadingUser } = useCurrentUser();
+  const { vehicles, loading: loadingVehicles, error: vehiclesError } = useVehicles('garage');
+  const {
+    records,
+    loading: loadingMaintenance,
+    error: maintenanceError,
+    remove,
+    changeStatus
+  } = useMaintenance(userId ?? '');
 
   // filtros
   const [vehicleFilter, setVehicleFilter] = useState<string>(presetVehicleId);
   const [statusFilter, setStatusFilter] = useState<'' | 'A fazer' | 'Feito' | 'Cancelado'>('');
   const [typeFilter, setTypeFilter] = useState<string>('');
-  
+
   // dropdowns
   const [showVehicleMenu, setShowVehicleMenu] = useState(false);
-  const [showTypeMenu, setShowTypeMenu] = useState(false);
   const [openStatusMenuId, setOpenStatusMenuId] = useState<string | null>(null);
   const vehicleMenuRef = useRef<HTMLDivElement>(null);
-  const typeMenuRef = useRef<HTMLDivElement>(null);
-  const statusMenuRef = useRef<HTMLDivElement>(null);
+  const statusMenuRef  = useRef<HTMLDivElement>(null);
 
-  // carrega veículos
-  const loadVehicles = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return router.push('/login');
-    const { data } = await supabase
-      .from('vehicles')
-      .select("id, brand, model, user_id, category_id, year, price, mileage, color, fuel")
-      .eq('owner_id', user.id)
-      .eq('is_for_sale', false)
-      .order('brand', { ascending: true })
-      .order('model', { ascending: true });
-    setVehicles(data || []);
-  }, [router]);
-
-  // carrega registros
-  const loadRecords = useCallback(async () => {
-    setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return router.push('/login');
-    if (vehicles.length === 0) {
-      setRecords([]);
-      setLoading(false);
-      return;
-    }
-    const ids = vehicles.map(v => v.id);
-    const { data, error } = await supabase
-      .from('maintenance_records')
-      .select(`*, maintenance_parts(*), vehicle:vehicles(id, brand, model)`)
-      .in('vehicle_id', ids)
-      .order('scheduled_date', { ascending: true });
-    if (!error && data) setRecords(data as MaintenanceWithVehicle[]);
-    setLoading(false);
-  }, [router, vehicles]);
-
-  useEffect(() => { loadVehicles(); }, [loadVehicles]);
-  useEffect(() => { if (vehicles.length) loadRecords(); }, [vehicles, loadRecords]);
-
-  // fecha dropdowns ao clicar fora
-  useEffect(() => {
-    function onClickOutside(e: MouseEvent) {
-      if (vehicleMenuRef.current && !vehicleMenuRef.current.contains(e.target as Node)) {
-        setShowVehicleMenu(false);
-      }
-      if (typeMenuRef.current && !typeMenuRef.current.contains(e.target as Node)) {
-        setShowTypeMenu(false);
-      }
-      if (statusMenuRef.current && !statusMenuRef.current.contains(e.target as Node)) {
-        setOpenStatusMenuId(null);
-      }
-    }
-    // trocar para 'click' em vez de 'mousedown'
-    document.addEventListener('click', onClickOutside);
-    return () => document.removeEventListener('click', onClickOutside);
-  }, []);
-
-  const handleDelete = async (recId: string) => {
+  // handlers
+  const handleDelete = (id: string) => {
     if (!confirm('Deseja excluir esta manutenção?')) return;
-    const { error } = await supabase.from('maintenance_records').delete().eq('id', recId);
-    if (!error) setRecords(r => r.filter(x => x.id !== recId));
-    else alert('Erro: ' + error.message);
+    remove(id);
   };
 
-  const handleStatusChange = async (recId: string, newStatus: MaintenanceRecord['status']) => {
-    const { error } = await supabase
-      .from('maintenance_records')
-      .update({ status: newStatus })
-      .eq('id', recId);
-    if (!error) {
-      setRecords(r => r.map(x =>
-        x.id === recId ? { ...x, status: newStatus } : x
-      ));
-      setOpenStatusMenuId(null);
-    } else {
-      alert('Erro: ' + error.message);
-    }
+  const handleStatusChange = (id: string, newStatus: MaintenanceRecord['status']) => {
+    changeStatus(id, newStatus);
+    setOpenStatusMenuId(null);
   };
 
+  // aplica filtros
   const filtered = useMemo(() =>
-    records
+    (records as MaintenanceWithVehicle[])
       .filter(r => !vehicleFilter || r.vehicle.id === vehicleFilter)
-      .filter(r => !statusFilter || r.status === statusFilter)
-      .filter(r => !typeFilter || r.maintenance_type === typeFilter)
+      .filter(r => !statusFilter  || r.status === statusFilter)
+      .filter(r => !typeFilter    || r.maintenance_type === typeFilter)
   , [records, vehicleFilter, statusFilter, typeFilter]);
 
-  const totalGasto = useMemo(() =>
-    filtered.reduce((sum, r) => sum + (r.cost ?? 0), 0)
-  , [filtered]);
+  const totalGasto = useMemo(
+    () => filtered.reduce((sum, r) => sum + (r.cost ?? 0), 0),
+    [filtered]
+  );
 
-  if (loading) return <LoadingState message="Carregando manutenções…" />;
+  // loading / errors
+  if (loadingUser || loadingVehicles || loadingMaintenance) {
+    return <LoadingState message="Carregando manutenções…" />;
+  }
+  if (vehiclesError || maintenanceError) {
+    const msg = vehiclesError ?? maintenanceError;
+    return <div className="text-red-600 p-4">Erro: {msg}</div>;
+  }
 
   return (
     <AuthGuard>
       <EnsureProfile />
       <div className="p-4 max-w-4xl mx-auto space-y-6">
-      <BackButton className='mb-2'/>
-       {/* Header */}
-      <div className="flex justify-between items-center gap-4">
-        <h1 className="text-2xl font-bold">Manutenções</h1>
-        <button
-          onClick={() => router.push(`/manutencoes/novo`)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
-        >
-          <PlusCircle className="w-5 h-5" /> Nova
-        </button>
-      </div>
+        <BackButton className="mb-2" />
+
+        {/* Header */}
+        <div className="flex justify-between items-center gap-4">
+          <h1 className="text-2xl font-bold">Manutenções</h1>
+          <button
+            onClick={() => router.push(`/manutencoes/novo`)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+          >
+            <PlusCircle className="w-5 h-5" /> Nova
+          </button>
+        </div>
+
         {/* Filtros */}
         <form className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          {/* Status Filter */}
+          {/* Status */}
           <div className="flex flex-col">
             <label htmlFor="statusFilter" className="mb-1 text-sm font-medium text-gray-700">Status</label>
             <div id="statusFilter" className="relative inline-flex bg-gray-100 rounded-full p-1 h-10 w-full">
               <div
                 style={{
                   left:
-                    statusFilter === "" ? "1px"
-                    : statusFilter === "A fazer" ? "calc(100%/4 + 1px)"
-                    : statusFilter === "Feito" ? "calc(2 * 100%/4 + 1px)"
-                    : "calc(3 * 100%/4 + 1px)",
+                    statusFilter === ""       ? "1px"
+                  : statusFilter === "A fazer" ? "calc(100%/4 + 1px)"
+                  : statusFilter === "Feito"   ? "calc(2 * 100%/4 + 1px)"
+                  :                             "calc(3 * 100%/4 + 1px)",
                 }}
                 className="absolute top-1 h-8 w-1/4 bg-white rounded-full shadow transition-all duration-200"
               />
@@ -175,7 +127,7 @@ export default function AllMaintenanceClient() {
             </div>
           </div>
 
-          {/* Veículo Filter */}
+          {/* Veículo */}
           <div className="flex flex-col">
             <label htmlFor="vehicleFilter" className="mb-1 text-sm font-medium text-gray-700">Veículo</label>
             <div ref={vehicleMenuRef} id="vehicleFilter" className="relative">
@@ -192,7 +144,7 @@ export default function AllMaintenanceClient() {
               {showVehicleMenu && (
                 <ul className="absolute right-0 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-10">
                   <li
-                    onClick={() => { setVehicleFilter(""); setShowVehicleMenu(false); }}
+                    onClick={() => { setVehicleFilter(''); setShowVehicleMenu(false); }}
                     className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                   >
                     Todos
@@ -239,10 +191,11 @@ export default function AllMaintenanceClient() {
                   onClick={() => router.push(`/manutencoes/${r.id}`)}
                 >
                   <div className="flex justify-between items-center mb-2">
-                    <h2 className="text-lg font-semibold flex-1 text-center">{r.maintenance_name}</h2>
+                    <h2 className="text-lg font-semibold flex-1 text-center">
+                      {r.maintenance_name}
+                    </h2>
                     <div
                       ref={el => {
-                        // só atualiza o ref para o dropdown aberto
                         if (openStatusMenuId === r.id) statusMenuRef.current = el;
                       }}
                       className="relative"
@@ -250,12 +203,11 @@ export default function AllMaintenanceClient() {
                       <button
                         onClick={e => { e.stopPropagation(); setOpenStatusMenuId(r.id); }}
                         className={`inline-flex items-center gap-1 px-3 py-1 text-base font-medium rounded-full select-none
-                          ${r.status === "Feito" ? "bg-green-100 text-green-800"
+                          ${r.status === "Feito"     ? "bg-green-100 text-green-800"
                           : r.status === "Cancelado" ? "bg-red-100 text-red-800"
-                          : "bg-yellow-100 text-yellow-800"}`}
+                          :                            "bg-yellow-100 text-yellow-800"}`}
                       >
-                        {r.status}
-                        <ChevronDown className="w-4 h-4" />
+                        {r.status} <ChevronDown className="w-4 h-4" />
                       </button>
                       {openStatusMenuId === r.id && (
                         <ul
