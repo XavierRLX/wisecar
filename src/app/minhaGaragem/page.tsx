@@ -18,7 +18,7 @@ export default function MinhaGaragemPage() {
   const router = useRouter();
   const { userId, loading: authLoading } = useAuth();
 
-  // somente garagem (mesmo se estiver à venda)
+  // somente "GARAGE" inclui veículos em garagem ou à venda
   const [mode] = useState<VehicleMode>("garage");
   const {
     vehicles,
@@ -36,17 +36,19 @@ export default function MinhaGaragemPage() {
     [vehicles]
   );
 
-  if (authLoading || vehiclesLoading)
+  if (authLoading || vehiclesLoading) {
     return (
       <div className="flex justify-center py-16">
         <LoadingState message="Carregando veículos na garagem..." />
       </div>
     );
+  }
 
-  if (error)
+  if (error) {
     return <p className="p-8 text-red-500">Erro ao carregar: {error}</p>;
+  }
 
-  if (sorted.length === 0)
+  if (sorted.length === 0) {
     return (
       <AuthGuard>
         <EnsureProfile />
@@ -58,6 +60,7 @@ export default function MinhaGaragemPage() {
         />
       </AuthGuard>
     );
+  }
 
   return (
     <AuthGuard>
@@ -73,8 +76,8 @@ export default function MinhaGaragemPage() {
               className="relative cursor-pointer"
               onClick={() => router.push(`/veiculos/${v.id}`)}
             >
-              {/* Badge “À Venda” caso esteja */}
-              {v.is_for_sale && (
+              {/* Badge “À Venda” */}
+              {v.status === "FOR_SALE" && (
                 <div className="absolute top-2 left-2 z-10 bg-green-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
                   <DollarSign className="w-4 h-4" /> À Venda
                 </div>
@@ -84,8 +87,7 @@ export default function MinhaGaragemPage() {
                 vehicle={v}
                 onDelete={() => deleteVehicle(v.id, userId!)}
                 extraActions={
-                  // só aparece manutenção quando NÃO é wishlist
-                  !v.is_wishlist && (
+                  v.status !== "WISHLIST" && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

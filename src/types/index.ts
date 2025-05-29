@@ -1,3 +1,6 @@
+// types.ts
+export type VehicleStatus = 'WISHLIST' | 'GARAGE' | 'FOR_SALE';
+
 export interface VehicleImage {
   id: string;
   vehicle_id: string;
@@ -14,38 +17,36 @@ export interface VehicleOptional {
   optional: Optional;
 }
 
+export interface SellerDetails {
+  vehicle_id: string;
+  seller_type: 'particular' | 'profissional';
+  seller_name: string;
+  phone: string;
+  company?: string;
+  social_media?: string;
+  address?: string;
+}
+
 export interface Vehicle {
   id: string;
-  user_id: string;
-  category_id: number | null;
-  owner_id?: string | null;      
-  is_for_sale?: boolean; 
-  is_wishlist?:boolean;
+  user_id: string;               // quem “registrou” (wishlist) ou criou inicialmente
+  owner_id: string | null;       // quem “possui” (garagem/venda)
+  category_id: number | null;    // 1 = carros, 2 = motos, etc.
+  status: VehicleStatus;
+  fipe_info?: any;               // JSON cru, se quiser tipar, crie uma interface à parte
+  fipe_price: number;            // antigo price, agora explicitamente FIPE
+  sale_price?: number | null;    // só quando status === 'FOR_SALE'
   brand: string;
   model: string;
   year: number;
-  price: number;
   mileage: number;
   color: string;
   fuel: string;
   notes?: string;
-  created_at?: string;
   vehicle_images?: VehicleImage[];
-  fipe_info?: any;
-  optionals?: Optional[]; 
+  vehicle_optionals?: VehicleOptional[];
+  optionals?: Optional[];       
   seller_details?: SellerDetails;
-  vehicle_optionals?: VehicleOptional[]; 
-}
-
-export interface SellerDetails {
-  id: string;
-  vehicle_id: string;
-  seller_type: string;    
-  seller_name: string;
-  phone: string;
-  company: string;
-  social_media: string;
-  address: string;
   created_at?: string;
 }
 

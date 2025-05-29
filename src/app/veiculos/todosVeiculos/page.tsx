@@ -1,4 +1,3 @@
-// app/todosVeiculos/page.tsx
 "use client";
 
 import { useState, useMemo } from "react";
@@ -32,17 +31,19 @@ export default function TodosVeiculosPage() {
     [vehicles]
   );
 
-  if (authLoading || vehiclesLoading)
+  if (authLoading || vehiclesLoading) {
     return (
       <div className="flex justify-center py-16">
         <LoadingState message="Carregando veículos..." />
       </div>
     );
+  }
 
-  if (error)
+  if (error) {
     return <p className="p-8 text-red-500">Erro ao carregar: {error}</p>;
+  }
 
-  if (sorted.length === 0)
+  if (sorted.length === 0) {
     return (
       <AuthGuard>
         <EnsureProfile />
@@ -54,6 +55,7 @@ export default function TodosVeiculosPage() {
         />
       </AuthGuard>
     );
+  }
 
   return (
     <AuthGuard>
@@ -106,7 +108,7 @@ export default function TodosVeiculosPage() {
               onClick={() => router.push(`/veiculos/${v.id}`)}
             >
               {/* Badge À Venda */}
-              {v.is_for_sale && (
+              {v.status === "FOR_SALE" && (
                 <div className="absolute top-2 left-2 z-10 bg-green-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
                   <DollarSign className="w-4 h-4" /> À Venda
                 </div>
@@ -118,8 +120,8 @@ export default function TodosVeiculosPage() {
                 onToggleFavorite={() => toggleFavorite(v.id)}
                 onDelete={() => deleteVehicle(v.id, userId!)}
                 extraActions={
-                  // só aparece manutenção quando não é wishlist
-                  !v.is_wishlist && (
+                  // só aparece manutenção quando não é "Desejado"
+                  v.status !== "WISHLIST" && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

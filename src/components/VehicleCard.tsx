@@ -1,4 +1,3 @@
-// components/VehicleCard.tsx
 "use client";
 
 import React from "react";
@@ -29,6 +28,12 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
   onRemoveFavorite,
   extraActions,
 }) => {
+  // Usar fipe_price para valor padrão; se estiver à venda, mostrar sale_price
+  const displayPrice =
+    vehicle.status === "FOR_SALE" && vehicle.sale_price != null
+      ? vehicle.sale_price
+      : vehicle.fipe_price;
+
   return (
     <div className="bg-white shadow-xl rounded-lg overflow-hidden transform transition duration-100 hover:scale-102">
       <div>
@@ -73,7 +78,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
         <div className="flex mb-4 justify-between">
           <div className="flex items-center gap-1">
             <DollarSign className="w-5 h-5" />
-            <span>R$ {vehicle.price.toLocaleString("pt-BR")}</span>
+            <span>R$ {displayPrice.toLocaleString("pt-BR")}</span>
           </div>
           <div className="flex items-center gap-1">
             <Calendar className="w-4 h-4" />
@@ -85,7 +90,6 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
           </div>
         </div>
 
-        {/* ícone de delete/favorito */}
         <div className="flex justify-end items-center">
           {onDelete ? (
             <button
@@ -111,7 +115,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
           ) : null}
         </div>
 
-        {/* Ações extras (e.g. Manutenções) */}
+        {/* Botão de Manutenções (quando extraActions vier) */}
         {extraActions && <div className="mt-2">{extraActions}</div>}
       </div>
     </div>

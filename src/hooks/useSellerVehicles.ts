@@ -1,48 +1,41 @@
-// src/hooks/useNonSellerVehicles.ts
+// src/hooks/useSellerVehicles.ts
 "use client";
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Vehicle } from "@/types";
+import { Vehicle, VehicleStatus } from "@/types";
 
 type RawVehicle = Vehicle & {
   vehicle_images: any[];
-  profiles: { is_seller: boolean; username: string };
+  profiles: { username: string };
 };
 
-export function useNonSellerVehicles() {
+export function useSellerVehicles(status: VehicleStatus) {
   const [vehicles, setVehicles] = useState<RawVehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  async function fetchVehicles() {
+  const fetchVehicles = async () => {
     setLoading(true);
     setError(null);
 
-    // 1) busca só anúncios e já puxa o username do dono
     const { data, error: supError } = await supabase
       .from("vehicles")
-      .select("*, vehicle_images(*), profiles:user_id(is_seller, username)")
-      .eq("is_for_sale", true);
+      .select("*, vehicle_images(*), profiles:user_id(username)")
+      .eq("status", status);
 
     if (supError) {
       setError(supError.message);
       setVehicles([]);
-      setLoading(false);
-      return;
+    } else {
+      setVehicles((data as RawVehicle[]) || []);
     }
-
-    // 2) filtra só perfis não‐vendedores
-    const raw = (data as RawVehicle[]) || [];
-    const filtered = raw.filter((v) => v.profiles.is_seller === false);
-
-    setVehicles(filtered);
     setLoading(false);
-  }
+  };
 
   useEffect(() => {
     fetchVehicles();
-  }, []);
+  }, [status]);
 
   return { vehicles, loading, error, refetch: fetchVehicles };
 }

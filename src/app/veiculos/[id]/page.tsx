@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import AuthGuard from "@/components/AuthGuard";
 import { fetchFipeAtualizado } from "@/lib/fipe";
-import { Vehicle } from "@/types";
+import { Vehicle, VehicleStatus } from "@/types";
 import BackButton from "@/components/BackButton";
 import {
   Calendar,
@@ -61,6 +61,7 @@ export default function VehicleDetailsPage() {
     });
   }, [fetchVehicle]);
 
+  // compara FIPE antigo vs atual
   const handleCompararFipe = async () => {
     if (!vehicle?.fipe_info) return;
     try {
@@ -81,7 +82,8 @@ export default function VehicleDetailsPage() {
     }
   };
 
-  const handleAddToGarage = async () => {
+  // move de WISHLIST → GARAGE
+  const handleMoveToGarage = async () => {
     if (!vehicle) return;
     setActionLoading(true);
     const {
@@ -95,64 +97,106 @@ export default function VehicleDetailsPage() {
     const { error: updErr } = await supabase
       .from("vehicles")
       .update({
-        is_wishlist: false,
+        status: "GARAGE" as VehicleStatus,
         owner_id: user.id,
+        sale_price: null,
       })
       .eq("id", vehicle.id);
-    setActionLoading(false);
     if (updErr) {
-      alert("Erro ao adicionar à garagem: " + updErr.message);
-      return;
+      alert("Erro ao mover para garagem: " + updErr.message);
+    } else {
+      fetchVehicle();
     }
-    fetchVehicle();
+    setActionLoading(false);
   };
 
+  // de GARAGE → FOR_SALE
   const handlePutForSale = async () => {
     if (!vehicle) return;
     setActionLoading(true);
-    const { error: updErr } = await supabase
-      .from("vehicles")
-      .update({ is_for_sale: true })
-      .eq("id", vehicle.id);
-    setActionLoading(false);
-    if (updErr) {
-      alert("Erro ao colocar à venda: " + updErr.message);
-      return;
-    }
-    fetchVehicle();
-  };
-
-  const handleRemoveSale = async () => {
-    if (!vehicle) return;
-    setActionLoading(true);
-    const {
-      data: { user },
-      error: authErr,
-    } = await supabase.auth.getUser();
-    if (authErr || !user) {
-      setActionLoading(false);
-      return router.push("/login");
-    }
+    const salePrice = vehicle.fipe_price; // ou algum outro valor que queira usar
     const { error: updErr } = await supabase
       .from("vehicles")
       .update({
-        is_for_sale: false,
-        owner_id: user.id,
+        status: "FOR_SALE" as VehicleStatus,
+        sale_price: salePrice,
       })
       .eq("id", vehicle.id);
+    if (updErr) {
+      alert("Erro ao colocar à venda: " + updErr.message);
+    } else {
+      fetchVehicle();
+    }
     setActionLoading(false);
+  };
+
+  // de FOR_SALE → GARAGE
+  const handleRemoveSale = async () => {
+    if (!vehicle) return;
+    setActionLoading(true);
+    const { error: updErr } = await supabase
+      .from("vehicles")
+      .update({
+        status: "GARAGE" as VehicleStatus,
+        sale_price: null,
+      })
+      .eq("id", vehicle.id);
     if (updErr) {
       alert("Erro ao retirar da venda: " + updErr.message);
-      return;
+    } else {
+      fetchVehicle();
     }
-    fetchVehicle();
+    setActionLoading(false);
   };
 
   if (loading) return <LoadingState message="Carregando veículo..." />;
   if (error) return <p className="p-8 text-red-500">Erro: {error}</p>;
   if (!vehicle) return <p className="p-8">Veículo não encontrado</p>;
 
-  const isOwner = currentUser?.id === vehicle.user_id;
+  const isOwner = currentUser?.id === vehicle.owner_id;
+
+  // Escolhe o botão de ação principal
+  const renderActionButton = () => {
+    if (!isOwner) return null;
+
+    switch (vehicle.status) {
+      case "WISHLIST":
+        return (
+          <button
+            onClick={handleMoveToGarage}
+            disabled={actionLoading}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 transition"
+          >
+            <CheckCircle className="w-5 h-5" />
+            {actionLoading ? "Movendo..." : "Mover para Garagem"}
+          </button>
+        );
+
+      case "GARAGE":
+        return (
+          <button
+            onClick={handlePutForSale}
+            disabled={actionLoading}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition"
+          >
+            <CheckCircle className="w-5 h-5" />
+            {actionLoading ? "Processando..." : "Colocar à Venda"}
+          </button>
+        );
+
+      case "FOR_SALE":
+        return (
+          <button
+            onClick={handleRemoveSale}
+            disabled={actionLoading}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 transition"
+          >
+            <CheckCircle className="w-5 h-5" />
+            {actionLoading ? "Processando..." : "Retirar da Venda"}
+          </button>
+        );
+    }
+  };
 
   return (
     <AuthGuard>
@@ -197,10 +241,11 @@ export default function VehicleDetailsPage() {
             <DollarSign className="w-5 h-5 text-gray-500" />
             <span className="text-gray-700">
               <strong>Preço:</strong>{" "}
-              {vehicle.price.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-              })}
+              {(vehicle.status === "FOR_SALE" && vehicle.sale_price) ||
+                vehicle.fipe_price?.toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                })}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -228,53 +273,16 @@ export default function VehicleDetailsPage() {
           <strong>Observações:</strong> {vehicle.notes || "Sem observações"}
         </p>
 
-        {/* Botões de Ação */}
-         <div className="flex justify-around flex-wrap gap-4 mb-4">
-        <button
+        {/* Ações */}
+        <div className="flex flex-wrap justify-center gap-4 mb-4">
+          <button
             onClick={handleCompararFipe}
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition"
           >
             <RefreshCw className="w-5 h-5" />
             <span>Comparar FIPE</span>
           </button>
-        {isOwner && (
-          <div className="flex justify-around flex-wrap gap-4 mb-4">
-            {vehicle.is_wishlist ? (
-              <button
-                onClick={handleAddToGarage}
-                disabled={actionLoading}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 transition"
-              >
-                <CheckCircle className="w-5 h-5" />
-                <span>
-                  {actionLoading ? "Adicionando..." : "Adicionar à Garagem"}
-                </span>
-              </button>
-            ) : vehicle.is_for_sale ? (
-              <button
-                onClick={handleRemoveSale}
-                disabled={actionLoading}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 transition"
-              >
-                <CheckCircle className="w-5 h-5" />
-                <span>
-                  {actionLoading ? "Retirando..." : "Retirar da Venda"}
-                </span>
-              </button>
-            ) : (
-              <button
-                onClick={handlePutForSale}
-                disabled={actionLoading}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition"
-              >
-                <CheckCircle className="w-5 h-5" />
-                <span>
-                  {actionLoading ? "Processando..." : "Colocar à Venda"}
-                </span>
-              </button>
-            )}
-          </div>
-        )}
+          {renderActionButton()}
         </div>
 
         {/* FIPE Atualizado */}
@@ -295,7 +303,7 @@ export default function VehicleDetailsPage() {
           </div>
         )}
 
-        {/* Detalhes do vendedor e opcionais */}
+        {/* Vendedor e opcionais */}
         <div className="bg-white p-4 rounded shadow space-y-4">
           <SellerDetails seller={vehicle.seller_details!} />
           <OptionalList vehicleOptionals={vehicle.vehicle_optionals} />

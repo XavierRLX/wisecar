@@ -34,8 +34,8 @@ export default function BottomNav({ onMenuClick }: BottomNavProps) {
         onMenuClick();
       },
     },
-    { href: "/todosVeiculos", label: "Veículos", Icon: CarIcon },
-    { href: "/adicionar", label: "Adicionar", Icon: AddIcon },
+    { href: "/veiculos/todosVeiculos", label: "Veículos", Icon: CarIcon },
+    { href: "/veiculos/novo", label: "Adicionar", Icon: AddIcon },
     { href: "/lojas", label: "Serviços", Icon: ServicesIcon },
     { href: "/chat", label: "Chat", Icon: ChatIcon },
   ];

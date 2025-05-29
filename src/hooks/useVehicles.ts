@@ -5,9 +5,9 @@ import { supabase } from "@/lib/supabase";
 import { Vehicle } from "@/types";
 
 export type VehicleMode =
-  | "all"     // desejos + garagem
-  | "desire"  // apenas desejos
-  | "garage"; // apenas garagem
+  | "all"     // Desejo + Garagem + À Venda
+  | "desire"  // Apenas Desejo
+  | "garage"; // Garagem + À Venda
 
 export function useVehicles(mode: VehicleMode = "desire") {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -28,16 +28,25 @@ export function useVehicles(mode: VehicleMode = "desire") {
       return;
     }
 
-    let query = supabase.from("vehicles").select("*, vehicle_images(*)");
+    let query = supabase
+      .from("vehicles")
+      .select("*, vehicle_images(*)");
 
     if (mode === "desire") {
-      query = query.eq("user_id", user.id).eq("is_wishlist", true);
+      // só lista de desejo
+      query = query
+        .eq("user_id", user.id)
+        .eq("status", "WISHLIST");
     } else if (mode === "garage") {
-      query = query.eq("owner_id", user.id);
+      // garagem + à venda
+      query = query
+        .eq("owner_id", user.id)
+        .in("status", ["GARAGE", "FOR_SALE"]);
     } else {
-      // all: desejos + garagem
+      // all: desejo, garagem e à venda
       query = query.or(
-        `and(user_id.eq.${user.id},is_wishlist.eq.true),owner_id.eq.${user.id}`
+        `and(user_id.eq.${user.id},status.eq.WISHLIST),` +
+        `and(owner_id.eq.${user.id},status.in.(GARAGE,FOR_SALE))`
       );
     }
 
