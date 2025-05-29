@@ -16,23 +16,25 @@ export default function NewMaintenancePage() {
   const [submitting, setSubmitting] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState("");
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) return router.push("/login");
-      supabase
-        .from("vehicles")
-        .select("id, brand, model")
-        .eq("owner_id", data.user.id)
-        .eq("is_for_sale", false)
-        .order("brand", { ascending: true })
-        .order("model", { ascending: true })
-        .then(({ data: vs, error }) => {
-          if (error) console.error(error);
-          setVehicles(vs || []);
-          setLoading(false);
-        });
+  // src/app/manutencoes/novo/page.tsx
+useEffect(() => {
+  supabase.auth.getUser().then(({ data }) => {
+    if (!data.user) return router.push("/login");
+    supabase
+    .from("vehicles")
+    .select("id, brand, model")
+    .eq("owner_id", data.user.id)
+    .in("status", ["GARAGE", "FOR_SALE"])   // ← garagem **e** à venda
+    .order("brand", { ascending: true })
+    .order("model", { ascending: true })
+    .then(({ data: vs, error }) => {
+      if (error) console.error(error);
+      setVehicles(vs || []);
+      setLoading(false);
     });
-  }, [router]);
+  });
+}, [router]);
+
 
   const initial: MaintenanceValues = {
     vehicleId: "",
