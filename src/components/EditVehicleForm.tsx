@@ -21,7 +21,7 @@ export interface VehicleFormData {
   quilometragem: string;
   cor: string;
   combustivel: string;
-  observacoes: string;
+  observacoes: string;  
   vendedorTipo: "particular" | "profissional";
   nome_vendedor: string;
   telefone: string;
@@ -51,14 +51,12 @@ export default function EditVehicleForm({ vehicle }: Props) {
       })()
     : null;
 
-  // Estado do formulário usando o código completo do ano (ex: "2025-1")
   const [formData, setFormData] = useState<VehicleFormData>({
     category_id: vehicle.category_id === 1 ? "carros" : "motos",
-    marca: initialFipeData?.codigoMarca || vehicle.brand,
-    modelo: initialFipeData?.codigoModelo || vehicle.model,
-    // NÃO divida o valor; use o código completo para que o select e a chamada à API FIPE funcionem
-    ano: initialFipeData?.codigoAno || vehicle.year.toString(),
-    preco: vehicle.price.toString(),
+    marca: initialFipeData?.codigoMarca || "",
+    modelo: initialFipeData?.codigoModelo || "",
+    ano: initialFipeData?.codigoAno || "",
+    preco: vehicle.fipe_price?.toString() || "",
     quilometragem: vehicle.mileage.toString(),
     cor: vehicle.color,
     combustivel: vehicle.fuel,
@@ -193,34 +191,46 @@ export default function EditVehicleForm({ vehicle }: Props) {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-
-     // Converte os códigos para os nomes correspondentes, usando as listas carregadas
-  const brandName =
-  marcas.find((m) => m.codigo === formData.marca)?.nome || formData.marca;
-const modelName =
-  modelos.find((mod) => String(mod.codigo) === formData.modelo)?.nome ||
-  formData.modelo;
-
-// Se o código do ano estiver no formato "2025-1", extraímos apenas a parte numérica
-const yearValue = formData.ano.includes("-")
-  ? parseInt(formData.ano.split("-")[0])
-  : parseInt(formData.ano);
-
-// Atualiza os dados principais do veículo, salvando os nomes em vez dos códigos
-const { error } = await supabase
-  .from("vehicles")
-  .update({
-    brand: brandName,
-    model: modelName,
-    year: yearValue,
-    price: parseFloat(formData.preco),
-    mileage: parseInt(formData.quilometragem),
-    color: formData.cor,
-    fuel: formData.combustivel,
-    notes: formData.observacoes,
-    fipe_info: fipeInfo ? JSON.stringify(fipeInfo) : null,
-  })
-  .eq("id", vehicle.id);
+  
+    // 1) Converte CÓDIGO → NOME
+    const brandName =
+      marcas.find((m) => String(m.codigo) === String(formData.marca))?.nome ||
+      formData.marca;
+    const modelName =
+      modelos.find((m) => String(m.codigo) === String(formData.modelo))?.nome ||
+      formData.modelo;
+  
+    console.log("Vai salvar:", { brandName, modelName });
+  
+    // 2) Ano como número
+    const yearValue = formData.ano.includes("-")
+      ? parseInt(formData.ano.split("-")[0], 10)
+      : parseInt(formData.ano, 10);
+  
+    // 3) Monta o objeto de atualização
+    const updates = {
+      brand:      brandName,      // ← nome mesmo
+      model:      modelName,      // ← nome mesmo
+      year:       yearValue,
+      fipe_price: parseFloat(formData.preco),
+      mileage:    parseInt(formData.quilometragem, 10),
+      color:      formData.cor,
+      fuel:       formData.combustivel,
+      notes:      formData.observacoes,
+      fipe_info:  fipeInfo ? JSON.stringify(fipeInfo) : null,
+    };
+  
+    // 4) Envia ao Supabase
+    const { error } = await supabase
+      .from("vehicles")
+      .update(updates)
+      .eq("id", vehicle.id);
+  
+    if (error) {
+      console.error("Erro ao atualizar veículo:", error.message);
+      return;
+    }
+  
 
     // Atualiza ou insere os detalhes do vendedor
     const { error: sellerError } = await supabase
@@ -299,6 +309,20 @@ if (insertOptError) {
           onChange={handleChange}
           onFetchFipe={handleFetchFipe}
         />
+        {/* Detalhes FIPE */}
+        {fipeInfo && (
+          <div className="p-4 bg-gray-100 rounded-lg mb-4">
+            <p>
+              <span className="font-semibold">Valor FIPE:</span>{" "}
+              {fipeInfo.Valor}
+            </p>
+            <p>
+              <span className="font-semibold">Referência:</span>{" "}
+              {fipeInfo.MesReferencia}
+            </p>
+          </div>
+        )}
+
         {/* Vehicle Data */}
         <VehicleDataForm
           preco={formData.preco}

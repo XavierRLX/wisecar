@@ -153,8 +153,11 @@ export default function VehicleDetailsPage() {
   if (error) return <p className="p-8 text-red-500">Erro: {error}</p>;
   if (!vehicle) return <p className="p-8">Veículo não encontrado</p>;
 
-  const isOwner = currentUser?.id === vehicle.owner_id;
-
+  const isOwner =
+  vehicle.status === "WISHLIST"
+    ? currentUser?.id === vehicle.user_id
+    : currentUser?.id === vehicle.owner_id;
+    
   // Escolhe o botão de ação principal
   const renderActionButton = () => {
     if (!isOwner) return null;
