@@ -11,9 +11,10 @@ import { useIsSeller } from "@/hooks/useIsSeller";
 import { useSellerVehicles } from "@/hooks/useSellerVehicles";
 import { VehicleStatus } from "@/types";
 import RestrictedAccessAlert from "@/components/RestrictedAccessAlert";
+import { ToggleFilter, Option } from "@/components/ToggleFilter";
 import { supabase } from "@/lib/supabase";
 
-interface Option {
+interface Options {
   value: string;
   label: string;
 }
@@ -29,7 +30,7 @@ export default function SellerPage() {
   const { vehicles, loading, error } = useSellerVehicles(statusFilter);
 
   // 3) AsyncSelect filtra sobre esse conjunto
-  const [selectedOption, setSelectedOption] = useState<Option | null>(null);
+  const [selectedOption, setSelectedOption] = useState<Options | null>(null);
   const loadOptions = useCallback(
     async (input: string) => {
       if (!input) return [];
@@ -59,45 +60,34 @@ export default function SellerPage() {
       </div>
     );
 
+    type SellerFilter = "WISHLIST" | "FOR_SALE";
+const sellerOptions: Option<SellerFilter>[] = [
+  { value: "WISHLIST", label: "Desejo" },
+  { value: "FOR_SALE",  label: "À Venda" },
+];
+
   return (
     <div className="p-4 max-w-4xl mx-auto space-y-6">
       {/* Toggle de Status */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Área do Vendedor</h1>
-          <p className="text-gray-600">
-            {statusFilter === "WISHLIST"
-              ? "Veículos na lista de desejo de todos os usuários"
-              : "Veículos à venda de todos os usuários"}
-          </p>
+  <div>
+    <h1 className="text-2xl font-bold">Área do Vendedor</h1>
+    <p className="text-gray-600">
+      {statusFilter === "WISHLIST"
+        ? "Veículos na lista de desejo de todos os usuários"
+        : "Veículos à venda de todos os usuários"}
+    </p>
+          </div>
+          <ToggleFilter
+            options={sellerOptions}
+            value={statusFilter}
+            onChange={setStatusFilter}
+          />
         </div>
-        <div className="inline-flex bg-gray-200 rounded-full p-1 h-10">
-          <button
-            onClick={() => setStatusFilter("WISHLIST")}
-            className={`px-4 rounded-full ${
-              statusFilter === "WISHLIST"
-                ? "bg-white text-blue-600"
-                : "text-gray-600 hover:text-gray-800"
-            }`}
-          >
-            Desejo
-          </button>
-          <button
-            onClick={() => setStatusFilter("FOR_SALE")}
-            className={`px-4 rounded-full ${
-              statusFilter === "FOR_SALE"
-                ? "bg-white text-blue-600"
-                : "text-gray-600 hover:text-gray-800"
-            }`}
-          >
-            À Venda
-          </button>
-        </div>
-      </div>
 
       {/* Filtro por AsyncSelect */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <AsyncSelect<Option, false>
+        <AsyncSelect<Options, false>
           cacheOptions
           defaultOptions={false}
           loadOptions={loadOptions}

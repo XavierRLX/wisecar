@@ -16,6 +16,7 @@ import SellerForm from "@/components/SellerForm";
 import OptionalsSelect from "@/components/OptionalsSelect";
 import FileUpload from "@/components/FileUpload";
 import { submitVehicleData } from "@/lib/vehicleService";
+import { ToggleFilter, Option } from "@/components/ToggleFilter";
 import { VehicleStatus } from "@/types";
 
 interface VehicleFormData {
@@ -161,22 +162,27 @@ export default function AddVehiclePage() {
     }
   }
 
+  type Status = "WISHLIST" | "GARAGE" | "FOR_SALE";
+const statusOptions: Option<Status>[] = [
+  { value: "WISHLIST", label: "Desejado" },
+  { value: "GARAGE",    label: "Garagem" },
+  { value: "FOR_SALE",  label: "Venda" },
+];
+
   return (
     <AuthGuard>
       <div className="px-4 py-8 max-w-4xl mx-auto space-y-8">
         {/* Toggle de Status */}
         <div className="flex flex-col items-center space-y-2">
-          <h1 className="text-medium text-gray-600">Status do Veículo</h1>
-          <select
-            name="status"
+          <h1 className="text-medium text-gray-600">Novo carro é:</h1>
+          <ToggleFilter
+            options={statusOptions}
             value={formData.status}
-            onChange={handleChange}
-            className="border rounded p-2"
-          >
-            <option value="WISHLIST">Lista de Desejo</option>
-            <option value="GARAGE">Minha Garagem</option>
-            <option value="FOR_SALE">À Venda</option>
-          </select>
+            onChange={(newStatus) =>
+              setFormData(prev => ({ ...prev, status: newStatus }))
+            }
+            className="w-80"
+          />
         </div>
 
         <div className="bg-white shadow-md rounded-lg p-8">

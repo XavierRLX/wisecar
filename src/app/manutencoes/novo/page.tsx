@@ -24,7 +24,7 @@ useEffect(() => {
     .from("vehicles")
     .select("id, brand, model")
     .eq("owner_id", data.user.id)
-    .in("status", ["GARAGE", "FOR_SALE"])   // ← garagem **e** à venda
+    .in("status", ["GARAGE", "FOR_SALE"])  
     .order("brand", { ascending: true })
     .order("model", { ascending: true })
     .then(({ data: vs, error }) => {

@@ -1,3 +1,4 @@
+// app/veiculos/todosVeiculos/page.tsx
 "use client";
 
 import { useState, useMemo } from "react";
@@ -13,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useVehicles, VehicleMode } from "@/hooks/useVehicles";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useDeleteVehicle } from "@/hooks/useDeleteVehicle";
+import { ToggleFilter, Option } from "@/components/ToggleFilter";
 
 export default function TodosVeiculosPage() {
   const router = useRouter();
@@ -57,49 +59,28 @@ export default function TodosVeiculosPage() {
     );
   }
 
+  const vehicleModeOptions: Option<VehicleMode>[] = [
+    { value: "all",    label: "Todos" },
+    { value: "desire", label: "Desejado" },
+    { value: "garage", label: "Garagem" },
+  ];
+
   return (
     <AuthGuard>
       <EnsureProfile />
 
       <div className="px-4 py-6 max-w-4xl mx-auto space-y-6">
-        {/* Filtro de modo */}
-        <div className="flex justify-center mb-6">
-          <div className="relative inline-flex bg-gray-200 rounded-full p-1 h-10 w-72">
-            <div
-              style={{
-                left:
-                  mode === "all"
-                    ? "1px"
-                    : mode === "desire"
-                    ? "calc(100%/3 + 1px)"
-                    : "calc(2 * 100%/3 + 1px)",
-              }}
-              className="absolute top-1 h-8 w-1/3 bg-white rounded-full shadow transition-all duration-300"
-            />
-            {(["all", "desire", "garage"] as VehicleMode[]).map((m) => {
-              const labels = {
-                all: "Todos",
-                desire: "Desejado",
-                garage: "Garagem",
-              } as const;
-              return (
-                <button
-                  key={m}
-                  onClick={() => setMode(m)}
-                  className={`relative z-10 flex-1 text-sm font-medium transition-colors ${
-                    mode === m
-                      ? "text-blue-600"
-                      : "text-gray-600 hover:text-gray-800"
-                  }`}
-                >
-                  {labels[m]}
-                </button>
-              );
-            })}
-          </div>
+        {/* filtro sem form: só botão normal */}
+        <div className="text-center">
+          <ToggleFilter
+            options={vehicleModeOptions}
+            value={mode}
+            onChange={setMode}
+            className="w-72"
+          />
         </div>
 
-        {/* Lista de cards */}
+        {/* lista recarrega só por causa do hook useVehicles(mode) */}
         <div className="grid grid-cols-1 gap-4">
           {sorted.map((v) => (
             <div
@@ -107,7 +88,6 @@ export default function TodosVeiculosPage() {
               className="relative cursor-pointer"
               onClick={() => router.push(`/veiculos/${v.id}`)}
             >
-              {/* Badge À Venda */}
               {v.status === "FOR_SALE" && (
                 <div className="absolute top-2 left-2 z-10 bg-green-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
                   <DollarSign className="w-4 h-4" /> À Venda
@@ -120,9 +100,9 @@ export default function TodosVeiculosPage() {
                 onToggleFavorite={() => toggleFavorite(v.id)}
                 onDelete={() => deleteVehicle(v.id, userId!)}
                 extraActions={
-                  // só aparece manutenção quando não é "Desejado"
                   v.status !== "WISHLIST" && (
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         router.push(`/manutencoes?vehicleId=${v.id}`);
