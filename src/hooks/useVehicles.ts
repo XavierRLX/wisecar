@@ -38,12 +38,10 @@ export function useVehicles(mode: VehicleMode = "desire") {
         .eq("user_id", user.id)
         .eq("status", "WISHLIST");
     } else if (mode === "garage") {
-      // garagem + à venda
       query = query
         .eq("owner_id", user.id)
         .in("status", ["GARAGE", "FOR_SALE"]);
     } else {
-      // all: desejo, garagem e à venda
       query = query.or(
         `and(user_id.eq.${user.id},status.eq.WISHLIST),` +
         `and(owner_id.eq.${user.id},status.in.(GARAGE,FOR_SALE))`

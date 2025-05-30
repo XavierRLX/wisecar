@@ -5,12 +5,14 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Vehicle, VehicleStatus } from "@/types";
 
+export type SellerFilter = "ALL" | VehicleStatus;
+
 type RawVehicle = Vehicle & {
   vehicle_images: any[];
   profiles: { username: string };
 };
 
-export function useSellerVehicles(status: VehicleStatus) {
+export function useSellerVehicles(status: SellerFilter) {
   const [vehicles, setVehicles] = useState<RawVehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -19,15 +21,22 @@ export function useSellerVehicles(status: VehicleStatus) {
     setLoading(true);
     setError(null);
 
-    // Monta a query base
     let query = supabase
       .from("vehicles")
-      .select("*, vehicle_images(*), profiles:user_id(username)")
-      .eq("status", status);
+      .select("*, vehicle_images(*), profiles:user_id(username)");
 
-    // Se for filtro "À Venda", garante owner_id != null
-    if (status === "FOR_SALE") {
-      query = query.not("owner_id", "is", null);
+    if (status === "ALL") {
+      // traz wishlist e à venda (com owner_id não-nulo em FOR_SALE)
+      query = query
+        .in("status", ["WISHLIST", "FOR_SALE"])
+        .not("owner_id", "is", null);
+    } else if (status === "FOR_SALE") {
+      query = query
+        .eq("status", "FOR_SALE")
+        .not("owner_id", "is", null);
+    } else {
+      // WISHLIST
+      query = query.eq("status", "WISHLIST");
     }
 
     const { data, error: supError } = await query;

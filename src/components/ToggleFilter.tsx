@@ -39,7 +39,7 @@ export function ToggleFilter<T extends string>({
       {options.map((opt) => (
         <button
           key={opt.value}
-          type="button"          /* evita submit ou reload */
+          type="button"          
           onClick={() => onChange(opt.value)}
           className={`${buttonClassName} ${
             value === opt.value

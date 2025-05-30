@@ -19,6 +19,12 @@ interface Options {
   label: string;
 }
 
+type SellerFilter = "WISHLIST" | "FOR_SALE";
+const sellerOptions: Option<SellerFilter>[] = [
+  { value: "WISHLIST", label: "Desejo" },
+  { value: "FOR_SALE",  label: "À Venda" },
+];
+
 export default function SellerPage() {
   const router = useRouter();
   const isSeller = useIsSeller();
@@ -48,8 +54,8 @@ export default function SellerPage() {
     return vehicles.filter((v) => v.id === selectedOption.value);
   }, [vehicles, selectedOption]);
 
-  if (loading) return <LoadingState message="Carregando..." />;
-  if (isSeller === false)
+  // acesso restrito
+  if (isSeller === false) {
     return (
       <div className="p-2 mt-60 flex justify-center items-center">
         <RestrictedAccessAlert
@@ -59,33 +65,28 @@ export default function SellerPage() {
         />
       </div>
     );
-
-    type SellerFilter = "WISHLIST" | "FOR_SALE";
-const sellerOptions: Option<SellerFilter>[] = [
-  { value: "WISHLIST", label: "Desejo" },
-  { value: "FOR_SALE",  label: "À Venda" },
-];
+  }
 
   return (
     <div className="p-4 max-w-4xl mx-auto space-y-6">
-      {/* Toggle de Status */}
+      {/* Toggle de Status e título */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-  <div>
-    <h1 className="text-2xl font-bold">Área do Vendedor</h1>
-    <p className="text-gray-600">
-      {statusFilter === "WISHLIST"
-        ? "Veículos na lista de desejo de todos os usuários"
-        : "Veículos à venda de todos os usuários"}
-    </p>
-          </div>
-          <ToggleFilter
-            options={sellerOptions}
-            value={statusFilter}
-            onChange={setStatusFilter}
-          />
+        <div>
+          <h1 className="text-2xl font-bold">Área do Vendedor</h1>
+          <p className="text-gray-600">
+            {statusFilter === "WISHLIST"
+              ? "Veículos na lista de desejo de todos os usuários"
+              : "Veículos à venda de todos os usuários"}
+          </p>
         </div>
+        <ToggleFilter
+          options={sellerOptions}
+          value={statusFilter}
+          onChange={setStatusFilter}
+        />
+      </div>
 
-      {/* Filtro por AsyncSelect */}
+      {/* Filtro por AsyncSelect + total */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <AsyncSelect<Options, false>
           cacheOptions
@@ -105,9 +106,13 @@ const sellerOptions: Option<SellerFilter>[] = [
 
       {error && <p className="text-red-500">Erro: {error}</p>}
 
-      {/* Grid de resultados */}
+      {/* Grid de resultados com carregamento interno */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filtered.length > 0 ? (
+        {loading ? (
+          <div className="col-span-full flex justify-center py-8">
+            <LoadingState message="Carregando veículos..." />
+          </div>
+        ) : filtered.length > 0 ? (
           filtered.map((v) => (
             <div key={v.id} className="cursor-pointer">
               <VehicleCard
