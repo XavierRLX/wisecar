@@ -353,18 +353,14 @@ if (insertOptError) {
           }
         />
         {/* File Upload */}
-        <FileUpload
+                <FileUpload
           previewUrls={previewUrls}
-          onFileChange={(e) => {
-            if (e.target.files) {
-              const files = Array.from(e.target.files);
-              setSelectedFiles(files);
-            }
-          }}
+          onFileChange={setSelectedFiles}
           onRemoveFile={(index) =>
             setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
           }
         />
+
         <button
           type="submit"
           className="w-full py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
