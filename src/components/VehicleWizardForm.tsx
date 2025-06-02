@@ -17,8 +17,6 @@ import VehicleDataForm from "@/components/VehicleDataForm";
 import SellerForm from "@/components/SellerForm";
 import OptionalsSelect from "@/components/OptionalsSelect";
 import FileUpload from "@/components/FileUpload";
-
-// <<-- CORREÇÃO AQUI: import nomeado, pois não há default export em ToggleFilter.tsx -->
 import { ToggleFilter, Option as ToggleOption } from "@/components/ToggleFilter";
 
 import { submitVehicleData } from "@/lib/vehicleService";
@@ -36,22 +34,24 @@ interface WizardFormData {
   cor: string;
   combustivel: string;
   observacoes: string;
-  // Dados do vendedor (apenas para status = WISHLIST)
+  // Dados do vendedor (apenas para status = WISHLIST e caso “Encontrou Carro = Sim”)
   sellerType: "particular" | "profissional" | "";
   sellerName: string;
   phone: string;
   company: string;
   socialMedia: string;
   address: string;
+  // Nova flag: apenas para “Desejado” → pergunta se já encontrou carro
+  foundCar: "yes" | "no" | "";
   // Opcionais + imagens
   selectedOptionals: number[];
   selectedFiles: File[];
 }
 
 const statusOptions: ToggleOption<VehicleStatus>[] = [
-  { value: "WISHLIST", label: "Desejado" },
+  { value: "WISHLIST", label: "Desejo" },
   { value: "GARAGE",    label: "Garagem" },
-  { value: "FOR_SALE",  label: "Venda" },
+  { value: "FOR_SALE",  label: "À Venda" },
 ];
 
 export default function VehicleWizardForm() {
@@ -77,6 +77,7 @@ export default function VehicleWizardForm() {
     company: "",
     socialMedia: "",
     address: "",
+    foundCar: "",
     selectedOptionals: [],
     selectedFiles: [],
   });
@@ -169,7 +170,8 @@ export default function VehicleWizardForm() {
         formData.ano
       );
       // Salvamos o objeto bruto + códigos, e já pré-preenchemos “preco”
-      const fi = { ...detalhes,
+      const fi = {
+        ...detalhes,
         codigoMarca: formData.marca,
         codigoModelo: formData.modelo,
         codigoAno: formData.ano,
@@ -269,11 +271,11 @@ export default function VehicleWizardForm() {
 
   // ========== 6) VALIDAÇÕES MÍNIMAS PARA LIBERAR CADA ETAPA ==========
 
-// Step 1 → Step 2: basta ter status preenchido.
-function canProceedToStep2() {
+  // Step 1 → Step 2: basta ter “status” preenchido.
+  function canProceedToStep2() {
     return formData.status !== "";
   }
-  
+
   // Step 2 → Step 3: exige marca, modelo e ano preenchidos.
   // Convertendo para string antes de chamar .trim()
   function canProceedToStep3() {
@@ -283,20 +285,28 @@ function canProceedToStep2() {
       String(formData.ano).trim() !== ""
     );
   }
-  
-  // Step 3 → Step 4:
-  // - se WISHLIST, exige dados de vendedor
-  // - se GARAGE ou FOR_SALE, exige quilometragem e cor
-  // - se FOR_SALE, exige também “preco”
+
+  // Step 3 → Step 4: lógica diferente se status = WISHLIST ou não.
   function canProceedToStep4() {
     if (formData.status === "WISHLIST") {
-      return (
-        formData.sellerType !== "" &&
-        formData.sellerName.trim() !== "" &&
-        formData.phone.trim() !== ""
-      );
+      // Para “Desejado”, precisa ter escolhido se encontrou carro (foundCar)
+      if (formData.foundCar === "") return false;
+
+      // Se “Encontrou Carro = Sim”, então exige também campos de vendedor e dados de veículo:
+      if (formData.foundCar === "yes") {
+        return (
+          formData.sellerType !== "" &&
+          formData.sellerName.trim() !== "" &&
+          formData.phone.trim() !== "" &&
+          formData.quilometragem.trim() !== "" &&
+          formData.cor.trim() !== ""
+        );
+      }
+
+      // Se “Encontrou Carro = Não”, basta avançar para etapa de upload
+      return formData.foundCar === "no";
     } else {
-      // GARAGE ou FOR_SALE
+      // Caso GARAGE ou FOR_SALE: exige quilometragem e cor
       if (
         formData.quilometragem.trim() === "" ||
         formData.cor.trim() === ""
@@ -310,19 +320,21 @@ function canProceedToStep2() {
       return true;
     }
   }
-  
 
   // ========== 7) Renderização de cada “step” ==========
 
   function renderStep() {
     switch (currentStep) {
-      // ====== STEP 1: ESCOLHER O STATUS ======
+      // ====== STEP 1: “Qual lista adicionar seu veículo?” ======
+      // Dentro de VehicleWizardForm.tsx, no case 1 (Step 1), faça esta alteração:
+
       case 1:
         return (
           <div className="space-y-6">
             <h2 className="text-xl font-semibold">
-              1. Selecione o status do veículo
+              Qual lista adicionar seu veículo?
             </h2>
+  
             <ToggleFilter<VehicleStatus>
               options={statusOptions}
               value={formData.status as VehicleStatus}
@@ -331,6 +343,48 @@ function canProceedToStep2() {
               }
               className="w-full max-w-md"
             />
+  
+            {/** → Novo card de informação, exibido somente após escolher “status” */}
+            {formData.status && (
+              <div className="flex items-start bg-blue-50 border-l-4 border-blue-400 p-4 rounded-md">
+                {/* Ícone de exclamação */}
+                <svg
+                  className="h-6 w-6 text-blue-400 flex-shrink-0"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.054 0 1.938-.894 1.938-2L21 7c0-1.106-.884-2-1.938-2H4.062C3.008 5 2.124 5.894 2.124 7l.006 12c0 1.106.884 2 1.938 2z"
+                  />
+                </svg>
+                <div className="ml-3 text-blue-700 text-sm">
+                  {formData.status === "WISHLIST" && (
+                    <>
+                      <strong>Desejo:</strong> Salve seu carro desejado e/ou os dados de um veículo que você viu em algum lugar.  
+                      Estes carros ficarão visíveis apenas para usuários profissionais verificados, que poderão entrar em contato para oferecer modelos semelhantes.
+                    </>
+                  )}
+                  {formData.status === "GARAGE" && (
+                    <>
+                      <strong>Garagem:</strong> Armazene seus veículos e gerencie manutenções e melhorias de modo fácil.  
+                      Tenha sempre seu histórico de revisões e alertas para serviços pendentes.
+                    </>
+                  )}
+                  {formData.status === "FOR_SALE" && (
+                    <>
+                      <strong>À Venda:</strong> Profissionais cadastrados poderão ver seu anúncio e entrar em contato para negociar a compra do seu carro.  
+                      Preencha todos os detalhes para atrair ofertas de forma rápida.
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+  
             <div className="mt-6 flex justify-end">
               <button
                 type="button"
@@ -350,6 +404,8 @@ function canProceedToStep2() {
             </div>
           </div>
         );
+  
+      
 
       // ====== STEP 2: DADOS FIPE ======
       case 2:
@@ -429,57 +485,126 @@ function canProceedToStep2() {
           </div>
         );
 
-      // ====== STEP 3: CAMPOS ESPECÍFICOS POR STATUS ======
+      // ====== STEP 3: lógica condicional para WISHLIST vs. GARAGE/FOR_SALE ======
       case 3:
-        return (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold">
-              3.{" "}
-              {formData.status === "WISHLIST"
-                ? "Detalhes do Vendedor"
-                : "Dados do Veículo"}
-            </h2>
+        // SE “Desejado” (WISHLIST), primeiro pergunta “Já encontrou algum carro?”
+        if (formData.status === "WISHLIST") {
+          return (
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold">
+                3. Já encontrou algum carro?
+              </h2>
 
-            {formData.status === "WISHLIST" ? (
-              /* Se “Desejado”, mostrar SellerForm */
-              <SellerForm
-                sellerType={formData.sellerType}
-                sellerName={formData.sellerName}
-                phone={formData.phone}
-                company={formData.company}
-                socialMedia={formData.socialMedia}
-                address={formData.address}
-                onChange={handleChange}
-              />
-            ) : (
-              /* Se GARAGE ou FOR_SALE, mostrar VehicleDataForm */
-              <div className="space-y-6">
-                <VehicleDataForm
-                  preco={formData.preco}
-                  quilometragem={formData.quilometragem}
-                  cor={formData.cor}
-                  combustivel={formData.combustivel}
-                  observacoes={formData.observacoes}
-                  onChange={handleChange}
-                />
+              <div className="flex items-center space-x-6">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="foundCar"
+                    value="yes"
+                    checked={formData.foundCar === "yes"}
+                    onChange={handleChange}
+                    className="mr-2"
+                  />
+                  Sim
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="foundCar"
+                    value="no"
+                    checked={formData.foundCar === "no"}
+                    onChange={handleChange}
+                    className="mr-2"
+                  />
+                  Não
+                </label>
+              </div>
 
-                {/* Se status = FOR_SALE, exibir campo extra “Valor de Venda” */}
-                {formData.status === "FOR_SALE" && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Valor de Venda (R$)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      name="preco"
-                      value={formData.preco}
+              {/*
+                Se o usuário escolheu “Sim” (foundCar === "yes"),
+                então exibimos SellerForm + VehicleDataForm para preencher dados do vendedor e do carro.
+              */}
+              {formData.foundCar === "yes" && (
+                <div className="space-y-6">
+                  <SellerForm
+                    sellerType={formData.sellerType}
+                    sellerName={formData.sellerName}
+                    phone={formData.phone}
+                    company={formData.company}
+                    socialMedia={formData.socialMedia}
+                    address={formData.address}
+                    onChange={handleChange}
+                  />
+
+                  <div className="space-y-6">
+                    <VehicleDataForm
+                      preco={formData.preco}
+                      quilometragem={formData.quilometragem}
+                      cor={formData.cor}
+                      combustivel={formData.combustivel}
+                      observacoes={formData.observacoes}
                       onChange={handleChange}
-                      className="block w-full max-w-xs rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Ex: 55000.00"
                     />
                   </div>
-                )}
+                </div>
+              )}
+
+              <div className="mt-6 flex justify-between">
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(2)}
+                  className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                >
+                  Anterior
+                </button>
+                <button
+                  type="button"
+                  disabled={!canProceedToStep4()}
+                  onClick={() => setCurrentStep(4)}
+                  className={`
+                    px-4 py-2 rounded 
+                    ${
+                      canProceedToStep4()
+                        ? "bg-blue-600 text-white hover:bg-blue-700"
+                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    }
+                  `}
+                >
+                  Próximo
+                </button>
+              </div>
+            </div>
+          );
+        }
+
+        // SE STATUS = GARAGE ou FOR_SALE, comporta-se como antes: apenas VehicleDataForm
+        return (
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold">3. Dados do Veículo</h2>
+
+            <VehicleDataForm
+              preco={formData.preco}
+              quilometragem={formData.quilometragem}
+              cor={formData.cor}
+              combustivel={formData.combustivel}
+              observacoes={formData.observacoes}
+              onChange={handleChange}
+            />
+
+            {formData.status === "FOR_SALE" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Valor de Venda (R$)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  name="preco"
+                  value={formData.preco}
+                  onChange={handleChange}
+                  className="block w-full max-w-xs rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Ex: 55000.00"
+                />
               </div>
             )}
 
@@ -514,34 +639,29 @@ function canProceedToStep2() {
       case 4:
         return (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold">
-              4. Opcionais, Imagens e Revisão
-            </h2>
+            <h2 className="text-xl font-semibold">4. Opcionais, Imagens e Revisão</h2>
 
-            {/* Opcionais (checkboxes) */}
             <OptionalsSelect
               optionals={optionals}
               selectedOptionals={formData.selectedOptionals}
               onToggleOptional={handleToggleOptional}
             />
 
-            {/* Upload de Imagens (preview + remoção) */}
             <FileUpload
               previewUrls={previewUrls}
               onFileChange={handleFileChange}
               onRemoveFile={handleRemoveFile}
             />
 
-            {/* Resumo Final (só‐leitura) */}
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-md">
               <h3 className="text-lg font-medium mb-2">Resumo do Cadastro</h3>
               <ul className="space-y-1 text-sm">
                 <li>
-                  <strong>Status:</strong>{" "}
+                  <strong>Lista:</strong>{" "}
                   {formData.status === "WISHLIST"
-                    ? "Desejado"
+                    ? "Desejo"
                     : formData.status === "GARAGE"
-                    ? "Na Garagem"
+                    ? "Garagem"
                     : "À Venda"}
                 </li>
                 <li>
@@ -554,25 +674,12 @@ function canProceedToStep2() {
                     ? `${formData.fipeInfo.Marca} ${formData.fipeInfo.Modelo} (${formData.fipeInfo.AnoModelo}) – R$ ${formData.fipeInfo.Valor}`
                     : "Não consultado"}
                 </li>
-                {formData.status !== "WISHLIST" && (
-                  <>
-                    <li>
-                      <strong>Quilometragem:</strong> {formData.quilometragem} km
-                    </li>
-                    <li>
-                      <strong>Cor:</strong> {formData.cor}
-                    </li>
-                    <li>
-                      <strong>Combustível:</strong> {formData.combustivel}
-                    </li>
-                    {formData.status === "FOR_SALE" && (
-                      <li>
-                        <strong>Preço de Venda:</strong> R$ {formData.preco}
-                      </li>
-                    )}
-                  </>
-                )}
-                {formData.status === "WISHLIST" && (
+
+                {/*
+                  Se for “Desejo” e “Encontrou Carro = Sim”:
+                  exibimos também dados de vendedor e do veículo (quilometragem, cor, etc.)
+                */}
+                {formData.status === "WISHLIST" && formData.foundCar === "yes" && (
                   <>
                     <li>
                       <strong>Tipo Vendedor:</strong>{" "}
@@ -601,8 +708,51 @@ function canProceedToStep2() {
                         <strong>Endereço:</strong> {formData.address}
                       </li>
                     )}
+                    <li>
+                      <strong>Quilometragem:</strong> {formData.quilometragem} km
+                    </li>
+                    <li>
+                      <strong>Cor:</strong> {formData.cor}
+                    </li>
+                    <li>
+                      <strong>Combustível:</strong> {formData.combustivel}
+                    </li>
+                    {/*
+                      Em “Desejo” não tem campo “Preço de Venda”,
+                      mas se o usuário já encontrou o carro e quer
+                      informar preço, esse valor ficou em formData.preco
+                    */}
+                    {formData.preco && (
+                      <li>
+                        <strong>Preço:</strong> R$ {formData.preco}
+                      </li>
+                    )}
                   </>
                 )}
+
+                {/*
+                  Se for “Garagem” ou “À Venda”, mostramos sempre quilometragem, cor, etc.
+                  E, se “À Venda”, mostramos também “Preço de Venda”.
+                */}
+                {formData.status !== "WISHLIST" && (
+                  <>
+                    <li>
+                      <strong>Quilometragem:</strong> {formData.quilometragem} km
+                    </li>
+                    <li>
+                      <strong>Cor:</strong> {formData.cor}
+                    </li>
+                    <li>
+                      <strong>Combustível:</strong> {formData.combustivel}
+                    </li>
+                    {formData.status === "FOR_SALE" && (
+                      <li>
+                        <strong>Preço de Venda:</strong> R$ {formData.preco}
+                      </li>
+                    )}
+                  </>
+                )}
+
                 {formData.selectedOptionals.length > 0 && (
                   <li>
                     <strong>Opcionais:</strong>{" "}
@@ -628,7 +778,15 @@ function canProceedToStep2() {
             <div className="mt-6 flex justify-between">
               <button
                 type="button"
-                onClick={() => setCurrentStep(3)}
+                onClick={() => {
+                  // Se “Desejo” e usuário escolheu “Não encontrou carro”,
+                  // voltamos diretamente ao passo 2. Senão, voltamos ao passo 3.
+                  if (formData.status === "WISHLIST" && formData.foundCar === "no") {
+                    setCurrentStep(2);
+                  } else {
+                    setCurrentStep(3);
+                  }
+                }}
                 className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
               >
                 Anterior
