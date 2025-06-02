@@ -1,3 +1,6 @@
+// components/SellerForm.tsx
+"use client";
+
 import React from "react";
 
 interface SellerFormProps {
@@ -32,7 +35,7 @@ export default function SellerForm({
           <label className="flex items-center">
             <input
               type="radio"
-              name="vendedorTipo"
+              name="sellerType"             // <-- alinhado com WizardFormData.sellerType
               value="particular"
               checked={sellerType === "particular"}
               onChange={onChange}
@@ -43,7 +46,7 @@ export default function SellerForm({
           <label className="flex items-center">
             <input
               type="radio"
-              name="vendedorTipo"
+              name="sellerType"             // <-- alinhado com WizardFormData.sellerType
               value="profissional"
               checked={sellerType === "profissional"}
               onChange={onChange}
@@ -63,7 +66,7 @@ export default function SellerForm({
             </label>
             <input
               type="text"
-              name="nome_vendedor"
+              name="sellerName"            // <-- alinhado com WizardFormData.sellerName
               value={sellerName}
               onChange={onChange}
               placeholder="Ex: João da Silva"
@@ -76,7 +79,7 @@ export default function SellerForm({
             </label>
             <input
               type="text"
-              name="telefone"
+              name="phone"                // <-- alinhado com WizardFormData.phone
               value={phone}
               onChange={onChange}
               placeholder="Ex: (11) 99999-8888"
@@ -90,7 +93,7 @@ export default function SellerForm({
             </label>
             <input
               type="text"
-              name="endereco"
+              name="address"              // <-- alinhado com WizardFormData.address
               value={address}
               onChange={onChange}
               placeholder="Ex: Rua Principal, 123, Cidade, País"
@@ -106,7 +109,7 @@ export default function SellerForm({
             </label>
             <input
               type="text"
-              name="empresa"
+              name="company"               // <-- alinhado com WizardFormData.company
               value={company}
               onChange={onChange}
               placeholder="Ex: AutoCenter"
@@ -119,7 +122,7 @@ export default function SellerForm({
             </label>
             <input
               type="text"
-              name="nome_vendedor"
+              name="sellerName"            // <-- alinhado com WizardFormData.sellerName
               value={sellerName}
               onChange={onChange}
               placeholder="Ex: João da Silva"
@@ -132,7 +135,7 @@ export default function SellerForm({
             </label>
             <input
               type="text"
-              name="telefone"
+              name="phone"                // <-- alinhado com WizardFormData.phone
               value={phone}
               onChange={onChange}
               placeholder="Ex: (11) 99999-8888"
@@ -145,7 +148,7 @@ export default function SellerForm({
             </label>
             <input
               type="text"
-              name="redes_sociais"
+              name="socialMedia"           // <-- alinhado com WizardFormData.socialMedia
               value={socialMedia}
               onChange={onChange}
               placeholder="Ex: @autocenter"
@@ -158,7 +161,7 @@ export default function SellerForm({
             </label>
             <input
               type="text"
-              name="endereco"
+              name="address"              // <-- alinhado com WizardFormData.address
               value={address}
               onChange={onChange}
               placeholder="Ex: Rua Principal, 123, Cidade, País"
