@@ -417,24 +417,6 @@ export default function VehicleWizardForm() {
             </h2>
 
             {/* Seleção de Categoria */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Categoria
-              </label>
-              <select
-                name="category_id"
-                value={formData.category_id}
-                onChange={handleChange}
-                className="block w-40 rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Selecione...</option>
-                <option value="carros">Carros</option>
-                <option value="motos">Motos</option>
-              </select>
-            </div>
-
-            {/* Se categoria preenchida, mostrar FipeSelectors */}
-            {formData.category_id && (
               <FipeSelectors
                 category={formData.category_id}
                 marca={formData.marca}
@@ -446,7 +428,6 @@ export default function VehicleWizardForm() {
                 onChange={handleChange}
                 onFetchFipe={handleFetchFipe}
               />
-            )}
 
             {/* Se já houver fipeInfo, exibir resumo */}
             {formData.fipeInfo && (
@@ -535,7 +516,7 @@ export default function VehicleWizardForm() {
                     address={formData.address}
                     onChange={handleChange}
                   />
-
+                  <p className="text-xl font-semibold"> Detalhes do veículo </p>
                   <div className="space-y-6">
                     <VehicleDataForm
                       preco={formData.preco}

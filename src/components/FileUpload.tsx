@@ -1,22 +1,37 @@
+// components/FileUpload.tsx
+"use client";
+
 import React from "react";
 
 interface FileUploadProps {
   previewUrls: string[];
-  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onFileChange: (files: File[]) => void;
   onRemoveFile: (index: number) => void;
 }
 
-export default function FileUpload({ previewUrls, onFileChange, onRemoveFile }: FileUploadProps) {
+export default function FileUpload({
+  previewUrls,
+  onFileChange,
+  onRemoveFile,
+}: FileUploadProps) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">Imagens do veículo (máx. 5)</label>
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        Imagens do veículo (máx. 5)
+      </label>
       <input
         type="file"
         name="image"
         multiple
-        onChange={onFileChange}
+        onChange={(e) => {
+          // Converte FileList em File[] e limita a 5 itens (se quiser)
+          if (!e.target.files) return;
+          const filesArray = Array.from(e.target.files).slice(0, 5);
+          onFileChange(filesArray);
+        }}
         className="block w-full text-sm text-gray-900 border border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:border-blue-500"
       />
+
       {previewUrls.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
           {previewUrls.map((url, index) => (
