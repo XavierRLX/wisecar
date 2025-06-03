@@ -1,4 +1,3 @@
-// components/VehicleWizardForm.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -21,7 +20,7 @@ import { ToggleFilter, Option as ToggleOption } from "@/components/ToggleFilter"
 
 import { submitVehicleData } from "@/lib/vehicleService";
 
-// Tipo para controlar os dados intermediários do “wizard”
+// 1) EXTENDENDO O ESTADO PARA “preco” E “salePrice”
 interface WizardFormData {
   status: VehicleStatus | "";          // "WISHLIST" | "GARAGE" | "FOR_SALE"
   category_id: "carros" | "motos" | ""; // categoria FIPE
@@ -29,21 +28,32 @@ interface WizardFormData {
   modelo: string;                       // código FIPE do modelo
   ano: string;                          // código FIPE do ano
   fipeInfo: any | null;                 // objeto bruto retornado da FIPE
-  preco: string;                        // string numérica (pode vir do FIPE ou ser digitado)
+
+  // Aqui mantemos apenas um campo “preco”:
+  // - Em GARAGE = “Preço comprado”
+  // - Em WISHLIST→Sim = “Preço do veículo encontrado”
+  // - NÃO usado em FOR_SALE (lá usamos salePrice para “Valor à venda”)
+  preco: string;
+  // Em FOR_SALE, “salePrice” será “Valor à venda”
+  salePrice: string;
+
   quilometragem: string;
   cor: string;
   combustivel: string;
   observacoes: string;
-  // Dados do vendedor (apenas para status = WISHLIST e caso “Encontrou Carro = Sim”)
+
+  // Dados do vendedor
   sellerType: "particular" | "profissional" | "";
   sellerName: string;
   phone: string;
   company: string;
   socialMedia: string;
   address: string;
-  // Nova flag: apenas para “Desejado” → pergunta se já encontrou carro
+
+  // Apenas para WISHLIST: “Já encontrou algum carro?”
   foundCar: "yes" | "no" | "";
-  // Opcionais + imagens
+
+  // Opcionais + Imagens
   selectedOptionals: number[];
   selectedFiles: File[];
 }
@@ -57,7 +67,7 @@ const statusOptions: ToggleOption<VehicleStatus>[] = [
 export default function VehicleWizardForm() {
   const router = useRouter();
 
-  // ========== 1) Estados internos do “wizard” ==========
+  // 2) ESTADO INICIAL DO WIZARD
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
   const [formData, setFormData] = useState<WizardFormData>({
     status: "",
@@ -67,6 +77,7 @@ export default function VehicleWizardForm() {
     ano: "",
     fipeInfo: null,
     preco: "",
+    salePrice: "",
     quilometragem: "",
     cor: "",
     combustivel: "",
@@ -93,9 +104,9 @@ export default function VehicleWizardForm() {
   // Para gerar previews das imagens
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
-  // ========== 2) useEffect para carregar FIPE e opcionais ==========
+  // 3) USEEFFECTS PARA CARREGAR FIPE E OPCIONAIS
 
-  // 2.1) Carregar “optionals” da tabela
+  // 3.1) Carrega “optionals” da tabela
   useEffect(() => {
     supabase
       .from("optionals")
@@ -109,7 +120,7 @@ export default function VehicleWizardForm() {
       });
   }, []);
 
-  // 2.2) Carregar “marcas” assim que categoria for escolhida
+  // 3.2) Carrega “marcas” assim que “category_id” mudar
   useEffect(() => {
     if (!formData.category_id) {
       setMarcas([]);
@@ -120,7 +131,7 @@ export default function VehicleWizardForm() {
       .catch((err) => console.error("Erro fetchMarcas:", err));
   }, [formData.category_id]);
 
-  // 2.3) Carregar “modelos” assim que “marca” for preenchida
+  // 3.3) Carrega “modelos” assim que “marca” mudar
   useEffect(() => {
     if (!formData.marca) {
       setModelos([]);
@@ -131,7 +142,7 @@ export default function VehicleWizardForm() {
       .catch((err) => console.error("Erro fetchModelos:", err));
   }, [formData.marca, formData.category_id]);
 
-  // 2.4) Carregar “anos” assim que “modelo” for preenchido
+  // 3.4) Carrega “anos” assim que “modelo” mudar
   useEffect(() => {
     if (!formData.modelo) {
       setAnos([]);
@@ -146,20 +157,18 @@ export default function VehicleWizardForm() {
       .catch((err) => console.error("Erro fetchAnos:", err));
   }, [formData.modelo, formData.category_id, formData.marca]);
 
-  // 2.5) Gerar “previewUrls” assim que “selectedFiles” mudar
+  // 3.5) Gera “previewUrls” assim que “selectedFiles” mudar
   useEffect(() => {
     const urls = formData.selectedFiles.map((file) =>
       URL.createObjectURL(file)
     );
     setPreviewUrls(urls);
     return () => {
-      // Ao desmontar ou mudar arquivos, revogamos as URLs antigas
       urls.forEach((url) => URL.revokeObjectURL(url));
     };
   }, [formData.selectedFiles]);
 
-  // ========== 3) Função para buscar detalhes FIPE ao clicar em “Buscar FIPE” ==========
-
+  // 4) BUSCAR DETALHES FIPE
   async function handleFetchFipe() {
     if (!formData.marca || !formData.modelo || !formData.ano) return;
     try {
@@ -169,7 +178,6 @@ export default function VehicleWizardForm() {
         formData.modelo,
         formData.ano
       );
-      // Salvamos o objeto bruto + códigos, e já pré-preenchemos “preco”
       const fi = {
         ...detalhes,
         codigoMarca: formData.marca,
@@ -177,11 +185,13 @@ export default function VehicleWizardForm() {
         codigoAno: formData.ano,
       };
       setFormData((prev) => ({ ...prev, fipeInfo: fi }));
+
       if (detalhes && detalhes.Valor) {
-        // Converte string “50.000,00” → número 50000.00
+        // Converte “50.000,00” → 50000.00
         const valorNum = parseFloat(
           detalhes.Valor.replace(".", "").replace(",", ".")
         );
+        // Pré-preenche “preco” com valor FIPE
         setFormData((p) => ({ ...p, preco: valorNum.toString() }));
       }
     } catch (err) {
@@ -189,8 +199,7 @@ export default function VehicleWizardForm() {
     }
   }
 
-  // ========== 4) Handlers genéricos de formulário ==========
-
+  // 5) HANDLERS DE FORMULÁRIO
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) {
@@ -219,8 +228,7 @@ export default function VehicleWizardForm() {
     }));
   }
 
-  // ========== 5) Função para enviar TODOS os dados ao Supabase ==========
-
+  // 6) SUBMETER TODOS OS DADOS
   async function handleSubmitAll() {
     setLoadingSubmit(true);
     setErrorSubmit(null);
@@ -234,6 +242,7 @@ export default function VehicleWizardForm() {
     }
 
     try {
+      // O submitVehicleData atual só espera “preco” (que aqui será salePrice)
       await submitVehicleData(
         user,
         {
@@ -242,7 +251,7 @@ export default function VehicleWizardForm() {
           marca: formData.marca,
           modelo: formData.modelo,
           ano: formData.ano,
-          preco: formData.preco,
+          preco: formData.salePrice,      // envia “salePrice” para o back
           quilometragem: formData.quilometragem,
           cor: formData.cor,
           combustivel: formData.combustivel,
@@ -260,7 +269,7 @@ export default function VehicleWizardForm() {
         formData.selectedFiles,
         formData.selectedOptionals
       );
-      // Redireciona para a lista de veículos cadastrados
+
       router.push("/veiculos/todosVeiculos");
     } catch (e: any) {
       setErrorSubmit(e.message || "Erro ao cadastrar veículo");
@@ -269,15 +278,11 @@ export default function VehicleWizardForm() {
     }
   }
 
-  // ========== 6) VALIDAÇÕES MÍNIMAS PARA LIBERAR CADA ETAPA ==========
-
-  // Step 1 → Step 2: basta ter “status” preenchido.
+  // 7) VALIDAÇÕES PARA AVANÇAR CADA ETAPA
   function canProceedToStep2() {
     return formData.status !== "";
   }
 
-  // Step 2 → Step 3: exige marca, modelo e ano preenchidos.
-  // Convertendo para string antes de chamar .trim()
   function canProceedToStep3() {
     return (
       String(formData.marca).trim() !== "" &&
@@ -286,13 +291,9 @@ export default function VehicleWizardForm() {
     );
   }
 
-  // Step 3 → Step 4: lógica diferente se status = WISHLIST ou não.
   function canProceedToStep4() {
     if (formData.status === "WISHLIST") {
-      // Para “Desejado”, precisa ter escolhido se encontrou carro (foundCar)
       if (formData.foundCar === "") return false;
-
-      // Se “Encontrou Carro = Sim”, então exige também campos de vendedor e dados de veículo:
       if (formData.foundCar === "yes") {
         return (
           formData.sellerType !== "" &&
@@ -302,39 +303,36 @@ export default function VehicleWizardForm() {
           formData.cor.trim() !== ""
         );
       }
-
-      // Se “Encontrou Carro = Não”, basta avançar para etapa de upload
       return formData.foundCar === "no";
+    } else if (formData.status === "GARAGE") {
+      // Em GARAGE, “preco” é “Preço comprado”
+      return (
+        formData.preco.trim() !== "" &&
+        formData.quilometragem.trim() !== "" &&
+        formData.cor.trim() !== ""
+      );
     } else {
-      // Caso GARAGE ou FOR_SALE: exige quilometragem e cor
-      if (
-        formData.quilometragem.trim() === "" ||
-        formData.cor.trim() === ""
-      ) {
-        return false;
-      }
-      // Se FOR_SALE, exige também “preco”
-      if (formData.status === "FOR_SALE" && formData.preco.trim() === "") {
-        return false;
-      }
-      return true;
+      // Em FOR_SALE, exige “preco” (comprado) e “salePrice” (à venda)
+      return (
+        formData.preco.trim() !== "" &&
+        formData.salePrice.trim() !== "" &&
+        formData.quilometragem.trim() !== "" &&
+        formData.cor.trim() !== ""
+      );
     }
   }
 
-  // ========== 7) Renderização de cada “step” ==========
-
+  // 8) RENDERIZAÇÃO DE CADA ETAPA
   function renderStep() {
     switch (currentStep) {
       // ====== STEP 1: “Qual lista adicionar seu veículo?” ======
-      // Dentro de VehicleWizardForm.tsx, no case 1 (Step 1), faça esta alteração:
-
       case 1:
         return (
           <div className="space-y-6">
             <h2 className="text-xl font-semibold">
               Qual lista adicionar seu veículo?
             </h2>
-  
+
             <ToggleFilter<VehicleStatus>
               options={statusOptions}
               value={formData.status as VehicleStatus}
@@ -343,8 +341,7 @@ export default function VehicleWizardForm() {
               }
               className="w-full max-w-md"
             />
-  
-            {/** → Novo card de informação, exibido somente após escolher “status” */}
+
             {formData.status && (
               <div className="flex items-start bg-blue-50 border-l-4 border-blue-400 p-4 rounded-md">
                 {/* Ícone de exclamação */}
@@ -384,7 +381,7 @@ export default function VehicleWizardForm() {
                 </div>
               </div>
             )}
-  
+
             <div className="mt-6 flex justify-end">
               <button
                 type="button"
@@ -404,8 +401,6 @@ export default function VehicleWizardForm() {
             </div>
           </div>
         );
-  
-      
 
       // ====== STEP 2: DADOS FIPE ======
       case 2:
@@ -416,20 +411,19 @@ export default function VehicleWizardForm() {
               {formData.status === "WISHLIST" ? "(Obrigatório)" : "(Opcional)"}
             </h2>
 
-            {/* Seleção de Categoria */}
-              <FipeSelectors
-                category={formData.category_id}
-                marca={formData.marca}
-                modelo={formData.modelo}
-                ano={formData.ano}
-                marcas={marcas}
-                modelos={modelos}
-                anos={anos}
-                onChange={handleChange}
-                onFetchFipe={handleFetchFipe}
-              />
+            {/* Remove o select de categoria, porque o FipeSelectors já tem */}
+            <FipeSelectors
+              category={formData.category_id}
+              marca={formData.marca}
+              modelo={formData.modelo}
+              ano={formData.ano}
+              marcas={marcas}
+              modelos={modelos}
+              anos={anos}
+              onChange={handleChange}
+              onFetchFipe={handleFetchFipe}
+            />
 
-            {/* Se já houver fipeInfo, exibir resumo */}
             {formData.fipeInfo && (
               <div className="p-4 bg-green-50 border border-green-200 rounded-md">
                 <p className="text-sm">
@@ -466,15 +460,13 @@ export default function VehicleWizardForm() {
           </div>
         );
 
-      // ====== STEP 3: lógica condicional para WISHLIST vs. GARAGE/FOR_SALE ======
+      // ====== STEP 3: lógica condicional ======
       case 3:
-        // SE “Desejado” (WISHLIST), primeiro pergunta “Já encontrou algum carro?”
+        // SE “Desejo” (WISHLIST): pergunta “Já encontrou algum carro?”
         if (formData.status === "WISHLIST") {
           return (
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold">
-                3. Já encontrou algum carro?
-              </h2>
+              <h2 className="text-xl font-semibold">3. Já encontrou algum carro?</h2>
 
               <div className="flex items-center space-x-6">
                 <label className="flex items-center">
@@ -501,10 +493,6 @@ export default function VehicleWizardForm() {
                 </label>
               </div>
 
-              {/*
-                Se o usuário escolheu “Sim” (foundCar === "yes"),
-                então exibimos SellerForm + VehicleDataForm para preencher dados do vendedor e do carro.
-              */}
               {formData.foundCar === "yes" && (
                 <div className="space-y-6">
                   <SellerForm
@@ -516,17 +504,17 @@ export default function VehicleWizardForm() {
                     address={formData.address}
                     onChange={handleChange}
                   />
-                  <p className="text-xl font-semibold"> Detalhes do veículo </p>
-                  <div className="space-y-6">
-                    <VehicleDataForm
-                      preco={formData.preco}
-                      quilometragem={formData.quilometragem}
-                      cor={formData.cor}
-                      combustivel={formData.combustivel}
-                      observacoes={formData.observacoes}
-                      onChange={handleChange}
-                    />
-                  </div>
+
+                  <p className="text-xl font-semibold">Detalhes do veículo</p>
+                  <VehicleDataForm
+                    preco={formData.preco}
+                    quilometragem={formData.quilometragem}
+                    cor={formData.cor}
+                    combustivel={formData.combustivel}
+                    observacoes={formData.observacoes}
+                    onChange={handleChange}
+                    priceLabel="Preço do veículo encontrado"
+                  />
                 </div>
               )}
 
@@ -558,36 +546,80 @@ export default function VehicleWizardForm() {
           );
         }
 
-        // SE STATUS = GARAGE ou FOR_SALE, comporta-se como antes: apenas VehicleDataForm
+        // SE “Garagem” (GARAGE): exibe VehicleDataForm com “Preço comprado”
+        if (formData.status === "GARAGE") {
+          return (
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold">3. Dados do veículo</h2>
+              <VehicleDataForm
+                preco={formData.preco}
+                quilometragem={formData.quilometragem}
+                cor={formData.cor}
+                combustivel={formData.combustivel}
+                observacoes={formData.observacoes}
+                onChange={handleChange}
+                priceLabel="Preço comprado"
+              />
+
+              <div className="mt-6 flex justify-between">
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(2)}
+                  className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                >
+                  Anterior
+                </button>
+                <button
+                  type="button"
+                  disabled={!canProceedToStep4()}
+                  onClick={() => setCurrentStep(4)}
+                  className={`
+                    px-4 py-2 rounded 
+                    ${
+                      canProceedToStep4()
+                        ? "bg-blue-600 text-white hover:bg-blue-700"
+                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    }
+                  `}
+                >
+                  Próximo
+                </button>
+              </div>
+            </div>
+          );
+        }
+
+        // SE “À Venda” (FOR_SALE): exibe dois campos separados
         return (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold">3. Dados do Veículo</h2>
-
-            <VehicleDataForm
-              preco={formData.preco}
-              quilometragem={formData.quilometragem}
-              cor={formData.cor}
-              combustivel={formData.combustivel}
-              observacoes={formData.observacoes}
-              onChange={handleChange}
-            />
-
-            {formData.status === "FOR_SALE" && (
+            <h2 className="text-xl font-semibold">3. Dados do veículo</h2>
+            <div className="space-y-6">
+              {/* “Valor à venda” no campo salePrice */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Valor de Venda (R$)
+                  Valor à venda (R$)
                 </label>
                 <input
                   type="number"
                   step="0.01"
-                  name="preco"
-                  value={formData.preco}
+                  name="salePrice"
+                  value={formData.salePrice}
                   onChange={handleChange}
                   className="block w-full max-w-xs rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Ex: 55000.00"
+                  placeholder="Ex: 45000.00"
                 />
               </div>
-            )}
+
+              {/* Restante dos campos do veículo */}
+              <VehicleDataForm
+                preco={"Preço comprado"}
+                quilometragem={formData.quilometragem}
+                cor={formData.cor}
+                combustivel={formData.combustivel}
+                observacoes={formData.observacoes}
+                onChange={handleChange}
+              />
+            </div>
 
             <div className="mt-6 flex justify-between">
               <button
@@ -618,9 +650,17 @@ export default function VehicleWizardForm() {
 
       // ====== STEP 4: OPCIONAIS + UPLOAD + RESUMO FINAL ======
       case 4:
+        // Se WISHLIST + foundCar="no", muda título e label
+        const isWishNoCar =
+          formData.status === "WISHLIST" && formData.foundCar === "no";
+
         return (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold">4. Opcionais, Imagens e Revisão</h2>
+            <h2 className="text-xl font-semibold">
+              {isWishNoCar
+                ? "4. Opcionais desejados"
+                : "4. Opcionais, Imagens e Revisão"}
+            </h2>
 
             <OptionalsSelect
               optionals={optionals}
@@ -632,6 +672,11 @@ export default function VehicleWizardForm() {
               previewUrls={previewUrls}
               onFileChange={handleFileChange}
               onRemoveFile={handleRemoveFile}
+              label={
+                isWishNoCar
+                  ? "Fotos do veículo desejado (máx. 5)"
+                  : undefined
+              }
             />
 
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-md">
@@ -656,10 +701,7 @@ export default function VehicleWizardForm() {
                     : "Não consultado"}
                 </li>
 
-                {/*
-                  Se for “Desejo” e “Encontrou Carro = Sim”:
-                  exibimos também dados de vendedor e do veículo (quilometragem, cor, etc.)
-                */}
+                {/* Se WISHLIST + foundCar="yes" */}
                 {formData.status === "WISHLIST" && formData.foundCar === "yes" && (
                   <>
                     <li>
@@ -698,25 +740,20 @@ export default function VehicleWizardForm() {
                     <li>
                       <strong>Combustível:</strong> {formData.combustivel}
                     </li>
-                    {/*
-                      Em “Desejo” não tem campo “Preço de Venda”,
-                      mas se o usuário já encontrou o carro e quer
-                      informar preço, esse valor ficou em formData.preco
-                    */}
                     {formData.preco && (
                       <li>
-                        <strong>Preço:</strong> R$ {formData.preco}
+                        <strong>Preço do veículo encontrado:</strong> R$ {formData.preco}
                       </li>
                     )}
                   </>
                 )}
 
-                {/*
-                  Se for “Garagem” ou “À Venda”, mostramos sempre quilometragem, cor, etc.
-                  E, se “À Venda”, mostramos também “Preço de Venda”.
-                */}
-                {formData.status !== "WISHLIST" && (
+                {/* Se GARAGE */}
+                {formData.status === "GARAGE" && (
                   <>
+                    <li>
+                      <strong>Preço comprado:</strong> R$ {formData.preco}
+                    </li>
                     <li>
                       <strong>Quilometragem:</strong> {formData.quilometragem} km
                     </li>
@@ -726,11 +763,27 @@ export default function VehicleWizardForm() {
                     <li>
                       <strong>Combustível:</strong> {formData.combustivel}
                     </li>
-                    {formData.status === "FOR_SALE" && (
-                      <li>
-                        <strong>Preço de Venda:</strong> R$ {formData.preco}
-                      </li>
-                    )}
+                  </>
+                )}
+
+                {/* Se FOR_SALE */}
+                {formData.status === "FOR_SALE" && (
+                  <>
+                    <li>
+                      <strong>Preço comprado:</strong> R$ {formData.preco}
+                    </li>
+                    <li>
+                      <strong>Preço à venda:</strong> R$ {formData.salePrice}
+                    </li>
+                    <li>
+                      <strong>Quilometragem:</strong> {formData.quilometragem} km
+                    </li>
+                    <li>
+                      <strong>Cor:</strong> {formData.cor}
+                    </li>
+                    <li>
+                      <strong>Combustível:</strong> {formData.combustivel}
+                    </li>
                   </>
                 )}
 
@@ -760,9 +813,10 @@ export default function VehicleWizardForm() {
               <button
                 type="button"
                 onClick={() => {
-                  // Se “Desejo” e usuário escolheu “Não encontrou carro”,
-                  // voltamos diretamente ao passo 2. Senão, voltamos ao passo 3.
-                  if (formData.status === "WISHLIST" && formData.foundCar === "no") {
+                  if (
+                    formData.status === "WISHLIST" &&
+                    formData.foundCar === "no"
+                  ) {
                     setCurrentStep(2);
                   } else {
                     setCurrentStep(3);
@@ -796,7 +850,6 @@ export default function VehicleWizardForm() {
     }
   }
 
-  // Container principal do wizard
   return (
     <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow">
       {/* Indicador de progresso (4 bolinhas) */}

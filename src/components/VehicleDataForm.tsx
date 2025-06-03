@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 
 interface VehicleDataFormProps {
@@ -9,6 +11,7 @@ interface VehicleDataFormProps {
   onChange: React.ChangeEventHandler<
     HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
   >;
+  priceLabel?: string;
 }
 
 export default function VehicleDataForm({
@@ -18,14 +21,15 @@ export default function VehicleDataForm({
   combustivel,
   observacoes,
   onChange,
+  priceLabel = "Preço",
 }: VehicleDataFormProps) {
   return (
     <div className="space-y-6">
-      {/* Linha 1: Preço e Quilometragem */}
+      {/* Linha 1: Preço (dinâmico) e Quilometragem */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Preço
+            {priceLabel}
           </label>
           <input
             type="number"

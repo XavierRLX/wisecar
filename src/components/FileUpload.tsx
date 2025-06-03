@@ -7,24 +7,26 @@ interface FileUploadProps {
   previewUrls: string[];
   onFileChange: (files: File[]) => void;
   onRemoveFile: (index: number) => void;
+  label?: string; // Novo campo para permitir texto customizado
 }
 
 export default function FileUpload({
   previewUrls,
   onFileChange,
   onRemoveFile,
+  label, // recebe texto customizado
 }: FileUploadProps) {
   return (
     <div>
+      {/* Usa o label customizado se fornecido, caso contrário o texto padrão */}
       <label className="block text-sm font-medium text-gray-700 mb-2">
-        Imagens do veículo (máx. 5)
+        {label ?? "Imagens do veículo (máx. 5)"}
       </label>
       <input
         type="file"
         name="image"
         multiple
         onChange={(e) => {
-          // Converte FileList em File[] e limita a 5 itens (se quiser)
           if (!e.target.files) return;
           const filesArray = Array.from(e.target.files).slice(0, 5);
           onFileChange(filesArray);
