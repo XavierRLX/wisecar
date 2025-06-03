@@ -1,12 +1,10 @@
 // components/MaintenanceWizardForm.tsx
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { PlusCircle, Trash2 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import type { MaintenanceValues, PartForm, DocForm } from "./MaintenanceWizardForm.types";
-import type { MaintenanceRecord } from "@/types";
 
 // Essas props vêm da página “/manutencoes/novo”
 interface MaintenanceWizardFormProps {
@@ -117,7 +115,9 @@ export default function MaintenanceWizardForm({
   // ── 5) HANDLER DE VALIDAÇÃO: determina se pode avançar ao próximo step ─────────
   function canProceedToStep2() {
     // Step 1 exige “vehicleId”
-    return (selectedVehicle || values.vehicleId).trim() !== "";
+    // Aqui corrigimos chamando trim() apenas em string
+    const vid = selectedVehicle || values.vehicleId || "";
+    return vid.trim() !== "";
   }
   function canProceedToStep3() {
     // Step 2 exige:
