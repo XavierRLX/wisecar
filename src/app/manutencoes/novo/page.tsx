@@ -1,43 +1,55 @@
-'use client';
+// app/manutencoes/novo/page.tsx
+"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import AuthGuard from "@/components/AuthGuard";
 import EnsureProfile from "@/components/EnsureProfile";
 import LoadingState from "@/components/LoadingState";
-import MaintenanceForm, { MaintenanceValues } from "@/components/MaintenanceForm";
 import { supabase } from "@/lib/supabase";
+import MaintenanceWizardForm from "@/components/MaintenanceWizardForm";
+import type {
+  MaintenanceValues,
+  PartForm,
+  DocForm,
+} from "@/components/MaintenanceWizardForm.types";
 
 export default function NewMaintenancePage() {
   const router = useRouter();
 
-  const [vehicles, setVehicles] = useState<{ id: string; brand: string; model: string }[]>([]);
+  const [vehicles, setVehicles] = useState<
+    { id: string; brand: string; model: string }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState("");
 
-  // src/app/manutencoes/novo/page.tsx
-useEffect(() => {
-  supabase.auth.getUser().then(({ data }) => {
-    if (!data.user) return router.push("/login");
-    supabase
-    .from("vehicles")
-    .select("id, brand, model")
-    .eq("owner_id", data.user.id)
-    .in("status", ["GARAGE", "FOR_SALE"])  
-    .order("brand", { ascending: true })
-    .order("model", { ascending: true })
-    .then(({ data: vs, error }) => {
-      if (error) console.error(error);
-      setVehicles(vs || []);
-      setLoading(false);
+  // Carrega veículos do usuário atual
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (!data.user) {
+        router.push("/login");
+        return;
+      }
+      supabase
+        .from("vehicles")
+        .select("id, brand, model")
+        .eq("owner_id", data.user.id)
+        .in("status", ["GARAGE", "FOR_SALE"])
+        .order("brand", { ascending: true })
+        .order("model", { ascending: true })
+        .then(({ data: vs, error }) => {
+          if (error) console.error(error);
+          setVehicles(vs || []);
+          setLoading(false);
+        });
     });
-  });
-}, [router]);
+  }, [router]);
 
-
+  // Valores iniciais para o Wizard (automapa campos vazios)
   const initial: MaintenanceValues = {
     vehicleId: "",
+    category: "manutencao",
     maintenanceName: "",
     status: "A fazer",
     maintenanceType: "preventiva",
@@ -49,15 +61,16 @@ useEffect(() => {
     notes: "",
     laborCost: "",
     parts: [],
-    docs: [],           // ← adiciona docs aqui
+    docs: [],
   };
 
+  //  → O mesmo handleSubmit que você já tinha adaptado, mas agora recebe MaintenanceValues
   async function handleSubmit(values: MaintenanceValues) {
     const vehicleId = selectedVehicle || values.vehicleId;
     if (!vehicleId) throw new Error("Selecione um veículo");
     setSubmitting(true);
 
-    // 1) cria manutenção
+    // 1) Cria a maintenance_records
     const { data, error } = await supabase
       .from("maintenance_records")
       .insert({
@@ -71,7 +84,7 @@ useEffect(() => {
         completed_km: +values.completedKm || null,
         provider: values.provider || null,
         notes: values.notes || null,
-        cost: 0,
+        cost: 0, // atualizaremos logo após
       })
       .select("id")
       .single();
@@ -82,7 +95,7 @@ useEffect(() => {
     }
     const recordId = data.id;
 
-    // 2) insere peças
+    // 2) Insere as partes (manutenção_parts)
     if (values.parts.length > 0) {
       await supabase
         .from("maintenance_parts")
@@ -98,7 +111,7 @@ useEffect(() => {
         );
     }
 
-    // 3) atualiza custo total
+    // 3) Atualiza custo total (peças + mão de obra)
     const partsTotal = values.parts.reduce(
       (sum, p) => sum + (parseFloat(p.price) || 0) * (parseInt(p.quantity) || 0),
       0
@@ -108,25 +121,27 @@ useEffect(() => {
       .update({ cost: partsTotal + (parseFloat(values.laborCost) || 0) })
       .eq("id", recordId);
 
-    // 4) faz upload dos docs e insere em maintenance_docs
+    // 4) Faz upload e grava documentos (maintenance_docs)
     if (values.docs.length > 0) {
       await Promise.all(
         values.docs.map(async (doc) => {
           const path = `${recordId}/${doc.file!.name}`;
-          // upload para o bucket "maintenance-docs"
+          // 4.1) Upload para o bucket "maintenance-docs"
           const { error: uploadErr } = await supabase
             .storage
             .from("maintenance-docs")
             .upload(path, doc.file!);
           if (uploadErr) throw uploadErr;
 
-          // recupera URL pública
-          const { data: { publicUrl } } = supabase
+          // 4.2) Recupera a URL pública
+          const {
+            data: { publicUrl },
+          } = supabase
             .storage
             .from("maintenance-docs")
             .getPublicUrl(path);
 
-          // insere metadados no banco
+          // 4.3) Grava registro em maintenance_docs
           const { error: dbErr } = await supabase
             .from("maintenance_docs")
             .insert({
@@ -147,7 +162,7 @@ useEffect(() => {
   return (
     <AuthGuard>
       <EnsureProfile />
-      <MaintenanceForm
+      <MaintenanceWizardForm
         initial={initial}
         vehicles={vehicles}
         selectedVehicle={selectedVehicle}
