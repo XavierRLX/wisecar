@@ -1,7 +1,4 @@
-// app/api/veiculos/[id]/customize/route.ts
-
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
@@ -9,8 +6,10 @@ import OpenAI from "openai";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+  { params }: { params: Promise<{ id: string }> } // Promise obrigatória
+): Promise<NextResponse> {
+  const { id: vehicleId } = await params;         // await para extrair id
+
   try {
     const formData = await request.formData();
     const prompt = formData.get("prompt");
@@ -24,12 +23,10 @@ export async function POST(
       );
     }
 
-    // File recebido já é Blob PNG
     const imageUpload = imageFile as unknown as Blob;
     const maskUpload = maskFile as unknown as Blob;
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-
     const editResponse = await openai.images.edit({
       image: imageUpload,
       mask: maskUpload,
