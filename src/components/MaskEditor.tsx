@@ -1,4 +1,3 @@
-// components/MaskEditor.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -15,13 +14,12 @@ export default function MaskEditor({
   onMaskChange,
 }: MaskEditorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const overlayRef = useRef<HTMLCanvasElement>(null);
 
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawMode, setDrawMode] = useState<"white" | "black">("white");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  // Inicializa máscara preta
+  // Inicializa máscara preta (tudo preservado)
   useEffect(() => {
     const canvas = canvasRef.current!;
     canvas.width = canvasSize;
@@ -31,7 +29,7 @@ export default function MaskEditor({
     ctx.fillRect(0, 0, canvasSize, canvasSize);
     updatePreview();
     // eslint-disable-next-line
-  }, [canvasSize]);
+  }, [canvasSize, imageUrl]);
 
   function getCursorPos(
     e: React.MouseEvent<HTMLCanvasElement, MouseEvent>
@@ -94,7 +92,7 @@ export default function MaskEditor({
     baseImg.src = imageUrl;
     baseImg.onload = () => {
       ctx.drawImage(baseImg, 0, 0, canvasSize, canvasSize);
-      ctx.globalAlpha = 0.35;
+      ctx.globalAlpha = 0.45;
       ctx.drawImage(maskCanvas, 0, 0, canvasSize, canvasSize);
       ctx.globalAlpha = 1.0;
       setPreviewUrl(temp.toDataURL());
@@ -103,10 +101,18 @@ export default function MaskEditor({
 
   function handleExportMask() {
     const canvas = canvasRef.current!;
-    canvas.toBlob((blob) => {
+    const ctx = canvas.getContext("2d")!;
+    const imgData = ctx.getImageData(0, 0, canvasSize, canvasSize);
+    for (let i = 0; i < imgData.data.length; i += 4) {
+      const isWhite = imgData.data[i] === 255;
+      if (isWhite) imgData.data[i+3] = 0; // alpha = 0 (transparente)
+    }
+    ctx.putImageData(imgData, 0, 0);
+    canvas.toBlob(blob => {
       if (blob) onMaskChange(blob);
     }, "image/png");
   }
+  
 
   return (
     <div className="flex flex-col items-center">
@@ -118,7 +124,6 @@ export default function MaskEditor({
           marginBottom: 12,
         }}
       >
-        {/* Preview overlay */}
         <img
           src={previewUrl || imageUrl}
           alt="Máscara sobre a imagem"
@@ -128,9 +133,13 @@ export default function MaskEditor({
             borderRadius: 8,
             border: "1px solid #e5e7eb",
             display: "block",
+            pointerEvents: "none",
+            position: "absolute",
+            left: 0,
+            top: 0,
+            zIndex: 1,
           }}
         />
-        {/* Canvas para desenhar (overlay invisível) */}
         <canvas
           ref={canvasRef}
           style={{

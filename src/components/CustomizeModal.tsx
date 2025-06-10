@@ -1,7 +1,9 @@
+
+//CustomizeModal
 "use client";
 
-import { useEffect, useState } from "react";
-import { useDeeplab } from "@/lib/useDeeplab";
+import { useState } from "react";
+import MaskEditor from "./MaskEditor"; // certifique-se que o caminho está correto
 
 interface CustomizeModalProps {
   imageUrl: string;
@@ -14,73 +16,26 @@ export default function CustomizeModal({
   vehicleId,
   onClose,
 }: CustomizeModalProps) {
-  const model = useDeeplab();
-
-  const [segMap, setSegMap] = useState<Uint8ClampedArray | null>(null);
-  const [segSize, setSegSize] = useState<{ w: number; h: number } | null>(null);
+  const [promptText, setPromptText] = useState("");
   const [maskBlob, setMaskBlob] = useState<Blob | null>(null);
   const [maskPreview, setMaskPreview] = useState<string | null>(null);
-  const [promptText, setPromptText] = useState("Carro na cor preta");
   const [isLoading, setIsLoading] = useState(false);
   const [editedUrl, setEditedUrl] = useState<string | null>(null);
 
-  // 1. Ao carregar o modelo e a imagem, gera o segmentation map
-  useEffect(() => {
-    if (!model) return;
-    (async () => {
-      const resp = await fetch(imageUrl);
-      const blob = await resp.blob();
-      const imgBitmap = await createImageBitmap(blob);
-      const off = document.createElement("canvas");
-      off.width = imgBitmap.width;
-      off.height = imgBitmap.height;
-      const ctx = off.getContext("2d")!;
-      ctx.drawImage(imgBitmap, 0, 0);
-      const result = await model.segment(off);
-      setSegMap(result.segmentationMap);
-      setSegSize({ w: result.width, h: result.height });
-    })();
-  }, [model, imageUrl]);
-
-  // Verifica se há carro na segmentação (COCO class 7)
-  const hasCar = segMap ? Array.from(segMap).some((c) => c === 7) : false;
-
-  // Gera máscara automática com base no tipo selecionado
-  function applyMask(type: "car" | "background") {
-    if (!segMap || !segSize) return;
-    const { w, h } = segSize;
-    const off = document.createElement("canvas");
-    off.width = w;
-    off.height = h;
-    const ctx = off.getContext("2d")!;
-    const imgData = ctx.createImageData(w, h);
-
-    segMap.forEach((classId, i) => {
-      const white = type === "car" ? classId === 7 : classId !== 7;
-      imgData.data[i * 4 + 0] = white ? 255 : 0;
-      imgData.data[i * 4 + 1] = white ? 255 : 0;
-      imgData.data[i * 4 + 2] = white ? 255 : 0;
-      imgData.data[i * 4 + 3] = 255;
-    });
-
-    ctx.putImageData(imgData, 0, 0);
-    off.toBlob((b) => {
-      if (b) {
-        setMaskBlob(b);
-        setMaskPreview(URL.createObjectURL(b));
-      }
-    }, "image/png");
+  // Preview da máscara exportada (para download)
+  function handleMaskChange(blob: Blob) {
+    setMaskBlob(blob);
+    setMaskPreview(URL.createObjectURL(blob));
   }
 
-  // 3. Geração de imagem pela API OpenAI
   async function handleGenerate() {
-    if (!maskBlob) {
-      alert("Selecione primeiro uma máscara (carro ou fundo).");
+    if (!maskBlob || !promptText) {
+      alert("Preencha o prompt e gere a máscara primeiro!");
       return;
     }
     setIsLoading(true);
     try {
-      // Redimensiona image e mask para 256×256
+      // Redimensionar para 256x256 igual backend espera (ajuste se necessário)
       const [respImg, maskBitmap] = await Promise.all([
         fetch(imageUrl).then((r) => r.blob()).then((blob) => createImageBitmap(blob)),
         createImageBitmap(maskBlob),
@@ -123,17 +78,30 @@ export default function CustomizeModal({
     }
   }
 
-  // JSX do modal
   if (editedUrl) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg max-w-md w-full p-6 space-y-4">
           <h2 className="text-xl font-semibold">Resultado da IA</h2>
+          <div className="flex gap-2">
+        <div className="w-1/2">
+          <p className="text-center text-sm">Original</p>
+          <img
+            src={imageUrl}
+            alt="Imagem gerada pela IA"
+            className="w-full h-52 object-contain rounded bg-gray-100"
+          />
+        </div>
+        <div className="w-1/2">
+          <p className="text-center text-sm">Editado</p>
           <img
             src={editedUrl}
             alt="Imagem gerada pela IA"
             className="w-full h-52 object-contain rounded bg-gray-100"
           />
+        </div>
+      </div>
+         
           <div className="flex justify-between">
             <a
               href={editedUrl}
@@ -163,65 +131,54 @@ export default function CustomizeModal({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-auto p-4">
       <div className="bg-white rounded-lg max-w-lg w-full p-6 space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Personalizar com IA</h2>
-          <button onClick={onClose} className="text-gray-500 text-2xl">
-            ×
-          </button>
+        <h2 className="text-xl font-semibold text-center">Editar veículo com IA</h2>
+        <p className="text-sm text-gray-600 mb-2 text-center">
+          1. <b>Pinte sobre a imagem</b> marcando as áreas que deseja modificar.
+          <br />
+          Áreas em <b>branco</b> serão alteradas pela IA; áreas em <b>preto</b> serão preservadas.
+          <br />
+          Segure <b>Ctrl</b> (ou <b>Command</b> no Mac) para apagar (pintar preto).
+        </p>
+        <MaskEditor
+          imageUrl={imageUrl}
+          canvasSize={256}
+          onMaskChange={handleMaskChange}
+        />
+        <div className="mt-2">
+          <label className="block text-sm font-medium mb-1">
+            2. Digite o que deseja mudar (preferencialmente em <b>inglês</b>):
+          </label>
+          <textarea
+            value={promptText}
+            onChange={(e) => setPromptText(e.target.value)}
+            rows={2}
+            placeholder={`Exemplo: "Make the car look sportier, change the wheels to black, add a spoiler"`}
+            className="w-full border rounded px-2 py-1"
+          />
         </div>
-
-        <img
-          src={imageUrl}
-          alt="Preview do veículo"
-          className="w-full h-48 object-contain rounded bg-gray-100"
-        />
-
-        <label className="block text-sm font-medium">Prompt de edição:</label>
-        <textarea
-          value={promptText}
-          onChange={(e) => setPromptText(e.target.value)}
-          rows={2}
-          className="w-full border rounded px-2 py-1"
-        />
-
-        {segMap ? (
-          <div className="flex gap-2">
-            <button
-              onClick={() => applyMask("car")}
-              disabled={!hasCar}
-              className="px-3 py-1 bg-indigo-500 text-white rounded disabled:opacity-50"
-            >
-              Mudar Carro
-            </button>
-            <button
-              onClick={() => applyMask("background")}
-              className="px-3 py-1 bg-indigo-500 text-white rounded"
-            >
-              Mudar Fundo
-            </button>
-          </div>
-        ) : (
-          <p>Carregando segmentação...</p>
-        )}
-
-        {maskPreview && (
-          <div>
-            <p className="text-xs text-gray-500">Preview da Máscara:</p>
-            <img
-              src={maskPreview}
-              alt="Preview da máscara"
-              className="w-32 h-32 object-contain border rounded"
-            />
-          </div>
-        )}
-
         <button
           onClick={handleGenerate}
-          disabled={isLoading || !maskBlob}
-          className="w-full py-2 bg-blue-600 text-white rounded disabled:opacity-50"
+          disabled={isLoading || !maskBlob || !promptText}
+          className="w-full py-2 mt-2 bg-blue-600 text-white rounded disabled:opacity-50"
         >
           {isLoading ? "Gerando…" : "Gerar Imagem IA"}
         </button>
+        <button
+          onClick={onClose}
+          className="w-full py-2 mt-2 bg-gray-300 text-gray-700 rounded"
+        >
+          Cancelar
+        </button>
+        {maskPreview && (
+          <div className="mt-2">
+            <p className="text-xs text-gray-500">Preview da máscara exportada:</p>
+            <img
+              src={maskPreview}
+              alt="Preview da máscara"
+              className="w-32 h-32 object-contain border rounded mx-auto"
+            />
+          </div>
+        )}
       </div>
     </div>
   );
