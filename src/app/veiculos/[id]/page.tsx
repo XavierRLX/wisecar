@@ -51,31 +51,43 @@ function CustomizeModal({ imageUrl, vehicleId, onClose }: CustomizeModalProps) {
 
     setIsLoading(true);
     try {
-      const imgResponse = await fetch(imageUrl);
-      if (!imgResponse.ok) {
-        throw new Error("Falha ao baixar a imagem no cliente.");
-      }
-      const imageBlob = await imgResponse.blob();
+      // 1) Baixar a imagem original (pode ser JPEG)
+      const imgRes = await fetch(imageUrl);
+      if (!imgRes.ok) throw new Error("Falha ao baixar imagem original.");
+      const originalBlob = await imgRes.blob();
 
+      // 2) Converter para PNG 256×256 via canvas
+      const imgBitmap = await createImageBitmap(originalBlob);
+      const offCanvas = document.createElement("canvas");
+      const size = 256;
+      offCanvas.width = size;
+      offCanvas.height = size;
+      const ctx = offCanvas.getContext("2d")!;
+      ctx.drawImage(imgBitmap, 0, 0, size, size);
+      const pngImageBlob: Blob = await new Promise((resolve) =>
+        offCanvas.toBlob((b) => resolve(b!), "image/png")
+      );
+
+      // 3) Preparar FormData
       const formData = new FormData();
       formData.append("prompt", promptText);
-      formData.append("image", imageBlob, "image.png");
+      formData.append("image", pngImageBlob, "image.png");
       formData.append("mask", maskBlob, "mask.png");
 
+      // 4) Enviar para a API
       const res = await fetch(`/api/veiculos/${vehicleId}/customize`, {
         method: "POST",
         body: formData,
       });
-
       if (!res.ok) {
-        const errorJson = await res.json();
-        throw new Error(errorJson.error || "Falha ao gerar imagem.");
+        const err = await res.json();
+        throw new Error(err.error || "Falha ao gerar imagem.");
       }
 
-      const data = await res.json();
-      setEditedUrl(data.editedUrl as string);
+      const { editedUrl } = await res.json();
+      setEditedUrl(editedUrl);
     } catch (err: any) {
-      console.error("Erro ao gerar imagem:", err);
+      console.error(err);
       alert("Erro: " + err.message);
     } finally {
       setIsLoading(false);
@@ -216,7 +228,6 @@ export default function VehicleDetailsPage() {
       setCurrentUser(user);
     });
   }, [fetchVehicle]);
-
   const handleCompararFipe = async () => {
     if (!vehicle?.fipe_info) return;
     try {
