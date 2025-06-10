@@ -22,165 +22,7 @@ import {
 } from "lucide-react";
 import SellerDetails from "@/components/SellerDetails";
 import OptionalList from "@/components/OptionalList";
-import MaskEditor from "@/components/MaskEditor";
-
-interface CustomizeModalProps {
-  imageUrl: string;
-  vehicleId: string;
-  onClose: () => void;
-}
-
-function CustomizeModal({ imageUrl, vehicleId, onClose }: CustomizeModalProps) {
-  const [promptText, setPromptText] = useState<string>("Carro na cor preta");
-  const [maskBlob, setMaskBlob] = useState<Blob | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [editedUrl, setEditedUrl] = useState<string | null>(null);
-
-  const promptTips = [
-    "Use adjetivos claros: ‘fosco’, ‘metálico’, ‘neon’.",
-    "Exemplo: ‘Pinte as rodas de azul metálico’",
-    "Se quiser alterar fundo: ‘Mude o fundo para uma pista de corrida neon’",
-    "Combine: ‘Carro vermelho esportivo, rodas prateadas’",
-  ];
-
-  async function handleGenerate() {
-    if (!maskBlob) {
-      alert("Primeiro clique em ‘Usar Máscara Atual’ para gerar o PNG de máscara.");
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      // 1) Baixar a imagem original (pode ser JPEG)
-      const imgRes = await fetch(imageUrl);
-      if (!imgRes.ok) throw new Error("Falha ao baixar imagem original.");
-      const originalBlob = await imgRes.blob();
-
-      // 2) Converter para PNG 256×256 via canvas
-      const imgBitmap = await createImageBitmap(originalBlob);
-      const offCanvas = document.createElement("canvas");
-      const size = 256;
-      offCanvas.width = size;
-      offCanvas.height = size;
-      const ctx = offCanvas.getContext("2d")!;
-      ctx.drawImage(imgBitmap, 0, 0, size, size);
-      const pngImageBlob: Blob = await new Promise((resolve) =>
-        offCanvas.toBlob((b) => resolve(b!), "image/png")
-      );
-
-      // 3) Preparar FormData
-      const formData = new FormData();
-      formData.append("prompt", promptText);
-      formData.append("image", pngImageBlob, "image.png");
-      formData.append("mask", maskBlob, "mask.png");
-
-      // 4) Enviar para a API
-      const res = await fetch(`/api/veiculos/${vehicleId}/customize`, {
-        method: "POST",
-        body: formData,
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Falha ao gerar imagem.");
-      }
-
-      const { editedUrl } = await res.json();
-      setEditedUrl(editedUrl);
-    } catch (err: any) {
-      console.error(err);
-      alert("Erro: " + err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  if (editedUrl) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg max-w-md w-full p-6 space-y-4">
-          <h2 className="text-xl font-semibold">Resultado da IA</h2>
-          <div className="w-full h-52 bg-gray-100 flex items-center justify-center rounded">
-            <img
-              src={editedUrl}
-              alt="Imagem gerada pela IA"
-              className="max-h-52 object-contain rounded"
-            />
-          </div>
-          <div className="flex justify-between">
-            <a
-              href={editedUrl}
-              download={`veiculo-${vehicleId}-customizado.png`}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
-            >
-              Download
-            </a>
-            <button
-              onClick={() => setEditedUrl(null)}
-              className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 transition"
-            >
-              Refazer
-            </button>
-          </div>
-          <button
-            onClick={onClose}
-            className="mt-2 w-full px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
-          >
-            Fechar
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg max-w-lg w-full p-6 space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Personalizar com IA</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-800">
-            ✕
-          </button>
-        </div>
-
-        <div className="w-full h-48 bg-gray-100 flex items-center justify-center rounded">
-          <img
-            src={imageUrl}
-            alt="Preview original"
-            className="max-h-48 object-contain rounded"
-          />
-        </div>
-
-        <label className="block text-sm font-medium">Prompt de edição:</label>
-        <textarea
-          value={promptText}
-          onChange={(e) => setPromptText(e.target.value)}
-          rows={2}
-          className="w-full border rounded px-2 py-1"
-        />
-
-        <ul className="list-disc list-inside text-xs text-gray-500">
-          {promptTips.map((tip, idx) => (
-            <li key={idx}>{tip}</li>
-          ))}
-        </ul>
-
-        <MaskEditor
-          imageUrl={imageUrl}
-          canvasSize={256}
-          onMaskChange={(blob) => setMaskBlob(blob)}
-        />
-
-        <button
-          onClick={handleGenerate}
-          disabled={isLoading || !maskBlob}
-          className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition"
-        >
-          {isLoading ? "Gerando…" : "Gerar Imagem IA"}
-        </button>
-      </div>
-    </div>
-  );
-}
+import CustomizeModal from "@/components/CustomizeModal";
 
 export default function VehicleDetailsPage() {
   const rawParams = useParams();
@@ -228,6 +70,7 @@ export default function VehicleDetailsPage() {
       setCurrentUser(user);
     });
   }, [fetchVehicle]);
+
   const handleCompararFipe = async () => {
     if (!vehicle?.fipe_info) return;
     try {
@@ -247,6 +90,7 @@ export default function VehicleDetailsPage() {
       console.error("Erro ao comparar com FIPE:", err);
     }
   };
+
 
   const handleMoveToGarage = async () => {
     if (!vehicle) return;

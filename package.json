@@ -13,6 +13,8 @@
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/auth-helpers-react": "^0.5.0",
     "@supabase/supabase-js": "^2.49.1",
+    "@tensorflow-models/deeplab": "^0.2.2",
+    "@tensorflow/tfjs": "^4.22.0",
     "class-variance-authority": "^0.7.1",
     "framer-motion": "^12.6.0",
     "lucide-react": "^0.482.0",
