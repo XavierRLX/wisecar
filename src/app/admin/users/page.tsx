@@ -5,6 +5,7 @@ import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import AdminGuard from "@/components/AdminGuard";
 import LoadingState from "@/components/LoadingState";
+import Link from "next/link";
 
 interface Profile {
   id: string;
@@ -127,58 +128,61 @@ export default function AdminUsersPage() {
         <div className="space-y-4">
           {displayed.length > 0 ? (
             displayed.map(user => (
-              <div
+              <Link
                 key={user.id}
-                className="bg-white rounded-lg shadow-sm hover:shadow-md transition p-6"
+                href={`/admin/users/${user.id}`}
+                className="block hover:shadow-md transition"
               >
-                <div className="flex items-center justify-between">
-                  {/* Avatar + Nome */}
-                  <div className="flex items-center space-x-4">
-                    <img
-                      src={user.avatar_url ?? "/default-avatar.png"}
-                      alt={`${user.first_name} avatar`}
-                      className="w-8 h-8 rounded-full object-cover bg-gray-200"
-                    />
-                    <div className="text-sm font-semibold text-gray-900 truncate">
-                      {user.first_name} {user.last_name}
+                <div className="bg-white rounded-lg shadow-sm transition p-6">
+                  <div className="flex items-center justify-between">
+                    {/* Avatar + Nome */}
+                    <div className="flex items-center space-x-4">
+                      <img
+                        src={user.avatar_url ?? "/default-avatar.png"}
+                        alt={`${user.first_name} avatar`}
+                        className="w-8 h-8 rounded-full object-cover bg-gray-200"
+                      />
+                      <div className="text-sm font-semibold text-gray-900 truncate">
+                        {user.first_name} {user.last_name}
+                      </div>
+                    </div>
+                    {/* Toggles */}
+                    <div className="flex items-center space-x-6">
+                      {(
+                        [
+                          ["Vendedor", "is_seller"],
+                          ["Admin",    "is_admin"]
+                        ] as const
+                      ).map(([label, field]) => {
+                        const value = !!user[field];
+                        return (
+                          <div key={field} className="flex flex-col items-center">
+                            <span className="text-sm font-medium text-gray-700">{label}</span>
+                            <button
+                              onClick={() => toggleField(user.id, field, !value)}
+                              className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors focus:outline-none ${
+                                field === "is_seller"
+                                  ? (value ? "bg-green-600" : "bg-gray-300")
+                                  : (value ? "bg-blue-600"  : "bg-gray-300")
+                              }`}
+                            >
+                              <span
+                                className={`absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transform transition-transform ${
+                                  value ? "translate-x-5" : ""
+                                }`}
+                              />
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                  {/* Toggles: cor consistente */}
-                  <div className="flex items-center space-x-6">
-                    {(
-                      [
-                        ["Vendedor", "is_seller"],
-                        ["Admin",    "is_admin"]
-                      ] as const
-                    ).map(([label, field]) => {
-                      const value = !!user[field];
-                      return (
-                        <div key={field} className="flex flex-col items-center">
-                          <span className="text-sm font-medium text-gray-700">{label}</span>
-                          <button
-                            onClick={() => toggleField(user.id, field, !value)}
-                            className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors focus:outline-none ${
-                              field === "is_seller"
-                                ? (value ? "bg-green-600" : "bg-gray-300")
-                                : (value ? "bg-blue-600"  : "bg-gray-300")
-                            }`}
-                          >
-                            <span
-                              className={`absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transform transition-transform ${
-                                value ? "translate-x-5" : ""
-                              }`}
-                            />
-                          </button>
-                        </div>
-                      );
-                    })}
+                  {/* Email */}
+                  <div className="mt-4 text-gray-600 truncate">
+                    {user.email}
                   </div>
                 </div>
-                {/* Email */}
-                <div className="mt-4 text-gray-600 truncate">
-                  {user.email}
-                </div>
-              </div>
+              </Link>
             ))
           ) : (
             <p className="text-center text-gray-500">

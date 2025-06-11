@@ -6,6 +6,30 @@ import type { Provider, Service, ServiceCategory } from "@/types";
 type RawService = Omit<Service, "category"> & {
   category: ServiceCategory[];
 };
+export async function fetchProvidersByUserId(userId: string): Promise<Provider[]> {
+  const { data, error } = await supabase
+    .from("service_providers")
+    .select(`
+      *,
+      provider_images(*),
+      services(
+        id, provider_id, category_id, price, name, created_at,
+        service_items(*, item_images:service_item_images(*)),
+        category:service_categories(id,name)
+      )
+    `)
+    .eq("user_id", userId);
+  if (error) throw new Error(error.message);
+  if (!data) return [];
+  // mapeia category array → objeto
+  return (data as any[]).map(p => ({
+    ...p,
+    services: (p.services as RawService[]).map(svc => ({
+      ...svc,
+      category: svc.category[0],
+    })),
+  })) as Provider[];
+}
 
 // Fetch de todas as lojas com serviços e itens
 export async function fetchProviders(filters?: {

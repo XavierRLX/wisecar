@@ -1,6 +1,26 @@
 import { supabase } from "@/lib/supabase";
 import { uploadVehicleImage } from "@/hooks/useUploadImage";
-import { VehicleStatus } from "@/types";
+import { Vehicle, VehicleStatus } from "@/types";
+
+
+// lib/vehicleService.ts
+export async function fetchVehiclesByUserId(userId: string): Promise<Vehicle[]> {
+  const { data, error } = await supabase
+    .from("vehicles")
+    .select(`
+      *,
+      vehicle_images(*),
+      seller_details(*),
+      vehicle_optionals(
+        *,
+        optional:optionals(id,name)
+      )
+    `)
+    .or(`user_id.eq.${userId},owner_id.eq.${userId}`);
+
+  if (error) throw new Error(error.message);
+  return (data || []) as Vehicle[];
+}
 
 // formData.status: 'WISHLIST' | 'GARAGE' | 'FOR_SALE'
 export async function submitVehicleData(
