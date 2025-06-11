@@ -7,6 +7,7 @@ import AdminGuard from "@/components/AdminGuard";
 import LoadingState from "@/components/LoadingState";
 import { useUserProviders } from "@/hooks/useUserProviders";
 import { useUserVehicles } from "@/hooks/useUserVehicles";
+import ProviderCard from "@/components/ProviderCard";
 
 export default function AdminUserDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +18,7 @@ export default function AdminUserDetailPage() {
     loading: loadingProviders,
     error: errorProviders
   } = useUserProviders(userId);
+
   const {
     vehicles,
     loading: loadingVehicles,
@@ -49,24 +51,15 @@ export default function AdminUserDetailPage() {
         {/* Lojas */}
         <section className="space-y-4">
           <h2 className="text-2xl font-semibold text-gray-800">Lojas cadastradas</h2>
+
           {providers.length > 0 ? (
-            providers.map((p) => (
-              <div
-                key={p.id}
-                className="bg-white rounded-lg shadow-sm hover:shadow-md transition p-6"
-              >
-                <h3 className="text-lg font-medium text-gray-900">{p.name}</h3>
-                <p className="mt-1 text-gray-600">
-                  {p.city} – {p.state}
-                </p>
-                <Link
-                  href={`/admin/providers/${p.id}`}
-                  className="inline-block mt-4 text-sm text-blue-600 hover:underline"
-                >
-                  Ver detalhes da loja →
-                </Link>
-              </div>
-            ))
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {providers.map((p) => (
+                <div key={p.id} className="cursor-pointer">
+                  <ProviderCard provider={p} />
+                </div>
+              ))}
+            </div>
           ) : (
             <p className="text-gray-500">Nenhuma loja encontrada.</p>
           )}
@@ -75,6 +68,7 @@ export default function AdminUserDetailPage() {
         {/* Veículos */}
         <section className="space-y-4">
           <h2 className="text-2xl font-semibold text-gray-800">Veículos cadastrados</h2>
+
           {vehicles.length > 0 ? (
             vehicles.map((v) => (
               <div
