@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
+import { formatDate } from "@/lib/formatters";
 import AdminGuard from "@/components/AdminGuard";
 import LoadingState from "@/components/LoadingState";
 import Link from "next/link";
@@ -11,10 +12,12 @@ interface Profile {
   id: string;
   first_name: string;
   last_name: string;
+  username?: string;
   email: string;
   avatar_url?: string;
   is_seller?: boolean;
   is_admin?: boolean;
+  created_at?: string;
 }
 
 export default function AdminUsersPage() {
@@ -28,7 +31,9 @@ export default function AdminUsersPage() {
     (async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, first_name, last_name, email, avatar_url, is_seller, is_admin");
+        .select(
+          "id, first_name, last_name, username, email, avatar_url, is_seller, is_admin, created_at"
+        );
       if (error) console.error("Erro ao carregar profiles:", error);
       else setProfiles(data as Profile[]);
       setLoading(false);
@@ -56,27 +61,18 @@ export default function AdminUsersPage() {
   const displayed = useMemo(() => {
     const term = search.toLowerCase().trim();
     return profiles
-      // filtro de busca por nome
       .filter(p =>
         !term ||
         p.first_name.toLowerCase().includes(term) ||
-        p.last_name.toLowerCase().includes(term)
+        p.last_name.toLowerCase().includes(term) ||
+        p.username?.toLowerCase().includes(term)
       )
-      // filtro combinado de seller/admin
       .filter(p => {
-        if (filterAdmin && filterSeller) {
-          // se ambos ativos, mostra quem for seller OR admin
-          return !!p.is_admin || !!p.is_seller;
-        }
-        if (filterAdmin) {
-          return !!p.is_admin;
-        }
-        if (filterSeller) {
-          return !!p.is_seller;
-        }
-        return true; // nenhum filtro
+        if (filterAdmin && filterSeller) return !!p.is_admin || !!p.is_seller;
+        if (filterAdmin) return !!p.is_admin;
+        if (filterSeller) return !!p.is_seller;
+        return true;
       })
-      // ordena por nome completo
       .sort((a, b) => {
         const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
         const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
@@ -91,11 +87,10 @@ export default function AdminUsersPage() {
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
         <h1 className="text-3xl font-bold text-gray-800">Painel de Usuários</h1>
 
-        {/* Busca + Filtros alinhados à direita */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
           <input
             type="text"
-            placeholder="Buscar por nome..."
+            placeholder="Buscar por nome ou usuário..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="w-full sm:flex-1 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -124,7 +119,6 @@ export default function AdminUsersPage() {
           </div>
         </div>
 
-        {/* Lista de cards */}
         <div className="space-y-4">
           {displayed.length > 0 ? (
             displayed.map(user => (
@@ -134,19 +128,25 @@ export default function AdminUsersPage() {
                 className="block hover:shadow-md transition"
               >
                 <div className="bg-white rounded-lg shadow-sm transition p-6">
-                  <div className="flex items-center justify-between">
-                    {/* Avatar + Nome */}
+                  {/* Nome + Username + Toggles */}
+                  <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-4">
                       <img
                         src={user.avatar_url ?? "/default-avatar.png"}
                         alt={`${user.first_name} avatar`}
                         className="w-8 h-8 rounded-full object-cover bg-gray-200"
                       />
-                      <div className="text-sm font-semibold text-gray-900 truncate">
-                        {user.first_name} {user.last_name}
+                      <div className="flex flex-col">
+                        <div className="text-sm font-semibold text-gray-900 truncate">
+                          {user.first_name} {user.last_name}
+                        </div>
+                        {user.username && (
+                          <div className="text-xs text-gray-500 truncate">
+                            @{user.username}
+                          </div>
+                        )}
                       </div>
                     </div>
-                    {/* Toggles */}
                     <div className="flex items-center space-x-6">
                       {(
                         [
@@ -177,9 +177,15 @@ export default function AdminUsersPage() {
                       })}
                     </div>
                   </div>
-                  {/* Email */}
-                  <div className="mt-4 text-gray-600 truncate">
-                    {user.email}
+
+                  {/* E-mail + Created At */}
+                  <div className="mt-4 flex justify-between items-center">
+                    <div className="text-gray-600 truncate">{user.email}</div>
+                    {user.created_at && (
+                      <div className="text-[10px] text-gray-400 whitespace-nowrap">
+                        Criado: {formatDate(user.created_at)}
+                      </div>
+                    )}
                   </div>
                 </div>
               </Link>
