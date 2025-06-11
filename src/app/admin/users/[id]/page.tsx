@@ -38,31 +38,30 @@ export default function AdminUserDetailPage() {
   return (
     <AdminGuard>
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
-        <Link
-          href="/admin/users"
-          className="text-blue-500 hover:underline"
-        >
+        {/* Voltar */}
+        <Link href="/admin/users" className="text-blue-500 hover:underline">
           ← Voltar à lista de usuários
         </Link>
 
-        <h1 className="text-2xl font-bold">Detalhes do Usuário</h1>
+        {/* Título */}
+        <h1 className="text-3xl font-bold text-gray-800">Detalhes do Usuário</h1>
 
-        {/* Seção de Lojas */}
-        <section>
-          <h2 className="text-xl font-semibold mb-2">Lojas cadastradas</h2>
+        {/* Lojas */}
+        <section className="space-y-4">
+          <h2 className="text-2xl font-semibold text-gray-800">Lojas cadastradas</h2>
           {providers.length > 0 ? (
             providers.map((p) => (
               <div
                 key={p.id}
-                className="bg-white rounded-lg shadow p-4 mb-2"
+                className="bg-white rounded-lg shadow-sm hover:shadow-md transition p-6"
               >
-                <h3 className="font-medium">{p.name}</h3>
-                <p className="text-sm text-gray-600">
+                <h3 className="text-lg font-medium text-gray-900">{p.name}</h3>
+                <p className="mt-1 text-gray-600">
                   {p.city} – {p.state}
                 </p>
                 <Link
                   href={`/admin/providers/${p.id}`}
-                  className="text-sm text-blue-600 hover:underline"
+                  className="inline-block mt-4 text-sm text-blue-600 hover:underline"
                 >
                   Ver detalhes da loja →
                 </Link>
@@ -73,27 +72,25 @@ export default function AdminUserDetailPage() {
           )}
         </section>
 
-        {/* Seção de Veículos */}
-        <section>
-          <h2 className="text-xl font-semibold mb-2">Veículos cadastrados</h2>
+        {/* Veículos */}
+        <section className="space-y-4">
+          <h2 className="text-2xl font-semibold text-gray-800">Veículos cadastrados</h2>
           {vehicles.length > 0 ? (
             vehicles.map((v) => (
               <div
                 key={v.id}
-                className="flex items-center bg-white rounded-lg shadow p-4 mb-2"
+                className="flex items-center bg-white rounded-lg shadow-sm hover:shadow-md transition p-6"
               >
                 <img
                   src={v.vehicle_images?.[0]?.image_url ?? "/default-car.png"}
                   alt={`${v.brand} ${v.model}`}
-                  className="w-12 h-8 object-cover rounded mr-4"
+                  className="w-12 h-12 object-cover rounded mr-4"
                 />
-                <div>
-                  <p className="font-medium">
+                <div className="flex-1">
+                  <p className="text-lg font-medium text-gray-900">
                     {v.brand} {v.model} ({v.year})
                   </p>
-                  <p className="text-sm text-gray-600">
-                    Status: {v.status}
-                  </p>
+                  <p className="mt-1 text-sm text-gray-600">Status: {v.status}</p>
                 </div>
               </div>
             ))
