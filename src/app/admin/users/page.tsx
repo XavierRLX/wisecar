@@ -65,7 +65,8 @@ export default function AdminUsersPage() {
         !term ||
         p.first_name.toLowerCase().includes(term) ||
         p.last_name.toLowerCase().includes(term) ||
-        p.username?.toLowerCase().includes(term)
+        p.username?.toLowerCase().includes(term) ||
+        p.email.toLowerCase().includes(term)  // agora busca também por email
       )
       .filter(p => {
         if (filterAdmin && filterSeller) return !!p.is_admin || !!p.is_seller;
@@ -87,10 +88,11 @@ export default function AdminUsersPage() {
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
         <h1 className="text-3xl font-bold text-gray-800">Painel de Usuários</h1>
 
+        {/* Busca + Filtros */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
           <input
             type="text"
-            placeholder="Buscar por nome ou usuário..."
+            placeholder="Buscar por nome, usuário ou email..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="w-full sm:flex-1 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -119,6 +121,12 @@ export default function AdminUsersPage() {
           </div>
         </div>
 
+        {/* Total de usuários filtrados */}
+        <div className="text-sm text-gray-600">
+          {displayed.length} usuário{displayed.length !== 1 ? "s" : ""}
+        </div>
+
+        {/* Lista de cards */}
         <div className="space-y-4">
           {displayed.length > 0 ? (
             displayed.map(user => (
@@ -128,7 +136,8 @@ export default function AdminUsersPage() {
                 className="block hover:shadow-md transition"
               >
                 <div className="bg-white rounded-lg shadow-sm transition p-6">
-                  {/* Nome + Username + Toggles */}
+
+                  {/* Nome + Username */}
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-4">
                       <img
@@ -136,7 +145,7 @@ export default function AdminUsersPage() {
                         alt={`${user.first_name} avatar`}
                         className="w-8 h-8 rounded-full object-cover bg-gray-200"
                       />
-                      <div className="flex flex-col">
+                      <div className="flex flex-col items-center">
                         <div className="text-sm font-semibold text-gray-900 truncate">
                           {user.first_name} {user.last_name}
                         </div>
@@ -147,6 +156,8 @@ export default function AdminUsersPage() {
                         )}
                       </div>
                     </div>
+
+                    {/* Toggles */}
                     <div className="flex items-center space-x-6">
                       {(
                         [
