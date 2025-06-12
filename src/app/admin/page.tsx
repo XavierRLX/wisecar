@@ -19,24 +19,22 @@ export default function AdminDashboardPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <Link
               href="/admin/users"
-              className="flex flex-col items-center justify-center gap-2 px-6 py-8 bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-shadow duration-300"
+              className="flex flex-col items-center justify-center gap-2 px-6 py-8 bg-white rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300"
             >
               <Users className="w-10 h-10 text-blue-600" />
               <span className="mt-2 text-lg font-medium text-gray-900">
                 Usuários
               </span>
-              <p className="text-sm text-gray-500">Criar, editar e remover</p>
             </Link>
 
             <Link
               href="/admin/lojas"
-              className="flex flex-col items-center justify-center gap-2 px-6 py-8 bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-shadow duration-300"
+              className="flex flex-col items-center justify-center gap-2 px-6 py-8 bg-white rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300"
             >
               <Store className="w-10 h-10 text-green-600" />
               <span className="mt-2 text-lg font-medium text-gray-900">
                 Lojas
               </span>
-              <p className="text-sm text-gray-500">Gerenciar provedores</p>
             </Link>
           </div>
         </div>

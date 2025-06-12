@@ -10,6 +10,7 @@ import LoadingState from '@/components/LoadingState';
 import ProviderCard from '@/components/ProviderCard';
 import { Edit2, Trash2 } from 'lucide-react';
 import type { Provider } from '@/types';
+import BackButton from '@/components/BackButton';
 
 export default function AdminProvidersPage() {
   const router = useRouter();
@@ -34,6 +35,7 @@ export default function AdminProvidersPage() {
   return (
     <AdminGuard>
       <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+      <BackButton className="mb-2" />
         {/* Cabeçalho */}
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           <h1 className="text-3xl font-extrabold text-gray-900">Gerenciar Lojas</h1>

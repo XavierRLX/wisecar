@@ -8,6 +8,7 @@ import LoadingState from "@/components/LoadingState";
 import { useUserProviders } from "@/hooks/useUserProviders";
 import { useUserVehicles } from "@/hooks/useUserVehicles";
 import ProviderCard from "@/components/ProviderCard";
+import BackButton from "@/components/BackButton";
 
 export default function AdminUserDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -41,9 +42,7 @@ export default function AdminUserDetailPage() {
     <AdminGuard>
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
         {/* Voltar */}
-        <Link href="/admin/users" className="text-blue-500 hover:underline">
-          ← Voltar à lista de usuários
-        </Link>
+        <BackButton className="mb-2" />
 
         {/* Título */}
         <h1 className="text-3xl font-bold text-gray-800">Detalhes do Usuário</h1>

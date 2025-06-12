@@ -7,6 +7,7 @@ import { formatDate } from "@/lib/formatters";
 import AdminGuard from "@/components/AdminGuard";
 import LoadingState from "@/components/LoadingState";
 import Link from "next/link";
+import BackButton from "@/components/BackButton";
 
 interface Profile {
   id: string;
@@ -86,6 +87,7 @@ export default function AdminUsersPage() {
   return (
     <AdminGuard>
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+      <BackButton className="mb-2" />
         <h1 className="text-3xl font-bold text-gray-800">Painel de Usuários</h1>
 
         {/* Busca + Filtros */}
