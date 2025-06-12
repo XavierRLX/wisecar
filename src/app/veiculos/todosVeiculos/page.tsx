@@ -1,3 +1,4 @@
+// app/todos-veiculos/page.tsx
 "use client";
 
 import { useState, useMemo } from "react";
@@ -7,13 +8,13 @@ import EnsureProfile from "@/components/EnsureProfile";
 import LoadingState from "@/components/LoadingState";
 import EmptyState from "@/components/EmptyState";
 import VehicleCard from "@/components/VehicleCard";
-import { Wrench, DollarSign } from "lucide-react";
+import { Wrench, DollarSign, Gauge } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useVehicles, VehicleMode } from "@/hooks/useVehicles";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useDeleteVehicle } from "@/hooks/useDeleteVehicle";
-import { ToggleFilter, Option } from "@/components/ToggleFilter";
+import { ToggleFilter } from "@/components/ToggleFilter";
 
 export default function TodosVeiculosPage() {
   const router = useRouter();
@@ -32,7 +33,6 @@ export default function TodosVeiculosPage() {
     [vehicles]
   );
 
-  // Se ainda estiver buscando autenticação, bloqueia toda a página
   if (authLoading) {
     return (
       <div className="flex justify-center py-16">
@@ -60,7 +60,7 @@ export default function TodosVeiculosPage() {
           />
         </div>
 
-        {/* Área da lista: mostra spinner, erro, vazio ou cards */}
+        {/* Área da lista */}
         <div className="grid grid-cols-1 gap-4">
           {vehiclesLoading ? (
             <div className="flex justify-center py-8 col-span-full">
@@ -82,6 +82,14 @@ export default function TodosVeiculosPage() {
                 className="relative cursor-pointer"
                 onClick={() => router.push(`/veiculos/${v.id}`)}
               >
+                {/* Badge de Wishlist */}
+                {v.status === "WISHLIST" && (
+                  <div className="absolute top-2 left-2 z-10 bg-yellow-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <Gauge  className="w-4 h-4" /> Desejado
+                  </div>
+                )}
+
+                {/* Badge de À Venda */}
                 {v.status === "FOR_SALE" && (
                   <div className="absolute top-2 left-2 z-10 bg-green-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
                     <DollarSign className="w-4 h-4" /> À Venda
