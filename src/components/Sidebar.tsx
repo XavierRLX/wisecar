@@ -13,6 +13,7 @@ import {
   Ligature,
   Wrench,
   Cog,
+  Store
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useRouter, usePathname } from "next/navigation";
@@ -197,6 +198,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               href="/consultaFipe"
               icon={<Ligature className="w-5 h-5" />}
               label="Consulta FIPE"
+              onClose={onClose}
+            />
+            <NavItem
+              href="/lojas/novo"
+              icon={<Store className="w-5 h-5" />}
+              label="Adicionar Loja"
               onClose={onClose}
             />
             <NavItem

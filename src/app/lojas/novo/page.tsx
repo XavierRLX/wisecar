@@ -3,11 +3,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import AuthGuard from '@/components/AdminGuard';
+import RoleGuard from '@/components/RoleGuard';
 import EnsureProfile from '@/components/EnsureProfile';
 import { supabase } from '@/lib/supabase';
 import { submitProviderData, submitServiceData } from '@/lib/providerService';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import type { ServiceCategory } from '@/types';
+import AsyncSelect from 'react-select/async';
 
 interface ItemForm {
   name: string;
@@ -26,8 +28,10 @@ interface ServiceForm {
 
 export default function NewProviderPage() {
   const router = useRouter();
+  const { profile } = useUserProfile();
+  const isAdmin = profile?.is_admin;
 
-  // — Dados da Loja —
+  // estados da loja
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [description, setDescription] = useState('');
@@ -37,38 +41,43 @@ export default function NewProviderPage() {
   const [city, setCity] = useState('');
   const [neighborhood, setNeighborhood] = useState('');
 
-  // — Logo + Galeria —
+  // logo e galeria
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState('');
   const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
   const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
 
-  // — Categorias de Serviços —
+  // categorias
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
 
-  // — Serviço Atual & Serviços Salvos —
+  // serviços
   const emptyService: ServiceForm = { name: '', categoryId: 0, price: '', items: [] };
   const [currentService, setCurrentService] = useState<ServiceForm>(emptyService);
   const [savedServices, setSavedServices] = useState<ServiceForm[]>([]);
 
   const [loading, setLoading] = useState(false);
 
-  // Carrega categorias
+  // profiles para admin escolher
+  const [allProfiles, setAllProfiles] = useState<
+    { id: string; username?: string; first_name?: string; last_name?: string }[]
+  >([]);
+  const [selectedUserId, setSelectedUserId] = useState('');
+
+  // carrega categories
   useEffect(() => {
-    supabase
-      .from('service_categories')
-      .select('id,name')
-      .then(({ data }) => data && setCategories(data));
+    supabase.from('service_categories').select('id,name').then(({ data }) => {
+      if (data) setCategories(data);
+    });
   }, []);
 
-  // Ajusta categoryId inicial quando categories chega
+  // ajusta categoryId inicial
   useEffect(() => {
     if (categories.length && currentService.categoryId === 0) {
       setCurrentService(cs => ({ ...cs, categoryId: categories[0].id }));
     }
   }, [categories]);
 
-  // Previews de logo e galeria
+  // previews de logo
   useEffect(() => {
     if (!logoFile) return;
     const url = URL.createObjectURL(logoFile);
@@ -76,21 +85,27 @@ export default function NewProviderPage() {
     return () => URL.revokeObjectURL(url);
   }, [logoFile]);
 
+  // previews de galeria
   useEffect(() => {
     const urls = galleryFiles.map(f => URL.createObjectURL(f));
     setGalleryPreviews(urls);
     return () => urls.forEach(u => URL.revokeObjectURL(u));
   }, [galleryFiles]);
 
-  // — Handlers Serviço Atual —
+  // se for admin, carrega perfis
+  useEffect(() => {
+    if (!isAdmin) return;
+    supabase
+      .from('profiles')
+      .select('id,username,first_name,last_name')
+      .then(({ data }) => data && setAllProfiles(data));
+  }, [isAdmin]);
+
+  // handlers de serviço
   const handleServiceField = (
     field: keyof Omit<ServiceForm, 'items'>,
     value: any
-  ) =>
-    setCurrentService(cs => ({
-      ...cs,
-      [field]: value,
-    }));
+  ) => setCurrentService(cs => ({ ...cs, [field]: value }));
 
   const addItem = () =>
     setCurrentService(cs => ({
@@ -98,32 +113,29 @@ export default function NewProviderPage() {
       items: [...cs.items, { name: '', details: '', price: '', files: [], previewUrls: [] }],
     }));
 
-  const removeItem = (iIdx: number) =>
+  const removeItem = (i: number) =>
     setCurrentService(cs => ({
       ...cs,
-      items: cs.items.filter((_, i) => i !== iIdx),
+      items: cs.items.filter((_, idx) => idx !== i),
     }));
 
   const handleItemField = (
-    iIdx: number,
+    idx: number,
     field: keyof ItemForm,
     value: any
-  ) =>
-    setCurrentService(cs => {
-      const items = [...cs.items];
-      (items[iIdx] as any)[field] = value;
-      return { ...cs, items };
-    });
+  ) => {
+    const items = [...currentService.items];
+    ;(items[idx] as any)[field] = value;
+    setCurrentService(cs => ({ ...cs, items }));
+  };
 
-  const handleItemFiles = (iIdx: number, files: File[]) =>
-    setCurrentService(cs => {
-      const items = [...cs.items];
-      items[iIdx].files = files;
-      items[iIdx].previewUrls = files.map(f => URL.createObjectURL(f));
-      return { ...cs, items };
-    });
+  const handleItemFiles = (idx: number, files: File[]) => {
+    const items = [...currentService.items];
+    items[idx].files = files;
+    items[idx].previewUrls = files.map(f => URL.createObjectURL(f));
+    setCurrentService(cs => ({ ...cs, items }));
+  };
 
-  // — Salvar/Editar/Remover Serviços —
   const saveService = () => {
     if (!currentService.name.trim() || !currentService.price.trim()) {
       alert('Preencha nome e preço do serviço antes de salvar.');
@@ -142,14 +154,16 @@ export default function NewProviderPage() {
     setSavedServices(prev => prev.filter((_, i) => i !== idx));
   };
 
-  // — Envio Final —
+  // submit final
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Se tiver serviço atual não salvo, pergunta se salva
-      if ((currentService.name || currentService.items.length) && !savedServices.includes(currentService)) {
+      if (
+        (currentService.name || currentService.items.length) &&
+        !savedServices.includes(currentService)
+      ) {
         if (confirm('Você tem um serviço não salvo. Deseja salvar antes de enviar?')) {
           saveService();
         }
@@ -160,27 +174,26 @@ export default function NewProviderPage() {
         return;
       }
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
+      // determina user_id
+      const userIdToCreateFor =
+        isAdmin && selectedUserId ? selectedUserId : profile!.id;
 
-      // 1️⃣ Cria loja
+      // cria loja
       const provider = await submitProviderData(
-        user.id,
+        userIdToCreateFor,
         { name, address, description, phone, social_media: socialMedia, state, city, neighborhood },
         logoFile,
         galleryFiles
       );
 
-      // 2️⃣ Cria cada serviço salvo
+      // cria serviços
       await Promise.all(
-        savedServices.map(svc =>
+        savedServices.map((svc) =>
           submitServiceData(provider.id, {
             name: svc.name,
             categoryId: svc.categoryId,
             price: parseFloat(svc.price),
-            items: svc.items.map(it => ({
+            items: svc.items.map((it) => ({
               name: it.name,
               details: it.details,
               price: parseFloat(it.price),
@@ -200,19 +213,49 @@ export default function NewProviderPage() {
   };
 
   return (
-    <AuthGuard>
+    <RoleGuard allowAdmin allowProvider>
       <EnsureProfile />
+
       <div className="max-w-4xl mx-auto p-6 bg-white shadow rounded space-y-6">
         <h1 className="text-2xl font-bold">Cadastrar Nova Loja e Serviços</h1>
         <form onSubmit={handleSubmit} className="space-y-8">
+        {isAdmin && (
+  <div className="mb-4">
+    <label className="block font-medium mb-1">
+      Vincular loja ao usuário
+    </label>
+    <AsyncSelect<{ value: string; label: string }, false>
+  cacheOptions
+  defaultOptions={false}
+  loadOptions={async (input) => {
+    if (!input) return [];
+    const term = `%${input}%`;
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id,username,first_name,last_name")
+      .or(
+        `username.ilike.${term},first_name.ilike.${term},last_name.ilike.${term}`
+      )
+      .limit(10);
+    if (error || !data) return [];
+    return data.map((p) => ({
+      value: p.id,
+      label: `${p.first_name} ${p.last_name} (${p.username})`,
+    }));
+  }}
+  onChange={(opt) => setSelectedUserId(opt?.value || "")}
+  placeholder="Busque por usuário..."
+  isClearable
+/>
 
-          {/* Logo da Loja */}
+        </div>
+      )}
           <div>
             <label className="block font-medium mb-1">Logo da Loja</label>
             <input
               type="file"
               accept="image/*"
-              onChange={e => setLogoFile(e.target.files?.[0] || null)}
+              onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
             />
             {logoPreview && (
               <img src={logoPreview} alt="Logo preview" className="h-24 mt-2" />
@@ -521,6 +564,6 @@ export default function NewProviderPage() {
           </button>
         </form>
       </div>
-    </AuthGuard>
+      </RoleGuard>
   );
 }
