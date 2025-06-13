@@ -109,7 +109,6 @@ export interface MaintenanceDoc {
   file_url: string;
   uploaded_at?: string;
 }
-
 export interface Profile {
   id: string;
   first_name: string;
@@ -117,17 +116,19 @@ export interface Profile {
   email: string;
   username?: string;
   avatar_url?: string;
-  is_admin?: boolean;        // continua pra admins
-  plan_id: string;           // já existia
-  subscription_plans: {      // relacionamento
+  is_admin?: boolean;
+  is_seller?: boolean;
+  is_provider?: boolean;
+  plan_id: string;
+  subscription_plans: {
     key: string;
     name: string;
-    // você pode tipar mais campos aqui se quiser
   };
   created_at?: string;
 }
 
-// NOVO: SubscriptionPlan
+
+
 export interface SubscriptionPlan {
   id: string;
   key: string;

@@ -31,8 +31,7 @@ export default function AdminGuard({ children }: { children: ReactNode }) {
         .single();
 
       if (error || !profile?.is_admin) {
-        // não é admin → nega acesso
-        router.push("/");
+        router.push("/login");
       } else {
         setIsAdmin(true);
       }
