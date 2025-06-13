@@ -1,16 +1,16 @@
 // components/RoleGuard.tsx
-"use client";
-import { ReactNode } from "react";
-import { useRouter } from "next/navigation";
-import LoadingState from "./LoadingState";
-import { useUserProfile } from "@/hooks/useUserProfile";
+'use client';
+
+import { ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
+import LoadingState from './LoadingState';
+import { useUserProfile } from '@/hooks/useUserProfile';
 
 interface RoleGuardProps {
   children: ReactNode;
   allowAdmin?: boolean;
   allowProvider?: boolean;
   allowSeller?: boolean;
-  /** Se true, em vez de redirecionar, exibe um fallback (ex.: RestrictedAccessAlert). */
   renderFallback?: ReactNode;
 }
 
@@ -24,22 +24,30 @@ export default function RoleGuard({
   const { profile, loading } = useUserProfile();
   const router = useRouter();
 
-  if (loading) return <LoadingState message="Verificando permissões…" />;
+  if (loading) {
+    return <LoadingState message="Verificando permissões…" />;
+  }
   if (!profile) {
-    router.push("/login");
+    router.push('/login');
     return null;
   }
 
+  // pega a key do plano
+  const planKey = profile.subscription_plans.key;
+  const isSellerPlan   = planKey === 'seller'   || planKey === 'full';
+  const isProviderPlan = planKey === 'provider' || planKey === 'full';
+  const isAdmin        = !!profile.is_admin;
+
   const hasAccess =
-    (allowAdmin && profile.is_admin) ||
-    (allowProvider && profile.is_provider) ||
-    (allowSeller && profile.is_seller);
+    (allowAdmin    && isAdmin)        ||
+    (allowProvider && isProviderPlan) ||
+    (allowSeller   && isSellerPlan);
 
   if (!hasAccess) {
     if (renderFallback) {
       return <>{renderFallback}</>;
     }
-    router.push("/");
+    router.push('/');
     return null;
   }
 

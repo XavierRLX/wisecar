@@ -115,12 +115,15 @@ export interface Profile {
   first_name: string;
   last_name: string;
   email: string;
-  avatar_url?: string;
   username?: string;
-  is_seller?: boolean;
-  is_admin?: boolean;
-  is_provider?: boolean;
-  plan_id?: string;
+  avatar_url?: string;
+  is_admin?: boolean;        // continua pra admins
+  plan_id: string;           // já existia
+  subscription_plans: {      // relacionamento
+    key: string;
+    name: string;
+    // você pode tipar mais campos aqui se quiser
+  };
   created_at?: string;
 }
 

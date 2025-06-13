@@ -13,6 +13,7 @@ import RestrictedAccessAlert from "@/components/RestrictedAccessAlert";
 import { ToggleFilter, Option } from "@/components/ToggleFilter";
 import { supabase } from "@/lib/supabase";
 import RoleGuard from "@/components/RoleGuard";
+import AdminGuard from "@/components/AdminGuard";
 
 interface Options {
   value: string;
@@ -52,6 +53,7 @@ export default function SellerPage() {
   }, [vehicles, selectedOption]);
 
   return (
+    <AdminGuard>
     <RoleGuard
       allowSeller
       renderFallback={
@@ -148,5 +150,6 @@ export default function SellerPage() {
         </div>
       </div>
     </RoleGuard>
+    </AdminGuard>
   );
 }
