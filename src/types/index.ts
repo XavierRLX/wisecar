@@ -1,4 +1,4 @@
-// types.ts
+// src/types/index.ts
 export type VehicleStatus = 'WISHLIST' | 'GARAGE' | 'FOR_SALE';
 
 export interface VehicleImage {
@@ -29,13 +29,13 @@ export interface SellerDetails {
 
 export interface Vehicle {
   id: string;
-  user_id: string;               // quem “registrou” (wishlist) ou criou inicialmente
-  owner_id: string | null;       // quem “possui” (garagem/venda)
-  category_id: number | null;    // 1 = carros, 2 = motos, etc.
+  user_id: string;
+  owner_id: string | null;
+  category_id: number | null;
   status: VehicleStatus;
-  fipe_info?: any;               // JSON cru, se quiser tipar, crie uma interface à parte
-  fipe_price: number;            // antigo price, agora explicitamente FIPE
-  sale_price?: number | null;    // só quando status === 'FOR_SALE'
+  fipe_info?: any;
+  fipe_price: number;
+  sale_price?: number | null;
   brand: string;
   model: string;
   year: number;
@@ -45,7 +45,7 @@ export interface Vehicle {
   notes?: string;
   vehicle_images?: VehicleImage[];
   vehicle_optionals?: VehicleOptional[];
-  optionals?: Optional[];       
+  optionals?: Optional[];
   seller_details?: SellerDetails;
   created_at?: string;
 }
@@ -89,7 +89,7 @@ export interface MaintenanceRecord {
   id: string;
   vehicle_id: string;
   maintenance_name: string;
-  status: "A fazer" | "Feito" | "Cancelado";
+  status: 'A fazer' | 'Feito' | 'Cancelado';
   maintenance_type: string;
   scheduled_date: string | null;
   scheduled_km: number | null;
@@ -99,7 +99,6 @@ export interface MaintenanceRecord {
   cost: number | null;
   notes: string | null;
   created_at?: string;
-
   maintenance_parts?: MaintenancePart[];
 }
 
@@ -111,7 +110,6 @@ export interface MaintenanceDoc {
   uploaded_at?: string;
 }
 
-
 export interface Profile {
   id: string;
   first_name: string;
@@ -120,9 +118,24 @@ export interface Profile {
   avatar_url?: string;
   username?: string;
   is_seller?: boolean;
-  is_admin?: boolean;   
+  is_admin?: boolean;
+  is_provider?: boolean;
+  plan_id?: string;
   created_at?: string;
 }
+
+// NOVO: SubscriptionPlan
+export interface SubscriptionPlan {
+  id: string;
+  key: string;
+  name: string;
+  description: string | null;
+  price: number;
+  currency: string;
+  interval: string;
+  interval_count: number;
+}
+
 export interface ProviderImage {
   id: string;
   provider_id: string;
@@ -157,10 +170,10 @@ export interface Service {
   provider_id: string;
   category_id?: number;
   name: string;
-  price?: number;               
+  price?: number;
   created_at?: string;
   service_items?: ServiceItem[];
-  category?: ServiceCategory;  
+  category?: ServiceCategory;
 }
 
 export interface Provider {

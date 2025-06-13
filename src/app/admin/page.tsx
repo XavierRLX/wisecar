@@ -1,8 +1,9 @@
+// app/admin/pages/page.tsx
 'use client';
 
 import Link from 'next/link';
 import AdminGuard from '@/components/AdminGuard';
-import { Users, Store, Settings } from 'lucide-react';
+import { Users, Store, Settings, Tag } from 'lucide-react';
 
 export default function AdminDashboardPage() {
   return (
@@ -34,6 +35,16 @@ export default function AdminDashboardPage() {
               <Store className="w-10 h-10 text-green-600" />
               <span className="mt-2 text-lg font-medium text-gray-900">
                 Lojas
+              </span>
+            </Link>
+
+            <Link
+              href="/admin/planos"
+              className="flex flex-col items-center justify-center gap-2 px-6 py-8 bg-white rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300"
+            >
+              <Tag className="w-10 h-10 text-purple-600" />
+              <span className="mt-2 text-lg font-medium text-gray-900">
+                Planos
               </span>
             </Link>
           </div>
