@@ -14,72 +14,74 @@ import { Profile, SubscriptionPlan } from '@/types';
 
 export default function AdminUserDetailPage() {
   const { id } = useParams();
-  const userId = id!;
+  const rawId = id;
+  const userId = typeof rawId === 'string' ? rawId : Array.isArray(rawId) ? rawId[0] : '';
 
-  // estado de profile + planos
   const [profile, setProfile] = useState<Profile | null>(null);
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [updatingPlan, setUpdatingPlan] = useState(false);
 
-  // hooks existentes para lojas e veículos
-  const {
-    providers,
-    loading: loadingProviders,
-    error: errorProviders
-  } = useUserProviders(userId);
-  const {
-    vehicles,
-    loading: loadingVehicles,
-    error: errorVehicles
-  } = useUserVehicles(userId);
+  const { providers, loading: loadingProviders, error: errorProviders } =
+    useUserProviders(userId);
+  const { vehicles, loading: loadingVehicles, error: errorVehicles } =
+    useUserVehicles(userId);
 
-  // fetch de profile e planos
   useEffect(() => {
+    if (!userId) return;
     setLoadingData(true);
+
     Promise.all([
       supabase
         .from('profiles')
-        .select('*')
+        .select(`*, subscription_plans ( key, name )`)
         .eq('id', userId)
         .single(),
       supabase
         .from('subscription_plans')
         .select('*')
-        .order('name')
+        .order('name'),
     ]).then(([profRes, plansRes]) => {
-      if (profRes.error) console.error(profRes.error);
-      else setProfile(profRes.data as Profile);
+      if (profRes.error) {
+        console.error('Erro ao carregar profile:', profRes.error);
+      } else {
+        setProfile(profRes.data as Profile);
+      }
 
-      if (plansRes.error) console.error(plansRes.error);
-      else setPlans(plansRes.data as SubscriptionPlan[]);
+      if (plansRes.error) {
+        console.error('Erro ao carregar planos:', plansRes.error);
+      } else {
+        setPlans(plansRes.data as SubscriptionPlan[]);
+      }
 
       setLoadingData(false);
     });
   }, [userId]);
 
-  // handler de troca de plano
   const handlePlanChange = async (newPlanId: string) => {
     if (!profile) return;
     setUpdatingPlan(true);
 
-    const newPlan = plans.find(p => p.id === newPlanId);
-    const is_seller   = newPlan?.key === 'seller'   || newPlan?.key === 'full';
-    const is_provider = newPlan?.key === 'provider' || newPlan?.key === 'full';
-
-    const updates = { plan_id: newPlanId, is_seller, is_provider };
     const { error } = await supabase
       .from('profiles')
-      .update(updates)
+      .update({ plan_id: newPlanId })
       .eq('id', userId);
 
     setUpdatingPlan(false);
-    if (error) console.error(error);
-    else setProfile(prev => prev ? { ...prev, ...updates } : prev);
+
+    if (error) {
+      console.error('Erro ao atualizar plano:', error);
+    } else {
+      const newPlan = plans.find(p => p.id === newPlanId)!;
+      setProfile({
+        ...profile,
+        plan_id: newPlan.id,
+        subscription_plans: { key: newPlan.key, name: newPlan.name },
+      });
+    }
   };
 
-  // estado de loading geral
-  if (loadingData || loadingProviders || loadingVehicles) {
+  if (!userId || loadingData || loadingProviders || loadingVehicles) {
     return <LoadingState message="Carregando detalhes…" />;
   }
 
@@ -94,9 +96,7 @@ export default function AdminUserDetailPage() {
   if (errorProviders || errorVehicles) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <p className="text-red-600">
-          Erro: {errorProviders || errorVehicles}
-        </p>
+        <p className="text-red-600">Erro: {errorProviders || errorVehicles}</p>
       </div>
     );
   }
@@ -108,28 +108,36 @@ export default function AdminUserDetailPage() {
 
         <h1 className="text-3xl font-bold text-gray-800">Detalhes do Usuário</h1>
 
-        {/* Dados básicos */}
         <div className="space-y-2">
-          <p><strong>Nome:</strong> {profile.first_name} {profile.last_name}</p>
-          <p><strong>Username:</strong> {profile.username ?? '—'}</p>
-          <p><strong>Email:</strong> {profile.email}</p>
+          <p>
+            <strong>Nome:</strong> {profile.first_name} {profile.last_name}
+          </p>
+          <p>
+            <strong>Username:</strong> {profile.username ?? '—'}
+          </p>
+          <p>
+            <strong>Email:</strong> {profile.email}
+          </p>
           <p>
             <strong>Criado em:</strong>{' '}
             {profile.created_at
               ? new Date(profile.created_at).toLocaleString()
               : '—'}
           </p>
-          <p><strong>É Admin?:</strong> {profile.is_admin ? 'Sim' : 'Não'}</p>
-          <p><strong>É Vendedor?:</strong> {profile.is_seller ? 'Sim' : 'Não'}</p>
-          <p><strong>É Lojista?:</strong> {profile.is_provider ? 'Sim' : 'Não'}</p>
+          <p>
+            <strong>É Admin?:</strong> {profile.is_admin ? 'Sim' : 'Não'}
+          </p>
+          <p>
+            <strong>Plano Atual:</strong> {profile.subscription_plans.name} (
+            {profile.subscription_plans.key})
+          </p>
         </div>
 
-        {/* Seletor de Plano */}
         <div className="pt-4">
-          <label className="block font-medium mb-2">Plano Atual</label>
+          <label className="block font-medium mb-2">Alterar Plano</label>
           <select
             className="w-full border px-3 py-2 rounded"
-            value={profile.plan_id ?? ''}
+            value={profile.plan_id}
             onChange={e => handlePlanChange(e.target.value)}
             disabled={updatingPlan}
           >
@@ -144,17 +152,12 @@ export default function AdminUserDetailPage() {
           )}
         </div>
 
-        {/* Lojas cadastradas */}
         <section className="space-y-4">
-          <h2 className="text-2xl font-semibold text-gray-800">
-            Lojas cadastradas
-          </h2>
+          <h2 className="text-2xl font-semibold text-gray-800">Lojas cadastradas</h2>
           {providers.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {providers.map(p => (
-                <div key={p.id} className="cursor-pointer">
-                  <ProviderCard provider={p} />
-                </div>
+                <ProviderCard key={p.id} provider={p} />
               ))}
             </div>
           ) : (
@@ -162,11 +165,8 @@ export default function AdminUserDetailPage() {
           )}
         </section>
 
-        {/* Veículos cadastrados */}
         <section className="space-y-4">
-          <h2 className="text-2xl font-semibold text-gray-800">
-            Veículos cadastrados
-          </h2>
+          <h2 className="text-2xl font-semibold text-gray-800">Veículos cadastrados</h2>
           {vehicles.length > 0 ? (
             vehicles.map(v => (
               <div
@@ -182,9 +182,7 @@ export default function AdminUserDetailPage() {
                   <p className="text-lg font-medium text-gray-900">
                     {v.brand} {v.model} ({v.year})
                   </p>
-                  <p className="mt-1 text-sm text-gray-600">
-                    Status: {v.status}
-                  </p>
+                  <p className="mt-1 text-sm text-gray-600">Status: {v.status}</p>
                 </div>
               </div>
             ))
