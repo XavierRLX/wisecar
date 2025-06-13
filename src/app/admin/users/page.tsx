@@ -1,13 +1,13 @@
 // app/admin/users/page.tsx
-"use client";
+'use client';
 
-import { useEffect, useState, useMemo } from "react";
-import { supabase } from "@/lib/supabase";
-import { formatDate } from "@/lib/formatters";
-import AdminGuard from "@/components/AdminGuard";
-import LoadingState from "@/components/LoadingState";
-import Link from "next/link";
-import BackButton from "@/components/BackButton";
+import { useEffect, useState, useMemo } from 'react';
+import { supabase } from '@/lib/supabase';
+import { formatDate } from '@/lib/formatters';
+import AdminGuard from '@/components/AdminGuard';
+import LoadingState from '@/components/LoadingState';
+import Link from 'next/link';
+import BackButton from '@/components/BackButton';
 
 interface Profile {
   id: string;
@@ -16,46 +16,41 @@ interface Profile {
   username?: string;
   email: string;
   avatar_url?: string;
-  is_seller?: boolean;
   is_admin?: boolean;
   created_at?: string;
 }
 
 export default function AdminUsersPage() {
-  const [profiles, setProfiles]         = useState<Profile[]>([]);
-  const [loading, setLoading]           = useState(true);
-  const [search, setSearch]             = useState("");
-  const [filterAdmin, setFilterAdmin]   = useState(false);
-  const [filterSeller, setFilterSeller] = useState(false);
+  const [profiles, setProfiles]       = useState<Profile[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [search, setSearch]           = useState('');
+  const [filterAdmin, setFilterAdmin] = useState(false);
 
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase
-        .from("profiles")
-        .select(
-          "id, first_name, last_name, username, email, avatar_url, is_seller, is_admin, created_at"
-        );
-      if (error) console.error("Erro ao carregar profiles:", error);
-      else setProfiles(data as Profile[]);
+        .from('profiles')
+        .select('id, first_name, last_name, username, email, avatar_url, is_admin, created_at');
+      if (error) {
+        console.error('Erro ao carregar profiles:', error);
+      } else {
+        setProfiles(data as Profile[]);
+      }
       setLoading(false);
     })();
   }, []);
 
-  const toggleField = async (
-    id: string,
-    field: "is_seller" | "is_admin",
-    value: boolean
-  ) => {
+  const toggleAdmin = async (id: string, value: boolean) => {
     const { error } = await supabase
-      .from("profiles")
-      .update({ [field]: value })
-      .eq("id", id);
+      .from('profiles')
+      .update({ is_admin: value })
+      .eq('id', id);
     if (error) {
-      console.error("Erro ao atualizar perfil:", error.message);
+      console.error('Erro ao atualizar perfil:', error.message);
       return;
     }
     setProfiles(prev =>
-      prev.map(p => (p.id === id ? { ...p, [field]: value } : p))
+      prev.map(p => p.id === id ? { ...p, is_admin: value } : p)
     );
   };
 
@@ -63,34 +58,29 @@ export default function AdminUsersPage() {
     const term = search.toLowerCase().trim();
     return profiles
       .filter(p =>
-        !term ||
-        p.first_name.toLowerCase().includes(term) ||
-        p.last_name.toLowerCase().includes(term) ||
-        p.username?.toLowerCase().includes(term) ||
-        p.email.toLowerCase().includes(term)  // agora busca também por email
+        !term
+        || p.first_name.toLowerCase().includes(term)
+        || p.last_name.toLowerCase().includes(term)
+        || p.username?.toLowerCase().includes(term)
+        || p.email.toLowerCase().includes(term)
       )
-      .filter(p => {
-        if (filterAdmin && filterSeller) return !!p.is_admin || !!p.is_seller;
-        if (filterAdmin) return !!p.is_admin;
-        if (filterSeller) return !!p.is_seller;
-        return true;
-      })
+      .filter(p => filterAdmin ? !!p.is_admin : true)
       .sort((a, b) => {
         const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
         const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
         return nameA.localeCompare(nameB);
       });
-  }, [profiles, search, filterAdmin, filterSeller]);
+  }, [profiles, search, filterAdmin]);
 
   if (loading) return <LoadingState message="Carregando usuários…" />;
 
   return (
     <AdminGuard>
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
-      <BackButton className="mb-2" />
+        <BackButton className="mb-2" />
         <h1 className="text-3xl font-bold text-gray-800">Painel de Usuários</h1>
 
-        {/* Busca + Filtros */}
+        {/* Busca + Filtro Admin */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
           <input
             type="text"
@@ -99,33 +89,21 @@ export default function AdminUsersPage() {
             onChange={e => setSearch(e.target.value)}
             className="w-full sm:flex-1 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <div className="flex justify-end space-x-1">
-            <button
-              onClick={() => setFilterSeller(s => !s)}
-              className={`px-4 py-2 rounded-full font-medium transition ${
-                filterSeller
-                  ? "bg-green-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              Vendedores
-            </button>
-            <button
-              onClick={() => setFilterAdmin(a => !a)}
-              className={`px-4 py-2 rounded-full font-medium transition ${
-                filterAdmin
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              Administradores
-            </button>
-          </div>
+          <button
+            onClick={() => setFilterAdmin(a => !a)}
+            className={`px-4 py-2 rounded-full font-medium transition ${
+              filterAdmin
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Apenas Administradores
+          </button>
         </div>
 
         {/* Total de usuários filtrados */}
         <div className="text-sm text-gray-600">
-          {displayed.length} usuário{displayed.length !== 1 ? "s" : ""}
+          {displayed.length} usuário{displayed.length !== 1 ? 's' : ''}
         </div>
 
         {/* Lista de cards */}
@@ -143,7 +121,7 @@ export default function AdminUsersPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-4">
                       <img
-                        src={user.avatar_url ?? "/default-avatar.png"}
+                        src={user.avatar_url ?? '/default-avatar.png'}
                         alt={`${user.first_name} avatar`}
                         className="w-8 h-8 rounded-full object-cover bg-gray-200"
                       />
@@ -159,35 +137,24 @@ export default function AdminUsersPage() {
                       </div>
                     </div>
 
-                    {/* Toggles */}
-                    <div className="flex items-center space-x-6">
-                      {(
-                        [
-                          ["Vendedor", "is_seller"],
-                          ["Admin",    "is_admin"]
-                        ] as const
-                      ).map(([label, field]) => {
-                        const value = !!user[field];
-                        return (
-                          <div key={field} className="flex flex-col items-center">
-                            <span className="text-sm font-medium text-gray-700">{label}</span>
-                            <button
-                              onClick={() => toggleField(user.id, field, !value)}
-                              className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors focus:outline-none ${
-                                field === "is_seller"
-                                  ? (value ? "bg-green-600" : "bg-gray-300")
-                                  : (value ? "bg-blue-600"  : "bg-gray-300")
-                              }`}
-                            >
-                              <span
-                                className={`absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transform transition-transform ${
-                                  value ? "translate-x-5" : ""
-                                }`}
-                              />
-                            </button>
-                          </div>
-                        );
-                      })}
+                    {/* Toggle Admin */}
+                    <div className="flex flex-col items-center">
+                      <span className="text-sm font-medium text-gray-700">Admin</span>
+                      <button
+                        onClick={e => {
+                          e.preventDefault();
+                          toggleAdmin(user.id, !user.is_admin);
+                        }}
+                        className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors focus:outline-none ${
+                          user.is_admin ? 'bg-blue-600' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span
+                          className={`absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transform transition-transform ${
+                            user.is_admin ? 'translate-x-5' : ''
+                          }`}
+                        />
+                      </button>
                     </div>
                   </div>
 

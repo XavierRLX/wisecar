@@ -6,6 +6,7 @@ import Link from 'next/link';
 import AdminGuard from '@/components/AdminGuard';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { SubscriptionPlan } from '@/types';
+import BackButton from '@/components/BackButton';
 
 export default function AdminPlanosPage() {
   const supabase = createClientComponentClient();
@@ -30,6 +31,7 @@ export default function AdminPlanosPage() {
     <AdminGuard>
       <div className="p-8">
         <div className="flex justify-between items-center mb-4">
+      <BackButton className="mb-2" />
           <h2 className="text-2xl font-bold">Gerenciar Planos</h2>
           <Link
             href="/admin/planos/new"

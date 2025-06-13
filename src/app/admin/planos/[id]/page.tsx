@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import AdminGuard from '@/components/AdminGuard';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { SubscriptionPlan } from '@/types';
+import BackButton from '@/components/BackButton';
 
 export default function EditPlanoPage() {
   const { id } = useParams();
@@ -75,6 +76,7 @@ export default function EditPlanoPage() {
   return (
     <AdminGuard>
       <div className="max-w-xl mx-auto p-8">
+      <BackButton className="mb-2" />
         <h2 className="text-2xl font-bold mb-4">Editar Plano</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Chave */}
