@@ -1,4 +1,3 @@
-// app/admin/planos/[id]/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -16,7 +15,7 @@ export default function EditPlanoPage() {
   const [plan, setPlan] = useState<SubscriptionPlan | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // campos de formulário
+  // campos
   const [name, setName] = useState('');
   const [key, setKey] = useState('');
   const [desc, setDesc] = useState('');
@@ -34,20 +33,19 @@ export default function EditPlanoPage() {
       .then(({ data, error }) => {
         if (error) console.error(error);
         else if (data) {
-          const p = data as SubscriptionPlan;
-          setPlan(p);
-          setName(p.name);
-          setKey(p.key);
-          setDesc(p.description || '');
-          setPrice(p.price);
-          setCurrency(p.currency);
-          setIntervalField(p.interval as any);
-          setIntervalCount(p.interval_count);
+          setPlan(data as SubscriptionPlan);
+          setName(data.name);
+          setKey(data.key);
+          setDesc(data.description || '');
+          setPrice(data.price);
+          setCurrency(data.currency);
+          setIntervalField(data.interval as any);
+          setIntervalCount(data.interval_count);
         }
       });
   }, [id, supabase]);
 
-  if (!plan) return <p className="p-8">Carregando plano…</p>;
+  if (!plan) return <p className="p-8 text-center">Carregando plano…</p>;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -75,83 +73,87 @@ export default function EditPlanoPage() {
 
   return (
     <AdminGuard>
-      <div className="max-w-xl mx-auto p-8">
-      <BackButton className="mb-2" />
-        <h2 className="text-2xl font-bold mb-4">Editar Plano</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="p-4 sm:p-8 max-w-lg mx-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 space-y-2 sm:space-y-0">
+          <BackButton />
+          <h2 className="text-2xl font-bold">Editar Plano</h2>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
           {/* Chave */}
-          <div>
-            <label className="block font-medium">Chave (única)</label>
+          <div className="flex flex-col">
+            <label className="mb-1 font-medium">Chave (única)</label>
             <input
               value={key}
               onChange={e => setKey(e.target.value)}
-              className="w-full border px-3 py-2 rounded"
+              className="w-full border px-3 py-2 rounded focus:ring sm:text-sm"
             />
           </div>
 
           {/* Nome */}
-          <div>
-            <label className="block font-medium">Nome</label>
+          <div className="flex flex-col">
+            <label className="mb-1 font-medium">Nome</label>
             <input
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full border px-3 py-2 rounded"
+              className="w-full border px-3 py-2 rounded focus:ring sm:text-sm"
             />
           </div>
 
           {/* Descrição */}
-          <div>
-            <label className="block font-medium">Descrição</label>
+          <div className="flex flex-col">
+            <label className="mb-1 font-medium">Descrição</label>
             <textarea
               value={desc}
               onChange={e => setDesc(e.target.value)}
-              className="w-full border px-3 py-2 rounded"
+              className="w-full border px-3 py-2 rounded focus:ring sm:text-sm"
+              rows={4}
             />
           </div>
 
           {/* Preço e Moeda */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block font-medium">Preço</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex flex-col">
+              <label className="mb-1 font-medium">Preço</label>
               <input
                 type="number"
                 step="0.01"
                 value={price}
                 onChange={e => setPrice(+e.target.value)}
-                className="w-full border px-3 py-2 rounded"
+                className="w-full border px-3 py-2 rounded focus:ring sm:text-sm"
               />
             </div>
-            <div>
-              <label className="block font-medium">Moeda</label>
+            <div className="flex flex-col">
+              <label className="mb-1 font-medium">Moeda</label>
               <input
                 value={currency}
                 onChange={e => setCurrency(e.target.value)}
-                className="w-full border px-3 py-2 rounded"
+                className="w-full border px-3 py-2 rounded focus:ring sm:text-sm"
               />
             </div>
           </div>
 
           {/* Intervalo */}
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block font-medium">Intervalo</label>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="flex flex-col">
+              <label className="mb-1 font-medium">Intervalo</label>
               <select
                 value={interval}
                 onChange={e => setIntervalField(e.target.value as any)}
-                className="w-full border px-3 py-2 rounded"
+                className="w-full border px-3 py-2 rounded focus:ring sm:text-sm"
               >
                 <option value="day">Dia</option>
                 <option value="month">Mês</option>
                 <option value="year">Ano</option>
               </select>
             </div>
-            <div className="col-span-2">
-              <label className="block font-medium">Contagem do Intervalo</label>
+            <div className="col-span-1 sm:col-span-2 flex flex-col">
+              <label className="mb-1 font-medium">Contagem do Intervalo</label>
               <input
                 type="number"
                 value={intervalCount}
                 onChange={e => setIntervalCount(+e.target.value)}
-                className="w-full border px-3 py-2 rounded"
+                className="w-full border px-3 py-2 rounded focus:ring sm:text-sm"
               />
             </div>
           </div>
@@ -159,7 +161,7 @@ export default function EditPlanoPage() {
           <button
             type="submit"
             disabled={saving}
-            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition sm:w-auto sm:px-6"
           >
             {saving ? 'Salvando…' : 'Salvar Alterações'}
           </button>
