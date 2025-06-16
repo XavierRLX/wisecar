@@ -13,6 +13,7 @@ import {
   Ligature,
   Wrench,
   Cog,
+  Tag,
   Store
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -194,6 +195,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </div>
 
           <div className="pt-4 border-t border-gray-200 space-y-1">
+          <NavItem
+              href="/planos"
+              icon={<Tag className="w-5 h-5" />}
+              label="Planos"
+              onClose={onClose}
+            />
             <NavItem
               href="/consultaFipe"
               icon={<Ligature className="w-5 h-5" />}
@@ -206,7 +213,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               label="Adicionar Loja"
               onClose={onClose}
             />
-            <NavItem
+             <NavItem
               href="/feed"
               icon={<Rss className="w-5 h-5" />}
               label="Feed"

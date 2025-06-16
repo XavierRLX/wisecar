@@ -1,3 +1,5 @@
+// app/admin/planos/page
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -34,7 +36,7 @@ export default function AdminPlanosPage() {
           <BackButton className="self-start sm:self-auto" />
           <h2 className="text-2xl font-bold">Gerenciar Planos</h2>
           <Link
-            href="/admin/planos/new"
+            href="/admin/planos/novo"
             className="w-full sm:w-auto text-center bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
           >
             Novo Plano

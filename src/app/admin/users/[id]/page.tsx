@@ -123,7 +123,7 @@ export default function AdminUserDetailPage() {
                 </dd>
               </div>
               <div className="flex justify-between">
-                <dt className="font-medium">É Admin?</dt>
+                <dt className="font-medium">Admin</dt>
                 <dd>{profile.is_admin ? 'Sim' : 'Não'}</dd>
               </div>
             </dl>

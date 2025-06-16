@@ -9,7 +9,6 @@ import VehicleCard from '@/components/VehicleCard';
 import { getOrCreateConversation } from '@/lib/chatService';
 import { useSellerVehicles } from '@/hooks/useSellerVehicles';
 import { VehicleStatus } from '@/types';
-import RestrictedAccessAlert from '@/components/RestrictedAccessAlert';
 import { ToggleFilter, Option } from '@/components/ToggleFilter';
 import { supabase } from '@/lib/supabase';
 import RoleGuard from '@/components/RoleGuard';
