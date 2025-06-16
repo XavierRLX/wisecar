@@ -14,8 +14,7 @@ import { Profile, SubscriptionPlan } from '@/types';
 
 export default function AdminUserDetailPage() {
   const { id } = useParams();
-  const rawId = id;
-  const userId = typeof rawId === 'string' ? rawId : Array.isArray(rawId) ? rawId[0] : '';
+  const userId = Array.isArray(id) ? id[0] : id || '';
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
@@ -42,120 +41,126 @@ export default function AdminUserDetailPage() {
         .select('*')
         .order('name'),
     ]).then(([profRes, plansRes]) => {
-      if (profRes.error) {
-        console.error('Erro ao carregar profile:', profRes.error);
-      } else {
-        setProfile(profRes.data as Profile);
-      }
-
-      if (plansRes.error) {
-        console.error('Erro ao carregar planos:', plansRes.error);
-      } else {
-        setPlans(plansRes.data as SubscriptionPlan[]);
-      }
-
+      if (!profRes.error) setProfile(profRes.data as Profile);
+      if (!plansRes.error) setPlans(plansRes.data as SubscriptionPlan[]);
       setLoadingData(false);
     });
   }, [userId]);
 
-  const handlePlanChange = async (newPlanId: string) => {
-    if (!profile) return;
-    setUpdatingPlan(true);
+  if (loadingData || loadingProviders || loadingVehicles) {
+    return <LoadingState message="Carregando detalhes…" />;
+  }
+  if (!profile) {
+    return (
+      <div className="max-w-lg mx-auto p-6">
+        <p className="text-center text-red-600">Perfil não encontrado.</p>
+      </div>
+    );
+  }
+  if (errorProviders || errorVehicles) {
+    return (
+      <div className="max-w-lg mx-auto p-6">
+        <p className="text-center text-red-600">
+          Erro: {errorProviders || errorVehicles}
+        </p>
+      </div>
+    );
+  }
 
+  const handlePlanChange = async (newPlanId: string) => {
+    setUpdatingPlan(true);
     const { error } = await supabase
       .from('profiles')
       .update({ plan_id: newPlanId })
       .eq('id', userId);
 
-    setUpdatingPlan(false);
-
-    if (error) {
-      console.error('Erro ao atualizar plano:', error);
-    } else {
+    if (!error) {
       const newPlan = plans.find(p => p.id === newPlanId)!;
-      setProfile({
-        ...profile,
+      setProfile(prev => prev && ({
+        ...prev,
         plan_id: newPlan.id,
         subscription_plans: { key: newPlan.key, name: newPlan.name },
-      });
+      }));
     }
+    setUpdatingPlan(false);
   };
-
-  if (!userId || loadingData || loadingProviders || loadingVehicles) {
-    return <LoadingState message="Carregando detalhes…" />;
-  }
-
-  if (!profile) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <p className="text-red-600">Perfil não encontrado.</p>
-      </div>
-    );
-  }
-
-  if (errorProviders || errorVehicles) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <p className="text-red-600">Erro: {errorProviders || errorVehicles}</p>
-      </div>
-    );
-  }
 
   return (
     <AdminGuard>
-      <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+      <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-8">
         <BackButton />
 
-        <h1 className="text-3xl font-bold text-gray-800">Detalhes do Usuário</h1>
+        <h1 className="text-3xl font-bold text-gray-800 text-center sm:text-left">
+          Detalhes do Usuário
+        </h1>
 
-        <div className="space-y-2">
-          <p>
-            <strong>Nome:</strong> {profile.first_name} {profile.last_name}
-          </p>
-          <p>
-            <strong>Username:</strong> {profile.username ?? '—'}
-          </p>
-          <p>
-            <strong>Email:</strong> {profile.email}
-          </p>
-          <p>
-            <strong>Criado em:</strong>{' '}
-            {profile.created_at
-              ? new Date(profile.created_at).toLocaleString()
-              : '—'}
-          </p>
-          <p>
-            <strong>É Admin?:</strong> {profile.is_admin ? 'Sim' : 'Não'}
-          </p>
-          <p>
-            <strong>Plano Atual:</strong> {profile.subscription_plans.name} (
-            {profile.subscription_plans.key})
-          </p>
+        {/* Informações e Plano */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Card de Informações */}
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-xl font-semibold mb-4">Informações Gerais</h2>
+            <dl className="space-y-3 text-gray-700">
+              <div className="flex justify-between">
+                <dt className="font-medium">Nome</dt>
+                <dd>
+                  {profile.first_name} {profile.last_name}
+                </dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="font-medium">Username</dt>
+                <dd>{profile.username || '—'}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="font-medium">Email</dt>
+                <dd>{profile.email}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="font-medium">Criado em</dt>
+                <dd>
+                  {profile.created_at
+                    ? new Date(profile.created_at).toLocaleString()
+                    : '—'}
+                </dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="font-medium">É Admin?</dt>
+                <dd>{profile.is_admin ? 'Sim' : 'Não'}</dd>
+              </div>
+            </dl>
+          </div>
+
+          {/* Card de Plano */}
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-xl font-semibold mb-4">Plano Atual</h2>
+            <p className="mb-4 text-gray-800">
+              <span className="font-medium">{profile.subscription_plans.name}</span>{' '}
+              ({profile.subscription_plans.key})
+            </p>
+
+            <label className="block font-medium mb-2">Alterar Plano</label>
+            <select
+              className="w-full border rounded px-3 py-2 focus:ring"
+              value={profile.plan_id}
+              onChange={e => handlePlanChange(e.target.value)}
+              disabled={updatingPlan}
+            >
+              {plans.map(plan => (
+                <option key={plan.id} value={plan.id}>
+                  {plan.name} ({plan.key})
+                </option>
+              ))}
+            </select>
+            {updatingPlan && (
+              <p className="mt-2 text-sm text-gray-500">Atualizando plano…</p>
+            )}
+          </div>
         </div>
 
-        <div className="pt-4">
-          <label className="block font-medium mb-2">Alterar Plano</label>
-          <select
-            className="w-full border px-3 py-2 rounded"
-            value={profile.plan_id}
-            onChange={e => handlePlanChange(e.target.value)}
-            disabled={updatingPlan}
-          >
-            {plans.map(plan => (
-              <option key={plan.id} value={plan.id}>
-                {plan.name} ({plan.key})
-              </option>
-            ))}
-          </select>
-          {updatingPlan && (
-            <p className="text-sm text-gray-500 mt-2">Atualizando plano…</p>
-          )}
-        </div>
-
+        {/* Seção de Lojas */}
         <section className="space-y-4">
-          <h2 className="text-2xl font-semibold text-gray-800">Lojas cadastradas</h2>
+          <h2 className="text-2xl font-semibold text-gray-800">Lojas Cadastradas</h2>
           {providers.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {providers.map(p => (
                 <ProviderCard key={p.id} provider={p} />
               ))}
@@ -165,27 +170,30 @@ export default function AdminUserDetailPage() {
           )}
         </section>
 
+        {/* Seção de Veículos */}
         <section className="space-y-4">
-          <h2 className="text-2xl font-semibold text-gray-800">Veículos cadastrados</h2>
+          <h2 className="text-2xl font-semibold text-gray-800">Veículos Cadastrados</h2>
           {vehicles.length > 0 ? (
-            vehicles.map(v => (
-              <div
-                key={v.id}
-                className="flex items-center bg-white rounded-lg shadow-sm hover:shadow-md transition p-6"
-              >
-                <img
-                  src={v.vehicle_images?.[0]?.image_url ?? '/default-car.png'}
-                  alt={`${v.brand} ${v.model}`}
-                  className="w-12 h-12 object-cover rounded mr-4"
-                />
-                <div className="flex-1">
-                  <p className="text-lg font-medium text-gray-900">
-                    {v.brand} {v.model} ({v.year})
-                  </p>
-                  <p className="mt-1 text-sm text-gray-600">Status: {v.status}</p>
+            <div className="space-y-4">
+              {vehicles.map(v => (
+                <div
+                  key={v.id}
+                  className="flex items-center bg-white rounded-lg shadow-sm hover:shadow-md transition p-4"
+                >
+                  <img
+                    src={v.vehicle_images?.[0]?.image_url ?? '/default-car.png'}
+                    alt={`${v.brand} ${v.model}`}
+                    className="w-14 h-14 object-cover rounded mr-4 flex-shrink-0"
+                  />
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">
+                      {v.brand} {v.model} ({v.year})
+                    </p>
+                    <p className="text-sm text-gray-600">Status: {v.status}</p>
+                  </div>
                 </div>
-              </div>
-            ))
+              ))}
+            </div>
           ) : (
             <p className="text-gray-500">Nenhum veículo encontrado.</p>
           )}
