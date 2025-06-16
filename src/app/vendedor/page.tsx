@@ -13,7 +13,6 @@ import RestrictedAccessAlert from '@/components/RestrictedAccessAlert';
 import { ToggleFilter, Option } from '@/components/ToggleFilter';
 import { supabase } from '@/lib/supabase';
 import RoleGuard from '@/components/RoleGuard';
-import AdminGuard from '@/components/AdminGuard';
 
 type SellerFilter = 'WISHLIST' | 'FOR_SALE';
 const sellerOptions: Option<SellerFilter>[] = [
@@ -44,7 +43,6 @@ export default function SellerPage() {
   }, [vehicles, selectedOption]);
 
   return (
-    <AdminGuard>
       <RoleGuard
         allowAdmin
         allowSeller
@@ -142,6 +140,5 @@ export default function SellerPage() {
           </div>
         </div>
       </RoleGuard>
-    </AdminGuard>
   );
 }

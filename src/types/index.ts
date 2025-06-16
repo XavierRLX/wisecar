@@ -128,9 +128,6 @@ export interface Profile {
   created_at?: string;
 }
 
-
-
-
 export interface SubscriptionPlan {
   id: string;
   key: string;
