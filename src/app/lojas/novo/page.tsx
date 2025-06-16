@@ -215,7 +215,6 @@ export default function NewProviderPage() {
   return (
     <RoleGuard allowAdmin allowProvider>
       <EnsureProfile />
-
       <div className="max-w-4xl mx-auto p-6 bg-white shadow rounded space-y-6">
         <h1 className="text-2xl font-bold">Cadastrar Nova Loja e Serviços</h1>
         <form onSubmit={handleSubmit} className="space-y-8">

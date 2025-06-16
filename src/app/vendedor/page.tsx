@@ -43,19 +43,7 @@ export default function SellerPage() {
   }, [vehicles, selectedOption]);
 
   return (
-      <RoleGuard
-        allowAdmin
-        allowSeller
-        renderFallback={
-          <div className="p-2 mt-60 flex justify-center items-center">
-            <RestrictedAccessAlert
-              message="Área exclusiva para vendedores."
-              buttonText="Assinar Plano"
-              onButtonClick={() => router.push('/planos')}
-            />
-          </div>
-        }
-      >
+      <RoleGuard allowAdmin allowSeller >
         <div className="p-4 max-w-4xl mx-auto space-y-6">
           {/* Toggle de Status e título */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
