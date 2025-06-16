@@ -10,8 +10,8 @@ import { SubscriptionPlan } from '@/types';
 
 const CATEGORIES: { key: 'seller' | 'other' | 'provider'; label: string }[] = [
   { key: 'seller',   label: 'Vendedor' },
-  { key: 'other',    label: 'Usuário' },
-  { key: 'provider', label: 'Lojista' },
+  { key: 'other',    label: 'Usuário'   },
+  { key: 'provider', label: 'Lojista'   },
 ];
 
 export default function PlansPage() {
@@ -19,9 +19,7 @@ export default function PlansPage() {
   const router = useRouter();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // usuario (other) pré-selecionado
-  const [category, setCategory] = useState<'seller' | 'other' | 'provider'>('other');
+  const [category, setCategory] = useState<'seller' | 'other' | 'provider'>('other'); // Usuário pré
 
   useEffect(() => {
     (async () => {
@@ -39,10 +37,18 @@ export default function PlansPage() {
   }
 
   const filteredPlans = plans.filter(p => {
-    if (category === 'other') {
-      return p.key !== 'provider' && p.key !== 'seller';
+    // sempre incluir 'full'
+    if (p.key === 'full') return true;
+
+    switch (category) {
+      case 'seller':
+        return p.key === 'seller';
+      case 'provider':
+        return p.key === 'provider';
+      case 'other':
+        // usuário = todos que não são seller nem provider (full já retorna acima)
+        return p.key !== 'seller' && p.key !== 'provider';
     }
-    return p.key === category;
   });
 
   const filterOptions: Option<string>[] = CATEGORIES.map(c => ({
@@ -58,7 +64,7 @@ export default function PlansPage() {
           Nossos Planos
         </h1>
         <p className="mt-3 text-gray-600">
-          Escolha a categoria para ver os planos disponíveis.
+          Selecione a categoria para ver os planos disponíveis.
         </p>
       </div>
 

@@ -18,7 +18,7 @@ export default function NewPlanoPage() {
   const [desc, setDesc] = useState('');
   const [price, setPrice] = useState<string>('');
   const [currency, setCurrency] = useState('BRL');
-  const [interval, setInterval] = useState<'day' | 'month' | 'year'>('month');
+  const [interval, setInterval] = useState<'dia' | 'Mês' | 'Ano'>('Mês');
   const [intervalCount, setIntervalCount] = useState<string>('1');
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
