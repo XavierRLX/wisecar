@@ -18,25 +18,85 @@ interface Profile {
   avatar_url?: string;
   is_admin?: boolean;
   created_at?: string;
+  plan_active: boolean;
+  subscription_plans: {
+    key: string;
+    name: string;
+  };
+}
+
+interface PlanOption {
+  key: string;
+  name: string;
 }
 
 export default function AdminUsersPage() {
-  const [profiles, setProfiles]       = useState<Profile[]>([]);
-  const [loading, setLoading]         = useState(true);
-  const [search, setSearch]           = useState('');
-  const [filterAdmin, setFilterAdmin] = useState(false);
+  const [profiles, setProfiles]         = useState<Profile[]>([]);
+  const [plans, setPlans]               = useState<PlanOption[]>([]);
+  const [loading, setLoading]           = useState(true);
+  const [search, setSearch]             = useState('');
+  const [filterAdmin, setFilterAdmin]   = useState(false);
+  const [filterPlan, setFilterPlan]     = useState<string>('');
+  const [filterActive, setFilterActive] = useState<'all'|'active'|'inactive'>('all');
 
+  // 1) Busca perfis
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, username, email, avatar_url, is_admin, created_at');
+        .select(`
+          id,
+          first_name,
+          last_name,
+          username,
+          email,
+          avatar_url,
+          is_admin,
+          created_at,
+          plan_active,
+          subscription_plans ( key, name )
+        `);
+
       if (error) {
-        console.error('Erro ao carregar profiles:', error);
-      } else {
-        setProfiles(data as Profile[]);
+        console.error('Erro ao carregar perfis:', error);
+      } else if (data) {
+        const normalized = (data as any[]).map(p => {
+          const arr = Array.isArray(p.subscription_plans) ? p.subscription_plans : [];
+          const sp = arr.length > 0
+            ? { key: arr[0].key, name: arr[0].name }
+            : { key: '', name: '' };
+          return {
+            id: p.id,
+            first_name: p.first_name,
+            last_name: p.last_name,
+            username: p.username,
+            email: p.email,
+            avatar_url: p.avatar_url,
+            is_admin: p.is_admin,
+            created_at: p.created_at,
+            plan_active: p.plan_active,
+            subscription_plans: sp,
+          } as Profile;
+        });
+        setProfiles(normalized);
       }
       setLoading(false);
+    })();
+  }, []);
+
+  // 2) Busca lista de todos os planos disponíveis (para popular o filtro)
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .select('key, name')
+        .order('name', { ascending: true });
+
+      if (error) {
+        console.error('Erro ao carregar planos:', error);
+      } else if (data) {
+        setPlans(data as PlanOption[]);
+      }
     })();
   }, []);
 
@@ -45,13 +105,14 @@ export default function AdminUsersPage() {
       .from('profiles')
       .update({ is_admin: value })
       .eq('id', id);
+
     if (error) {
-      console.error('Erro ao atualizar perfil:', error.message);
-      return;
+      console.error('Erro ao atualizar Admin:', error.message);
+    } else {
+      setProfiles(prev =>
+        prev.map(p => p.id === id ? { ...p, is_admin: value } : p)
+      );
     }
-    setProfiles(prev =>
-      prev.map(p => p.id === id ? { ...p, is_admin: value } : p)
-    );
   };
 
   const displayed = useMemo(() => {
@@ -65,12 +126,19 @@ export default function AdminUsersPage() {
         || p.email.toLowerCase().includes(term)
       )
       .filter(p => filterAdmin ? !!p.is_admin : true)
+      .filter(p =>
+        (!filterPlan || p.subscription_plans.key === filterPlan) &&
+        (filterActive === 'all'
+          || (filterActive === 'active'   && p.plan_active)
+          || (filterActive === 'inactive' && !p.plan_active)
+        )
+      )
       .sort((a, b) => {
         const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
         const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
         return nameA.localeCompare(nameB);
       });
-  }, [profiles, search, filterAdmin]);
+  }, [profiles, search, filterAdmin, filterPlan, filterActive]);
 
   if (loading) return <LoadingState message="Carregando usuários…" />;
 
@@ -87,26 +155,52 @@ export default function AdminUsersPage() {
             placeholder="Buscar por nome, usuário ou email..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full sm:flex-1 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full sm:flex-1 px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
-            onClick={() => setFilterAdmin(a => !a)}
+            onClick={() => setFilterAdmin(f => !f)}
             className={`px-4 py-2 rounded-full font-medium transition ${
               filterAdmin
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Apenas Administradores
+            Apenas Admins
           </button>
         </div>
 
-        {/* Total de usuários filtrados */}
+        {/* Filtros por Plano + Status */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
+          <select
+            value={filterPlan}
+            onChange={e => setFilterPlan(e.target.value)}
+            className="w-full sm:w-1/2 px-4 py-2 border rounded-lg focus:outline-none"
+          >
+            <option value="">Todos os Planos</option>
+            {plans.map(p => (
+              <option key={p.key} value={p.key}>
+                {p.name} ({p.key})
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={filterActive}
+            onChange={e => setFilterActive(e.target.value as any)}
+            className="w-full sm:w-1/2 px-4 py-2 border rounded-lg focus:outline-none"
+          >
+            <option value="all">Todos</option>
+            <option value="active">Ativos</option>
+            <option value="inactive">Inativos</option>
+          </select>
+        </div>
+
+        {/* Contagem */}
         <div className="text-sm text-gray-600">
           {displayed.length} usuário{displayed.length !== 1 ? 's' : ''}
         </div>
 
-        {/* Lista de cards */}
+        {/* Lista de Cards */}
         <div className="space-y-4">
           {displayed.length > 0 ? (
             displayed.map(user => (
@@ -115,9 +209,9 @@ export default function AdminUsersPage() {
                 href={`/admin/users/${user.id}`}
                 className="block hover:shadow-md transition"
               >
-                <div className="bg-white rounded-lg shadow-sm transition p-6">
+                <div className="bg-white rounded-lg shadow-sm p-6">
 
-                  {/* Nome + Username */}
+                  {/* Cabeçalho */}
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-4">
                       <img
@@ -125,7 +219,7 @@ export default function AdminUsersPage() {
                         alt={`${user.first_name} avatar`}
                         className="w-8 h-8 rounded-full object-cover bg-gray-200"
                       />
-                      <div className="flex flex-col items-center">
+                      <div>
                         <div className="text-sm font-semibold text-gray-900 truncate">
                           {user.first_name} {user.last_name}
                         </div>
@@ -137,28 +231,42 @@ export default function AdminUsersPage() {
                       </div>
                     </div>
 
-                    {/* Toggle Admin */}
-                    <div className="flex flex-col items-center">
-                      <span className="text-sm font-medium text-gray-700">Admin</span>
-                      <button
-                        onClick={e => {
-                          e.preventDefault();
-                          toggleAdmin(user.id, !user.is_admin);
-                        }}
-                        className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors focus:outline-none ${
-                          user.is_admin ? 'bg-blue-600' : 'bg-gray-300'
-                        }`}
-                      >
-                        <span
-                          className={`absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transform transition-transform ${
-                            user.is_admin ? 'translate-x-5' : ''
+                    {/* Toggles */}
+                    <div className="flex space-x-6">
+                      <div className="flex flex-col items-center">
+                        <span className="text-sm font-medium">Admin</span>
+                        <button
+                          onClick={e => {
+                            e.preventDefault();
+                            toggleAdmin(user.id, !user.is_admin);
+                          }}
+                          className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors ${
+                            user.is_admin ? 'bg-blue-600' : 'bg-gray-300'
                           }`}
-                        />
-                      </button>
+                        >
+                          <span
+                            className={`absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transform transition-transform ${
+                              user.is_admin ? 'translate-x-5' : ''
+                            }`}
+                          />
+                        </button>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <span className="text-sm font-medium">Plano</span>
+                        <span
+                          className={`px-2 py-1 text-xs rounded-full ${
+                            user.plan_active
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}
+                        >
+                          {user.plan_active ? 'Ativo' : 'Inativo'}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* E-mail + Created At */}
+                  {/* Rodapé */}
                   <div className="mt-4 flex justify-between items-center">
                     <div className="text-gray-600 truncate">{user.email}</div>
                     {user.created_at && (

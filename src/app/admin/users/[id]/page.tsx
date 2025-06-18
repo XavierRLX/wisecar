@@ -21,10 +21,16 @@ export default function AdminUserDetailPage() {
   const [loadingData, setLoadingData] = useState(true);
   const [updatingPlan, setUpdatingPlan] = useState(false);
 
-  const { providers, loading: loadingProviders, error: errorProviders } =
-    useUserProviders(userId);
-  const { vehicles, loading: loadingVehicles, error: errorVehicles } =
-    useUserVehicles(userId);
+  const {
+    providers,
+    loading: loadingProviders,
+    error: errorProviders,
+  } = useUserProviders(userId);
+  const {
+    vehicles,
+    loading: loadingVehicles,
+    error: errorVehicles,
+  } = useUserVehicles(userId);
 
   useEffect(() => {
     if (!userId) return;
@@ -33,7 +39,7 @@ export default function AdminUserDetailPage() {
     Promise.all([
       supabase
         .from('profiles')
-        .select(`*, subscription_plans ( key, name )`)
+        .select(`*, subscription_plans ( key, name ), plan_active`)
         .eq('id', userId)
         .single(),
       supabase
@@ -76,11 +82,28 @@ export default function AdminUserDetailPage() {
 
     if (!error) {
       const newPlan = plans.find(p => p.id === newPlanId)!;
-      setProfile(prev => prev && ({
-        ...prev,
-        plan_id: newPlan.id,
-        subscription_plans: { key: newPlan.key, name: newPlan.name },
-      }));
+      setProfile(prev =>
+        prev && {
+          ...prev,
+          plan_id: newPlan.id,
+          subscription_plans: { key: newPlan.key, name: newPlan.name },
+        }
+      );
+    }
+    setUpdatingPlan(false);
+  };
+
+  const togglePlanActive = async () => {
+    setUpdatingPlan(true);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ plan_active: !profile.plan_active })
+      .eq('id', userId);
+
+    if (!error) {
+      setProfile(prev =>
+        prev && { ...prev, plan_active: !prev.plan_active }
+      );
     }
     setUpdatingPlan(false);
   };
@@ -133,7 +156,9 @@ export default function AdminUserDetailPage() {
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-xl font-semibold mb-4">Plano Atual</h2>
             <p className="mb-4 text-gray-800">
-              <span className="font-medium">{profile.subscription_plans.name}</span>{' '}
+              <span className="font-medium">
+                {profile.subscription_plans.name}
+              </span>{' '}
               ({profile.subscription_plans.key})
             </p>
 
@@ -151,14 +176,32 @@ export default function AdminUserDetailPage() {
               ))}
             </select>
             {updatingPlan && (
-              <p className="mt-2 text-sm text-gray-500">Atualizando plano…</p>
+              <p className="mt-2 text-sm text-gray-500">
+                Atualizando plano…
+              </p>
             )}
+
+            {/* Botão para ativar/inativar plano */}
+            <div className="mt-4 flex items-center justify-between">
+              <span className="font-medium">Status do Plano:</span>
+              <button
+                onClick={togglePlanActive}
+                disabled={updatingPlan}
+                className="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200"
+              >
+                {profile.plan_active
+                  ? 'Inativar Plano'
+                  : 'Ativar Plano'}
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Seção de Lojas */}
         <section className="space-y-4">
-          <h2 className="text-2xl font-semibold text-gray-800">Lojas Cadastradas</h2>
+          <h2 className="text-2xl font-semibold text-gray-800">
+            Lojas Cadastradas
+          </h2>
           {providers.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {providers.map(p => (
@@ -172,7 +215,9 @@ export default function AdminUserDetailPage() {
 
         {/* Seção de Veículos */}
         <section className="space-y-4">
-          <h2 className="text-2xl font-semibold text-gray-800">Veículos Cadastrados</h2>
+          <h2 className="text-2xl font-semibold text-gray-800">
+            Veículos Cadastrados
+          </h2>
           {vehicles.length > 0 ? (
             <div className="space-y-4">
               {vehicles.map(v => (
@@ -189,7 +234,9 @@ export default function AdminUserDetailPage() {
                     <p className="font-medium text-gray-900">
                       {v.brand} {v.model} ({v.year})
                     </p>
-                    <p className="text-sm text-gray-600">Status: {v.status}</p>
+                    <p className="text-sm text-gray-600">
+                      Status: {v.status}
+                    </p>
                   </div>
                 </div>
               ))}

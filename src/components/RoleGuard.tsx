@@ -25,9 +25,12 @@ export default function RoleGuard({
   const { profile, loading } = useUserProfile();
   const router = useRouter();
 
+  // Enquanto carrega, exibe tela de loading
   if (loading) {
     return <LoadingState message="Verificando permissões…" />;
   }
+
+  // Se não estiver logado, força login
   if (!profile) {
     const fallback = renderFallback ?? (
       <RestrictedAccessAlert
@@ -40,10 +43,26 @@ export default function RoleGuard({
   }
 
   const key = profile.subscription_plans.key;
-  const isAdmin    = !!profile.is_admin;
-  const isSeller   = profile.is_seller  || key === 'seller'   || key === 'full';
-  const isProvider = profile.is_provider|| key === 'provider' || key === 'full';
+  const active = profile.plan_active;
 
+  // Define os papéis apenas via key do plano
+  const isAdmin    = !!profile.is_admin;
+  const isSeller   = ['seller', 'full'].includes(key);
+  const isProvider = ['provider', 'full'].includes(key);
+
+  // Bloqueia acesso a rotas de seller/provider se o plano está inativo
+  if (!active && (allowSeller || allowProvider)) {
+    const fallback = renderFallback ?? (
+      <RestrictedAccessAlert
+        message="Seu plano expirou ou está inativo."
+        buttonText="Ver Planos"
+        onButtonClick={() => router.push('/planos')}
+      />
+    );
+    return <>{fallback}</>;
+  }
+
+  // Verifica se tem permissão para entrar
   const hasAccess =
     (allowAdmin    && isAdmin)    ||
     (allowSeller   && isSeller)   ||
@@ -60,5 +79,6 @@ export default function RoleGuard({
     return <>{fallback}</>;
   }
 
+  // Se passou em todas as validações, renderiza as children
   return <>{children}</>;
 }

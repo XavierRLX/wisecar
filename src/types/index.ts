@@ -109,7 +109,6 @@ export interface MaintenanceDoc {
   file_url: string;
   uploaded_at?: string;
 }
-
 export interface Profile {
   id: string;
   first_name: string;
@@ -118,9 +117,8 @@ export interface Profile {
   username?: string;
   avatar_url?: string;
   is_admin?: boolean;
-  is_seller?: boolean;
-  is_provider?: boolean;
   plan_id: string;
+  plan_active: boolean;          
   subscription_plans: {
     key: string;
     name: string;
@@ -138,6 +136,7 @@ export interface SubscriptionPlan {
   interval: string;
   interval_count: number;
 }
+
 
 export interface ProviderImage {
   id: string;
