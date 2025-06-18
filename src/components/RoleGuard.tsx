@@ -1,4 +1,3 @@
-// components/RoleGuard.tsx
 'use client';
 
 import React, { ReactNode, ReactElement } from 'react';
@@ -25,31 +24,37 @@ export default function RoleGuard({
   const { profile, loading } = useUserProfile();
   const router = useRouter();
 
+  // Enquanto carrega perfil
   if (loading) {
     return <LoadingState message="Verificando permissões…" />;
   }
+
+  // Se não autenticado
   if (!profile) {
     const fallback = renderFallback ?? (
-      <RestrictedAccessAlert 
-        message="Faça login para acessar." 
-        buttonText="Entrar" 
-        onButtonClick={() => router.push('/login')} 
+      <RestrictedAccessAlert
+        message="Faça login para acessar."
+        buttonText="Entrar"
+        onButtonClick={() => router.push('/login')}
       />
     );
     return <>{fallback}</>;
   }
 
   const { subscription_plan, plan_active, is_admin } = profile;
-  const key = subscription_plan.key;
-  const isProvider = ['provider', 'full'].includes(key);
-  const isSeller   = ['seller',   'full'].includes(key);
 
-  // 1) Se for admin e permitimos admin, libera de cara:
+  // Extrai o “baseKey” (seller, provider ou full) de chaves como "seller_plus"
+  const rawKey = subscription_plan.key ?? '';
+  const baseKey = rawKey.split('_')[0]; // ex: "provider_basic" -> "provider"
+  const isProvider = baseKey === 'provider' || baseKey === 'full';
+  const isSeller   = baseKey === 'seller'   || baseKey === 'full';
+
+  // Admin sempre liberado, se permitir
   if (allowAdmin && is_admin) {
     return <>{children}</>;
   }
 
-  // 2) Bloqueia providers/sellers inativos (admins já liberados acima)
+  // Bloqueia providers/sellers inativos (exceto admin)
   if (!plan_active && (allowProvider || allowSeller)) {
     const fallback = renderFallback ?? (
       <RestrictedAccessAlert
@@ -61,14 +66,14 @@ export default function RoleGuard({
     return <>{fallback}</>;
   }
 
-  // 3) Checa acesso restante (provider ou seller)
+  // Valida acesso por papel
   const hasProviderAccess = allowProvider && isProvider;
   const hasSellerAccess   = allowSeller   && isSeller;
   if (hasProviderAccess || hasSellerAccess) {
     return <>{children}</>;
   }
 
-  // 4) Se chegou aqui, não tem acesso
+  // Sem permissão
   const fallback = renderFallback ?? (
     <RestrictedAccessAlert
       message="Área restrita. Assine o plano adequado."

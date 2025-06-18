@@ -25,7 +25,13 @@ export function useUserProfile() {
         .single()
 
       if (!error && data) {
-        const sub = data.subscription_plans?.[0] ?? { key: '', name: '' }
+        // 1) Suporta tanto object quanto array
+        const rawSub = (data as any).subscription_plans
+        const sub =
+          Array.isArray(rawSub)
+            ? rawSub[0] ?? { key: '', name: '' }
+            : rawSub ?? { key: '', name: '' }
+
         setProfile({
           id: data.id,
           first_name: data.first_name,
