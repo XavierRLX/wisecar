@@ -1,7 +1,6 @@
-// app/admin/users/[id]/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import AdminGuard from '@/components/AdminGuard';
 import LoadingState from '@/components/LoadingState';
@@ -10,73 +9,34 @@ import ProviderCard from '@/components/ProviderCard';
 import { useUserProviders } from '@/hooks/useUserProviders';
 import { useUserVehicles } from '@/hooks/useUserVehicles';
 import { supabase } from '@/lib/supabase';
-import { Profile } from '@/types';
+import { useProfiles } from '@/hooks/useProfiles';
 import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlans';
 
 export default function AdminUserDetailPage() {
   const { id } = useParams();
   const userId = Array.isArray(id) ? id[0] : id || '';
 
-  const [profile, setProfile] = useState<Profile | null>(null);
+  // Hooks
+  const { profiles, setProfiles, loading: loadingProfiles } = useProfiles();
   const { plans, loading: loadingPlans } = useSubscriptionPlans();
-  const [loadingData, setLoadingData] = useState(true);
+  const { providers, loading: loadingProviders, error: errorProviders } = useUserProviders(userId);
+  const { vehicles, loading: loadingVehicles, error: errorVehicles } = useUserVehicles(userId);
+
+  // Deriva o perfil a partir do hook
+  const profile = useMemo(() => profiles.find(p => p.id === userId) ?? null, [profiles, userId]);
+
+  // Plano atual completo
+  const currentPlan = useMemo(
+    () => plans.find(p => p.id === profile?.plan_id) ?? null,
+    [plans, profile]
+  );
+
   const [updatingPlan, setUpdatingPlan] = useState(false);
+  const [updatingAdmin, setUpdatingAdmin] = useState(false);
 
-  const { providers, loading: loadingProviders, error: errorProviders } =
-    useUserProviders(userId);
-  const { vehicles, loading: loadingVehicles, error: errorVehicles } =
-    useUserVehicles(userId);
-
-  // Carrega perfil do usuário
-  useEffect(() => {
-    if (!userId) return;
-    setLoadingData(true);
-
-    supabase
-      .from('profiles')
-      .select(`
-        id,
-        first_name,
-        last_name,
-        username,
-        email,
-        avatar_url,
-        is_admin,
-        created_at,
-        plan_id,
-        plan_active,
-        subscription_plans ( key, name )
-      `)
-      .eq('id', userId)
-      .single()
-      .then(({ data, error }) => {
-        if (!error && data) {
-          const sub =
-            Array.isArray(data.subscription_plans) && data.subscription_plans.length > 0
-              ? { key: data.subscription_plans[0].key, name: data.subscription_plans[0].name }
-              : { key: '', name: '' };
-
-          setProfile({
-            id: data.id,
-            first_name: data.first_name,
-            last_name: data.last_name,
-            username: data.username ?? undefined,
-            email: data.email,
-            avatar_url: data.avatar_url ?? undefined,
-            is_admin: data.is_admin ?? false,
-            created_at: data.created_at ?? undefined,
-            plan_id: data.plan_id,
-            plan_active: data.plan_active,
-            subscription_plan: sub,
-          });
-        }
-        setLoadingData(false);
-      });
-  }, [userId]);
-
-  if (loadingData || loadingProviders || loadingVehicles || loadingPlans) {
-    return <LoadingState message="Carregando detalhes…" />;
-  }
+  // Loading geral
+  const isLoading = loadingProfiles || loadingPlans || loadingProviders || loadingVehicles;
+  if (isLoading) return <LoadingState message="Carregando detalhes…" />;
 
   if (!profile) {
     return (
@@ -85,13 +45,10 @@ export default function AdminUserDetailPage() {
       </div>
     );
   }
-
   if (errorProviders || errorVehicles) {
     return (
       <div className="max-w-lg mx-auto p-6">
-        <p className="text-center text-red-600">
-          Erro: {errorProviders || errorVehicles}
-        </p>
+        <p className="text-center text-red-600">Erro: {errorProviders || errorVehicles}</p>
       </div>
     );
   }
@@ -103,34 +60,44 @@ export default function AdminUserDetailPage() {
       .from('profiles')
       .update({ plan_id: newPlanId })
       .eq('id', userId);
-
     if (!error) {
-      const newPlan = plans.find((p) => p.id === newPlanId);
-      if (newPlan) {
-        setProfile((prev) =>
-          prev && {
-            ...prev,
-            plan_id: newPlan.id,
-            subscription_plan: { key: newPlan.key, name: newPlan.name },
-          }
-        );
-      }
+      setProfiles(prev =>
+        prev.map(p => p.id === userId ? { ...p, plan_id: newPlanId } : p)
+      );
     }
     setUpdatingPlan(false);
   };
 
-  // Ativa / inativa o plano
+  // Ativa / Inativa o plano usando toggle
   const togglePlanActive = async () => {
+    if (!profile) return;
     setUpdatingPlan(true);
     const { error } = await supabase
       .from('profiles')
       .update({ plan_active: !profile.plan_active })
       .eq('id', userId);
-
     if (!error) {
-      setProfile((prev) => prev && { ...prev, plan_active: !prev.plan_active });
+      setProfiles(prev =>
+        prev.map(p => p.id === userId ? { ...p, plan_active: !p.plan_active } : p)
+      );
     }
     setUpdatingPlan(false);
+  };
+
+  // Ativa / Inativa permissão de admin
+  const toggleAdmin = async () => {
+    if (!profile) return;
+    setUpdatingAdmin(true);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ is_admin: !profile.is_admin })
+      .eq('id', userId);
+    if (!error) {
+      setProfiles(prev =>
+        prev.map(p => p.id === userId ? { ...p, is_admin: !p.is_admin } : p)
+      );
+    }
+    setUpdatingAdmin(false);
   };
 
   return (
@@ -141,89 +108,113 @@ export default function AdminUserDetailPage() {
           Detalhes do Usuário
         </h1>
 
-        {/* Informações e Plano */}
+        {/* Seção de Info e Plano */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Card de Informações */}
-          <div className="bg-white p-6 rounded-lg shadow">
+          {/* Informações Gerais com toggle Admin */}
+          <div className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300">
             <h2 className="text-xl font-semibold mb-4">Informações Gerais</h2>
             <dl className="space-y-3 text-gray-700">
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <dt className="font-medium">Nome</dt>
-                <dd>
-                  {profile.first_name} {profile.last_name}
-                </dd>
+                <dd>{profile.first_name} {profile.last_name}</dd>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <dt className="font-medium">Username</dt>
                 <dd>{profile.username || '—'}</dd>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <dt className="font-medium">Email</dt>
                 <dd>{profile.email}</dd>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <dt className="font-medium">Criado em</dt>
-                <dd>
-                  {profile.created_at
-                    ? new Date(profile.created_at).toLocaleString()
-                    : '—'}
-                </dd>
+                <dd>{profile.created_at ? new Date(profile.created_at).toLocaleString() : '—'}</dd>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <dt className="font-medium">Admin</dt>
-                <dd>{profile.is_admin ? 'Sim' : 'Não'}</dd>
+                <dd>
+                  <button
+                    onClick={toggleAdmin}
+                    disabled={updatingAdmin}
+                    className={`relative inline-flex items-center h-6 w-12 rounded-full transition-colors ${
+                      profile.is_admin ? 'bg-blue-600' : 'bg-gray-300'
+                    }`}
+                    aria-label="Alternar permissão de admin"
+                  >
+                    <span
+                      className={`inline-block w-5 h-5 bg-white rounded-full shadow transform transition-transform ${
+                        profile.is_admin ? 'translate-x-6' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </dd>
               </div>
             </dl>
           </div>
 
-          {/* Card de Plano */}
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4">Plano Atual</h2>
-            <p className="mb-4 text-gray-800">
-              <span className="font-medium">
-                {profile.subscription_plan.name}
-              </span>{' '}
-              ({profile.subscription_plan.key})
-            </p>
+          {/* Cartão de Plano */}
+          <div className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col justify-between">
+            <div>
+              <h2 className="text-xl font-semibold mb-2">Plano Atual</h2>
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-lg font-medium">{currentPlan?.name || '—'}</p>
+                  <p className="text-sm text-gray-500">{currentPlan?.key || '—'}</p>
+                  {currentPlan?.description && (
+                    <p className="mt-2 text-sm text-gray-600">{currentPlan.description}</p>
+                  )}
+                  {typeof currentPlan?.price === 'number' && (
+                    <p className="mt-1 text-sm font-semibold text-indigo-600">
+                      R$ {currentPlan.price.toFixed(2)} / mês
+                    </p>
+                  )}
+                </div>
+                {/* Toggle de status do plano */}
+                <button
+                  onClick={togglePlanActive}
+                  disabled={updatingPlan}
+                  className={`relative inline-flex items-center h-6 w-12 rounded-full transition-colors ${
+                    profile.plan_active ? 'bg-green-600' : 'bg-gray-300'
+                  }`}
+                  aria-label="Alternar status do plano"
+                >
+                  <span
+                    className={`inline-block w-5 h-5 bg-white rounded-full shadow transform transition-transform ${
+                      profile.plan_active ? 'translate-x-6' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
 
-            <label className="block font-medium mb-2">Alterar Plano</label>
-            <select
-              className="w-full border rounded px-3 py-2 focus:ring"
-              value={profile.plan_id}
-              onChange={(e) => handlePlanChange(e.target.value)}
-              disabled={updatingPlan}
-            >
-              {plans.map((plan) => (
-                <option key={plan.id} value={plan.id}>
-                  {plan.name} ({plan.key})
-                </option>
-              ))}
-            </select>
-            {updatingPlan && (
-              <p className="mt-2 text-sm text-gray-500">Atualizando plano…</p>
-            )}
-
-            <div className="mt-4 flex items-center justify-between">
-              <span className="font-medium">Status do Plano:</span>
-              <button
-                onClick={togglePlanActive}
+            {/* Seletor de planos */}
+            <div className="mt-6">
+              <label className="block text-sm font-medium mb-2">Alterar Plano</label>
+              <select
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={profile.plan_id}
+                onChange={e => handlePlanChange(e.target.value)}
                 disabled={updatingPlan}
-                className="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200"
               >
-                {profile.plan_active ? 'Inativar Plano' : 'Ativar Plano'}
-              </button>
+                {plans.map(plan => (
+                  <option key={plan.id} value={plan.id}>
+                    {plan.name} ({plan.key})
+                  </option>
+                ))}
+              </select>
+              {updatingPlan && (
+                <p className="mt-2 text-sm text-indigo-500">Atualizando plano…</p>
+              )}
             </div>
           </div>
         </div>
 
         {/* Lojas */}
         <section className="space-y-4">
-          <h2 className="text-2xl font-semibold text-gray-800">
-            Lojas Cadastradas
-          </h2>
+          <h2 className="text-2xl font-semibold text-gray-800">Lojas Cadastradas</h2>
           {providers.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {providers.map((p) => (
+              {providers.map(p => (
                 <ProviderCard key={p.id} provider={p} />
               ))}
             </div>
@@ -234,12 +225,10 @@ export default function AdminUserDetailPage() {
 
         {/* Veículos */}
         <section className="space-y-4">
-          <h2 className="text-2xl font-semibold text-gray-800">
-            Veículos Cadastrados
-          </h2>
+          <h2 className="text-2xl font-semibold text-gray-800">Veículos Cadastrados</h2>
           {vehicles.length > 0 ? (
             <div className="space-y-4">
-              {vehicles.map((v) => (
+              {vehicles.map(v => (
                 <div
                   key={v.id}
                   className="flex items-center bg-white rounded-lg shadow-sm hover:shadow-md transition p-4"
@@ -250,9 +239,7 @@ export default function AdminUserDetailPage() {
                     className="w-14 h-14 object-cover rounded mr-4 flex-shrink-0"
                   />
                   <div className="flex-1">
-                    <p className="font-medium text-gray-900">
-                      {v.brand} {v.model} ({v.year})
-                    </p>
+                    <p className="font-medium text-gray-900">{v.brand} {v.model} ({v.year})</p>
                     <p className="text-sm text-gray-600">Status: {v.status}</p>
                   </div>
                 </div>
