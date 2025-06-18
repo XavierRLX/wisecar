@@ -1,4 +1,3 @@
-// app/admin/users/page.tsx
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -12,21 +11,17 @@ import { useProfiles } from '@/hooks/useProfiles';
 import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlans';
 
 export default function AdminUsersPage() {
-  const { profiles, setProfiles, loading: loadingProfiles } = useProfiles();
-  const { loading: loadingPlans } = useSubscriptionPlans();
+  const {
+    profiles,
+    setProfiles,
+    loading: loadingProfiles,
+  } = useProfiles();
+  const { plans, loading: loadingPlans } = useSubscriptionPlans();
 
   const [search, setSearch] = useState('');
   const [filterAdmin, setFilterAdmin] = useState(false);
-  const [filterPlanKey, setFilterPlanKey] = useState<string>('');
+  const [filterPlanId, setFilterPlanId] = useState<string>('');
   const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all');
-
-  // Extrai chaves únicas de plano para listar no filtro
-  const planKeys = useMemo(
-    () => Array.from(
-      new Set(profiles.map(p => p.subscription_plan.key).filter(k => k))
-    ),
-    [profiles]
-  );
 
   // Aplica filtros e ordena
   const displayed = useMemo(() => {
@@ -40,7 +35,7 @@ export default function AdminUsersPage() {
         p.email.toLowerCase().includes(term)
       )
       .filter(p => (!filterAdmin || p.is_admin))
-      .filter(p => (!filterPlanKey || p.subscription_plan.key === filterPlanKey))
+      .filter(p => (!filterPlanId || p.plan_id === filterPlanId))
       .filter(p =>
         filterActive === 'all' ||
         (filterActive === 'active' && p.plan_active) ||
@@ -51,7 +46,7 @@ export default function AdminUsersPage() {
         const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
         return nameA.localeCompare(nameB);
       });
-  }, [profiles, search, filterAdmin, filterPlanKey, filterActive]);
+  }, [profiles, search, filterAdmin, filterPlanId, filterActive]);
 
   // Toggle admin flag
   const toggleAdmin = async (id: string, value: boolean) => {
@@ -100,17 +95,17 @@ export default function AdminUsersPage() {
           </button>
         </div>
 
-        {/* Filtros por Plano (chave) + Status */}
+        {/* Filtros por Plano + Status */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
           <select
-            value={filterPlanKey}
-            onChange={e => setFilterPlanKey(e.target.value)}
+            value={filterPlanId}
+            onChange={e => setFilterPlanId(e.target.value)}
             className="w-full sm:w-1/2 px-4 py-2 border rounded-lg focus:outline-none"
           >
             <option value="">Todos os Planos</option>
-            {planKeys.map(key => (
-              <option key={key} value={key}>
-                {key.charAt(0).toUpperCase() + key.slice(1)}
+            {plans.map(plan => (
+              <option key={plan.id} value={plan.id}>
+                {plan.name}
               </option>
             ))}
           </select>
