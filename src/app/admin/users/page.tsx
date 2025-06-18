@@ -1,105 +1,51 @@
 // app/admin/users/page.tsx
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { formatDate } from '@/lib/formatters';
 import AdminGuard from '@/components/AdminGuard';
 import LoadingState from '@/components/LoadingState';
 import Link from 'next/link';
 import BackButton from '@/components/BackButton';
-
-interface Profile {
-  id: string;
-  first_name: string;
-  last_name: string;
-  username?: string;
-  email: string;
-  avatar_url?: string;
-  is_admin?: boolean;
-  created_at?: string;
-  plan_active: boolean;
-  subscription_plans: {
-    key: string;
-    name: string;
-  };
-}
-
-interface PlanOption {
-  key: string;
-  name: string;
-}
+import { useProfiles } from '@/hooks/useProfiles';
+import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlans';
 
 export default function AdminUsersPage() {
-  const [profiles, setProfiles]         = useState<Profile[]>([]);
-  const [plans, setPlans]               = useState<PlanOption[]>([]);
-  const [loading, setLoading]           = useState(true);
-  const [search, setSearch]             = useState('');
-  const [filterAdmin, setFilterAdmin]   = useState(false);
-  const [filterPlan, setFilterPlan]     = useState<string>('');
-  const [filterActive, setFilterActive] = useState<'all'|'active'|'inactive'>('all');
+  const { profiles, setProfiles, loading: loadingProfiles } = useProfiles();
+  const { plans, loading: loadingPlans } = useSubscriptionPlans();
 
-  // 1) Busca perfis
-  useEffect(() => {
-    (async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(`
-          id,
-          first_name,
-          last_name,
-          username,
-          email,
-          avatar_url,
-          is_admin,
-          created_at,
-          plan_active,
-          subscription_plans ( key, name )
-        `);
+  const [search, setSearch] = useState('');
+  const [filterAdmin, setFilterAdmin] = useState(false);
+  const [filterPlan, setFilterPlan] = useState('');
+  const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all');
 
-      if (error) {
-        console.error('Erro ao carregar perfis:', error);
-      } else if (data) {
-        const normalized = (data as any[]).map(p => {
-          const arr = Array.isArray(p.subscription_plans) ? p.subscription_plans : [];
-          const sp = arr.length > 0
-            ? { key: arr[0].key, name: arr[0].name }
-            : { key: '', name: '' };
-          return {
-            id: p.id,
-            first_name: p.first_name,
-            last_name: p.last_name,
-            username: p.username,
-            email: p.email,
-            avatar_url: p.avatar_url,
-            is_admin: p.is_admin,
-            created_at: p.created_at,
-            plan_active: p.plan_active,
-            subscription_plans: sp,
-          } as Profile;
-        });
-        setProfiles(normalized);
-      }
-      setLoading(false);
-    })();
-  }, []);
+  // Filtragem e ordenação
+  const displayed = useMemo(() => {
+    const term = search.toLowerCase().trim();
+    return profiles
+      .filter(p =>
+        !term ||
+        p.first_name.toLowerCase().includes(term) ||
+        p.last_name.toLowerCase().includes(term) ||
+        p.username?.toLowerCase().includes(term) ||
+        p.email.toLowerCase().includes(term)
+      )
+      .filter(p => (filterAdmin ? p.is_admin : true))
+      .filter(p =>
+        (!filterPlan || p.subscription_plan.key === filterPlan) &&
+        (filterActive === 'all' ||
+          (filterActive === 'active' && p.plan_active) ||
+          (filterActive === 'inactive' && !p.plan_active))
+      )
+      .sort((a, b) => {
+        const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
+        const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+  }, [profiles, search, filterAdmin, filterPlan, filterActive]);
 
-  // 2) Busca lista de todos os planos disponíveis (para popular o filtro)
-  useEffect(() => {
-    (async () => {
-      const { data, error } = await supabase
-        .from('subscription_plans')
-        .select('key, name')
-        .order('name', { ascending: true });
-
-      if (error) {
-        console.error('Erro ao carregar planos:', error);
-      } else if (data) {
-        setPlans(data as PlanOption[]);
-      }
-    })();
-  }, []);
-
+  // Toggle admin flag no Supabase + atualização local
   const toggleAdmin = async (id: string, value: boolean) => {
     const { error } = await supabase
       .from('profiles')
@@ -110,37 +56,14 @@ export default function AdminUsersPage() {
       console.error('Erro ao atualizar Admin:', error.message);
     } else {
       setProfiles(prev =>
-        prev.map(p => p.id === id ? { ...p, is_admin: value } : p)
+        prev.map(p => (p.id === id ? { ...p, is_admin: value } : p))
       );
     }
   };
 
-  const displayed = useMemo(() => {
-    const term = search.toLowerCase().trim();
-    return profiles
-      .filter(p =>
-        !term
-        || p.first_name.toLowerCase().includes(term)
-        || p.last_name.toLowerCase().includes(term)
-        || p.username?.toLowerCase().includes(term)
-        || p.email.toLowerCase().includes(term)
-      )
-      .filter(p => filterAdmin ? !!p.is_admin : true)
-      .filter(p =>
-        (!filterPlan || p.subscription_plans.key === filterPlan) &&
-        (filterActive === 'all'
-          || (filterActive === 'active'   && p.plan_active)
-          || (filterActive === 'inactive' && !p.plan_active)
-        )
-      )
-      .sort((a, b) => {
-        const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
-        const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
-        return nameA.localeCompare(nameB);
-      });
-  }, [profiles, search, filterAdmin, filterPlan, filterActive]);
-
-  if (loading) return <LoadingState message="Carregando usuários…" />;
+  if (loadingProfiles || loadingPlans) {
+    return <LoadingState message="Carregando usuários e planos…" />;
+  }
 
   return (
     <AdminGuard>
@@ -275,6 +198,7 @@ export default function AdminUsersPage() {
                       </div>
                     )}
                   </div>
+
                 </div>
               </Link>
             ))

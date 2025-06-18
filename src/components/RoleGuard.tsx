@@ -42,11 +42,12 @@ export default function RoleGuard({
     return <>{fallback}</>;
   }
 
-  const key = profile.subscription_plans.key;
+  // Agora usamos subscription_plan (objeto único)
+  const key = profile.subscription_plan.key;
   const active = profile.plan_active;
 
   // Define os papéis apenas via key do plano
-  const isAdmin    = !!profile.is_admin;
+  const isAdmin    = profile.is_admin;
   const isSeller   = ['seller', 'full'].includes(key);
   const isProvider = ['provider', 'full'].includes(key);
 

@@ -109,22 +109,6 @@ export interface MaintenanceDoc {
   file_url: string;
   uploaded_at?: string;
 }
-export interface Profile {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  username?: string;
-  avatar_url?: string;
-  is_admin?: boolean;
-  plan_id: string;
-  plan_active: boolean;          
-  subscription_plans: {
-    key: string;
-    name: string;
-  };
-  created_at?: string;
-}
 
 export interface SubscriptionPlan {
   id: string;
@@ -135,6 +119,23 @@ export interface SubscriptionPlan {
   currency: string;
   interval: string;
   interval_count: number;
+}
+
+export interface Profile {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  username?: string;
+  avatar_url?: string;
+  is_admin: boolean;
+  plan_id: string;
+  plan_active: boolean;
+  subscription_plan: {
+    key: string;
+    name: string;
+  };
+  created_at?: string;
 }
 
 
