@@ -101,7 +101,8 @@ export default function AdminUsersPage() {
           >
             <option value="">Todos os Planos</option>
             {plans.map(p => (
-              <option key={p.key} value={p.key}>
+              // usar p.id como key garante unicidade mesmo com plan.key duplicado
+              <option key={p.id} value={p.key}>
                 {p.name} ({p.key})
               </option>
             ))}
