@@ -25,34 +25,32 @@ export default function RoleGuard({
   const { profile, loading } = useUserProfile();
   const router = useRouter();
 
-  // Enquanto carrega, exibe tela de loading
   if (loading) {
     return <LoadingState message="Verificando permissões…" />;
   }
-
-  // Se não estiver logado, força login
   if (!profile) {
     const fallback = renderFallback ?? (
-      <RestrictedAccessAlert
-        message="Faça login para acessar."
-        buttonText="Entrar"
-        onButtonClick={() => router.push('/login')}
+      <RestrictedAccessAlert 
+        message="Faça login para acessar." 
+        buttonText="Entrar" 
+        onButtonClick={() => router.push('/login')} 
       />
     );
     return <>{fallback}</>;
   }
 
-  // Agora usamos subscription_plan (objeto único)
-  const key = profile.subscription_plan.key;
-  const active = profile.plan_active;
-
-  // Define os papéis apenas via key do plano
-  const isAdmin    = profile.is_admin;
-  const isSeller   = ['seller', 'full'].includes(key);
+  const { subscription_plan, plan_active, is_admin } = profile;
+  const key = subscription_plan.key;
   const isProvider = ['provider', 'full'].includes(key);
+  const isSeller   = ['seller',   'full'].includes(key);
 
-  // Bloqueia acesso a rotas de seller/provider se o plano está inativo
-  if (!active && (allowSeller || allowProvider)) {
+  // 1) Se for admin e permitimos admin, libera de cara:
+  if (allowAdmin && is_admin) {
+    return <>{children}</>;
+  }
+
+  // 2) Bloqueia providers/sellers inativos (admins já liberados acima)
+  if (!plan_active && (allowProvider || allowSeller)) {
     const fallback = renderFallback ?? (
       <RestrictedAccessAlert
         message="Seu plano expirou ou está inativo."
@@ -63,23 +61,20 @@ export default function RoleGuard({
     return <>{fallback}</>;
   }
 
-  // Verifica se tem permissão para entrar
-  const hasAccess =
-    (allowAdmin    && isAdmin)    ||
-    (allowSeller   && isSeller)   ||
-    (allowProvider && isProvider);
-
-  if (!hasAccess) {
-    const fallback = renderFallback ?? (
-      <RestrictedAccessAlert
-        message="Área restrita. Assine o plano adequado."
-        buttonText="Ver Planos"
-        onButtonClick={() => router.push('/planos')}
-      />
-    );
-    return <>{fallback}</>;
+  // 3) Checa acesso restante (provider ou seller)
+  const hasProviderAccess = allowProvider && isProvider;
+  const hasSellerAccess   = allowSeller   && isSeller;
+  if (hasProviderAccess || hasSellerAccess) {
+    return <>{children}</>;
   }
 
-  // Se passou em todas as validações, renderiza as children
-  return <>{children}</>;
+  // 4) Se chegou aqui, não tem acesso
+  const fallback = renderFallback ?? (
+    <RestrictedAccessAlert
+      message="Área restrita. Assine o plano adequado."
+      buttonText="Ver Planos"
+      onButtonClick={() => router.push('/planos')}
+    />
+  );
+  return <>{fallback}</>;
 }
