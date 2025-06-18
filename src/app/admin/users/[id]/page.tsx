@@ -1,3 +1,5 @@
+//app/admin/users/[id]/page
+
 'use client';
 
 import { useState, useMemo } from 'react';
