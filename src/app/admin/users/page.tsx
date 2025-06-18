@@ -13,14 +13,22 @@ import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlans';
 
 export default function AdminUsersPage() {
   const { profiles, setProfiles, loading: loadingProfiles } = useProfiles();
-  const { plans, loading: loadingPlans } = useSubscriptionPlans();
+  const { loading: loadingPlans } = useSubscriptionPlans();
 
   const [search, setSearch] = useState('');
   const [filterAdmin, setFilterAdmin] = useState(false);
-  const [filterPlan, setFilterPlan] = useState('');
+  const [filterPlanKey, setFilterPlanKey] = useState<string>('');
   const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all');
 
-  // Filtragem e ordenação
+  // Extrai chaves únicas de plano para listar no filtro
+  const planKeys = useMemo(
+    () => Array.from(
+      new Set(profiles.map(p => p.subscription_plan.key).filter(k => k))
+    ),
+    [profiles]
+  );
+
+  // Aplica filtros e ordena
   const displayed = useMemo(() => {
     const term = search.toLowerCase().trim();
     return profiles
@@ -31,33 +39,33 @@ export default function AdminUsersPage() {
         p.username?.toLowerCase().includes(term) ||
         p.email.toLowerCase().includes(term)
       )
-      .filter(p => (filterAdmin ? p.is_admin : true))
+      .filter(p => (!filterAdmin || p.is_admin))
+      .filter(p => (!filterPlanKey || p.subscription_plan.key === filterPlanKey))
       .filter(p =>
-        (!filterPlan || p.subscription_plan.key === filterPlan) &&
-        (filterActive === 'all' ||
-          (filterActive === 'active' && p.plan_active) ||
-          (filterActive === 'inactive' && !p.plan_active))
+        filterActive === 'all' ||
+        (filterActive === 'active' && p.plan_active) ||
+        (filterActive === 'inactive' && !p.plan_active)
       )
       .sort((a, b) => {
         const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
         const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
         return nameA.localeCompare(nameB);
       });
-  }, [profiles, search, filterAdmin, filterPlan, filterActive]);
+  }, [profiles, search, filterAdmin, filterPlanKey, filterActive]);
 
-  // Toggle admin flag no Supabase + atualização local
+  // Toggle admin flag
   const toggleAdmin = async (id: string, value: boolean) => {
     const { error } = await supabase
       .from('profiles')
       .update({ is_admin: value })
       .eq('id', id);
 
-    if (error) {
-      console.error('Erro ao atualizar Admin:', error.message);
-    } else {
+    if (!error) {
       setProfiles(prev =>
         prev.map(p => (p.id === id ? { ...p, is_admin: value } : p))
       );
+    } else {
+      console.error('Erro ao atualizar Admin:', error.message);
     }
   };
 
@@ -92,18 +100,17 @@ export default function AdminUsersPage() {
           </button>
         </div>
 
-        {/* Filtros por Plano + Status */}
+        {/* Filtros por Plano (chave) + Status */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
           <select
-            value={filterPlan}
-            onChange={e => setFilterPlan(e.target.value)}
+            value={filterPlanKey}
+            onChange={e => setFilterPlanKey(e.target.value)}
             className="w-full sm:w-1/2 px-4 py-2 border rounded-lg focus:outline-none"
           >
             <option value="">Todos os Planos</option>
-            {plans.map(p => (
-              // usar p.id como key garante unicidade mesmo com plan.key duplicado
-              <option key={p.id} value={p.key}>
-                {p.name} ({p.key})
+            {planKeys.map(key => (
+              <option key={key} value={key}>
+                {key.charAt(0).toUpperCase() + key.slice(1)}
               </option>
             ))}
           </select>
@@ -134,7 +141,6 @@ export default function AdminUsersPage() {
                 className="block hover:shadow-md transition"
               >
                 <div className="bg-white rounded-lg shadow-sm p-6">
-
                   {/* Cabeçalho */}
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-4">
@@ -199,14 +205,11 @@ export default function AdminUsersPage() {
                       </div>
                     )}
                   </div>
-
                 </div>
               </Link>
             ))
           ) : (
-            <p className="text-center text-gray-500">
-              Nenhum usuário encontrado.
-            </p>
+            <p className="text-center text-gray-500">Nenhum usuário encontrado.</p>
           )}
         </div>
       </div>
