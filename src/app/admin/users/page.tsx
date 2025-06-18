@@ -11,11 +11,7 @@ import { useProfiles } from '@/hooks/useProfiles';
 import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlans';
 
 export default function AdminUsersPage() {
-  const {
-    profiles,
-    setProfiles,
-    loading: loadingProfiles,
-  } = useProfiles();
+  const { profiles, setProfiles, loading: loadingProfiles } = useProfiles();
   const { plans, loading: loadingPlans } = useSubscriptionPlans();
 
   const [search, setSearch] = useState('');
@@ -129,80 +125,94 @@ export default function AdminUsersPage() {
         {/* Lista de Cards */}
         <div className="space-y-4">
           {displayed.length > 0 ? (
-            displayed.map(user => (
-              <Link
-                key={user.id}
-                href={`/admin/users/${user.id}`}
-                className="block hover:shadow-md transition"
-              >
-                <div className="bg-white rounded-lg shadow-sm p-6">
-                  {/* Cabeçalho */}
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-4">
-                      <img
-                        src={user.avatar_url ?? '/default-avatar.png'}
-                        alt={`${user.first_name} avatar`}
-                        className="w-8 h-8 rounded-full object-cover bg-gray-200"
-                      />
-                      <div>
-                        <div className="text-sm font-semibold text-gray-900 truncate">
-                          {user.first_name} {user.last_name}
-                        </div>
-                        {user.username && (
-                          <div className="text-xs text-gray-500 truncate">
-                            @{user.username}
+            displayed.map(user => {
+              const userPlan = plans.find(pl => pl.id === user.plan_id);
+              return (
+                <Link
+                  key={user.id}
+                  href={`/admin/users/${user.id}`}
+                  className="block hover:shadow-md transition"
+                >
+                  <div className="bg-white rounded-lg shadow-sm p-6">
+                    {/* Cabeçalho */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-4">
+                        <img
+                          src={user.avatar_url ?? '/default-avatar.png'}
+                          alt={`${user.first_name} avatar`}
+                          className="w-8 h-8 rounded-full object-cover bg-gray-200"
+                        />
+                        <div>
+                          <div className="text-sm font-semibold text-gray-900 truncate">
+                            {user.first_name} {user.last_name}
                           </div>
-                        )}
+                          {user.username && (
+                            <div className="text-xs text-gray-500 truncate">
+                              @{user.username}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Toggles */}
-                    <div className="flex space-x-6">
-                      <div className="flex flex-col items-center">
-                        <span className="text-sm font-medium">Admin</span>
-                        <button
-                          onClick={e => {
-                            e.preventDefault();
-                            toggleAdmin(user.id, !user.is_admin);
-                          }}
-                          className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors ${
-                            user.is_admin ? 'bg-blue-600' : 'bg-gray-300'
-                          }`}
-                        >
-                          <span
-                            className={`absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transform transition-transform ${
-                              user.is_admin ? 'translate-x-5' : ''
+                      {/* Toggles e Info */}
+                      <div className="flex space-x-6">
+                        {/* Admin Toggle */}
+                        <div className="flex flex-col items-center">
+                          <span className="text-sm font-medium">Admin</span>
+                          <button
+                            onClick={e => {
+                              e.preventDefault();
+                              toggleAdmin(user.id, !user.is_admin);
+                            }}
+                            className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors ${
+                              user.is_admin ? 'bg-blue-600' : 'bg-gray-300'
                             }`}
-                          />
-                        </button>
-                      </div>
-                      <div className="flex flex-col items-center">
-                        <span className="text-sm font-medium">Plano</span>
-                        <span
-                          className={`px-2 py-1 text-xs rounded-full ${
-                            user.plan_active
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}
-                        >
-                          {user.plan_active ? 'Ativo' : 'Inativo'}
-                        </span>
+                          >
+                            <span
+                              className={`absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transform transition-transform ${
+                                user.is_admin ? 'translate-x-5' : ''
+                              }`}
+                            />
+                          </button>
+                        </div>
+
+                        {/* Plano Ativo */}
+                        <div className="flex flex-col items-center">
+                          <span className="text-sm font-medium">Status</span>
+                          <span
+                            className={`px-2 py-1 text-xs rounded-full ${
+                              user.plan_active
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}
+                          >
+                            {user.plan_active ? 'Ativo' : 'Inativo'}
+                          </span>
+                        </div>
+
+                        {/* Nome do Plano */}
+                        <div className="flex flex-col items-center">
+                          <span className="text-sm font-medium">Plano</span>
+                          <span className="text-xs text-gray-700 truncate">
+                            {userPlan?.name || '—'}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Rodapé */}
-                  <div className="mt-4 flex justify-between items-center">
-                    <div className="text-gray-600 truncate">{user.email}</div>
-                    {user.created_at && (
-                      <div className="text-[10px] text-gray-400 whitespace-nowrap">
-                        Criado: {formatDate(user.created_at)}
-                      </div>
-                    )}
+                    {/* Rodapé */}
+                    <div className="mt-4 flex justify-between items-center">
+                      <div className="text-gray-600 truncate">{user.email}</div>
+                      {user.created_at && (
+                        <div className="text-[10px] text-gray-400 whitespace-nowrap">
+                          Criado: {formatDate(user.created_at)}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))
+                </Link>
+              );
+            })
           ) : (
             <p className="text-center text-gray-500">Nenhum usuário encontrado.</p>
           )}
