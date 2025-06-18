@@ -1,103 +1,100 @@
-// app/admin/planos/page
-
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import AdminGuard from '@/components/AdminGuard';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { SubscriptionPlan } from '@/types';
 import BackButton from '@/components/BackButton';
+import { Plus, Edit2 } from 'lucide-react';
+import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlans';
 
 export default function AdminPlanosPage() {
-  const supabase = createClientComponentClient();
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { plans, loading } = useSubscriptionPlans();
 
-  useEffect(() => {
-    supabase
-      .from('subscription_plans')
-      .select('*')
-      .order('name')
-      .then(({ data, error }) => {
-        if (error) console.error(error);
-        else setPlans(data as SubscriptionPlan[]);
-        setLoading(false);
-      });
-  }, []);
-
-  if (loading) return <p className="p-8 text-center">Carregando planos…</p>;
+  if (loading) {
+    return <p className="p-8 text-center text-gray-500">Carregando planos…</p>;
+  }
 
   return (
     <AdminGuard>
-      <div className="p-4 sm:p-8">
+      <div className="px-4 py-6 sm:px-6 lg:px-8 space-y-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 space-y-2 sm:space-y-0">
-          <BackButton className="self-start sm:self-auto" />
-          <h2 className="text-2xl font-bold">Gerenciar Planos</h2>
-          <Link
+        <div className="flex sm:flex-row items-center justify-between gap-4">
+          <div className='flex'>
+          <BackButton />
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">Gerenciar Planos</h2>
+          </div>
+               <Link
             href="/admin/planos/novo"
-            className="w-full sm:w-auto text-center bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+            className="inline-flex items-center bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded-lg shadow-md transition"
           >
+            <Plus className="mr-2 h-5 w-5" />
             Novo Plano
           </Link>
         </div>
 
-        {/* MOBILE: cards */}
+        {/* Mobile: All Cards Open */}
         <div className="sm:hidden space-y-4">
           {plans.map(plan => (
             <div
               key={plan.id}
-              className="bg-white p-4 rounded-lg shadow flex flex-col"
+              className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition p-4"
             >
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">{plan.name}</h3>
-                <span className="text-sm text-gray-500 uppercase">{plan.key}</span>
+              <h3 className="text-lg font-semibold text-gray-800">{plan.name}</h3>
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">{plan.key}</p>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-700">Preço:</span>
+                  <span className="font-medium text-gray-900">
+                    R$ {plan.price.toFixed(2)} {plan.currency.toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-700">Intervalo:</span>
+                  <span className="font-medium text-gray-900">
+                    Cada {plan.interval_count}× {plan.interval}
+                  </span>
+                </div>
+                {plan.description && (
+                  <p className="text-sm text-gray-600">{plan.description}</p>
+                )}
               </div>
-              <p className="mt-2 text-gray-700">
-                R$ {plan.price.toFixed(2)} • {plan.currency.toUpperCase()}
-              </p>
-              <p className="mt-1 text-gray-500 text-sm">
-                Cada {plan.interval_count}× {plan.interval}
-              </p>
               <Link
                 href={`/admin/planos/${plan.id}`}
-                className="mt-4 self-start text-blue-600 hover:underline"
+                className="inline-flex items-center text-indigo-600 hover:text-indigo-800 text-sm mt-4"
               >
-                Editar
+                <Edit2 className="mr-1 h-4 w-4" />
+                Editar Plano
               </Link>
             </div>
           ))}
         </div>
 
-        {/* DESKTOP: tabela */}
-        <div className="hidden sm:block overflow-x-auto bg-white rounded-lg shadow">
+        {/* Desktop: Table */}
+        <div className="hidden sm:block bg-white border border-gray-200 rounded-lg shadow overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-100">
+            <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Nome</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Chave</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Preço</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Intervalo</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Ações</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-600">Nome</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-600">Chave</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-600">Preço</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-600">Intervalo</th>
+                <th className="px-6 py-3 text-right text-sm font-medium text-gray-600">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-100">
               {plans.map(plan => (
-                <tr key={plan.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 whitespace-nowrap text-gray-800">{plan.name}</td>
-                  <td className="px-4 py-2 whitespace-nowrap text-gray-600">{plan.key}</td>
-                  <td className="px-4 py-2 whitespace-nowrap text-gray-800">
+                <tr key={plan.id} className="hover:bg-gray-50 transition">
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-800 font-semibold">{plan.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-600 uppercase">{plan.key}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-800">
                     R$ {plan.price.toFixed(2)} {plan.currency.toUpperCase()}
                   </td>
-                  <td className="px-4 py-2 whitespace-nowrap text-gray-600">
-                    Cada {plan.interval_count}× {plan.interval}
-                  </td>
-                  <td className="px-4 py-2 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-600">Cada {plan.interval_count}× {plan.interval}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
                     <Link
                       href={`/admin/planos/${plan.id}`}
-                      className="text-blue-600 hover:underline"
+                      className="inline-flex items-center text-indigo-600 hover:text-indigo-800 text-sm"
                     >
+                      <Edit2 className="mr-1 h-4 w-4" />
                       Editar
                     </Link>
                   </td>
