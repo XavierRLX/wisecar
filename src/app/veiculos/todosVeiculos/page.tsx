@@ -15,7 +15,7 @@ import { useVehicles, VehicleMode } from "@/hooks/useVehicles";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useDeleteVehicle } from "@/hooks/useDeleteVehicle";
 import { ToggleFilter } from "@/components/ToggleFilter";
-import AdSense from "@/components/AdSense";
+import ConditionalAdSense from "@/components/ads/ConditionalAdSense";
 
 export default function TodosVeiculosPage() {
   const router = useRouter();
@@ -47,7 +47,7 @@ export default function TodosVeiculosPage() {
       <EnsureProfile />
 
       <div className="px-4 py-6 max-w-4xl mx-auto space-y-6">
-      <AdSense slot="1234567890" />
+      <ConditionalAdSense slot="1234567890" />
         {/* Filtro sempre visível */}
         <div className="text-center">
           <ToggleFilter

@@ -1,3 +1,4 @@
+//components/RoleGuard.tsx
 'use client';
 
 import React, { ReactNode, ReactElement } from 'react';
