@@ -1,6 +1,5 @@
 // app/layout.tsx
 import type { Metadata } from 'next'
-import Script from 'next/script'          // ← importa Script
 import { Geist, Geist_Mono } from 'next/font/google'
 import '@/app/globals.css'
 import ClientOnly from '@/components/ClientOnly'
@@ -20,12 +19,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-BR">
       <head>
-        <Script
-          id="adsense"
-          strategy="afterInteractive"
+        {/* Snippet bruto do AdSense */}
+        <script
+          async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5598392740749077"
           crossOrigin="anonymous"
-        />
+        ></script>
       </head>
       <body
         suppressHydrationWarning
