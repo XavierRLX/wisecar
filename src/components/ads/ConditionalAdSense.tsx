@@ -18,6 +18,7 @@ export default function ConditionalAdSense({
 
   if (loading) return null
   if (!profile || !profile.plan_active) return null
+  if (profile.is_admin) return null
   if (profile.subscription_plan.key !== 'free') return null
 
   return (
