@@ -11,11 +11,11 @@ import {
 } from "@/lib/fipe";
 import { VehicleStatus } from "@/types";
 
-import FipeSelectors from "@/components/Forms/FipeSelectors";
-import VehicleDataForm from "@/components/Forms/VehicleDataForm";
-import SellerForm from "@/components/ads/SellerForm";
-import OptionalsSelect from "@/components/Forms/OptionalsSelect";
-import FileUpload from "@/components/Forms/FileUpload";
+import FipeSelectors from "@/components/forms/FipeSelectors";
+import VehicleDataForm from "@/components/forms/VehicleDataForm";
+import SellerForm from "@/components/forms/SellerForm";
+import OptionalsSelect from "@/components/forms/OptionalsSelect";
+import FileUpload from "@/components/forms/FileUpload";
 import { ToggleFilter, Option as ToggleOption } from "@/components/ToggleFilter";
 
 import { submitVehicleData } from "@/lib/vehicleService";
