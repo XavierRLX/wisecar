@@ -1,7 +1,7 @@
 // app/admin/users/[id]/page.tsx
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AdminGuard from '@/components/AdminGuard';
@@ -11,6 +11,7 @@ import { useUserProviders } from '@/hooks/useUserProviders';
 import { useUserVehicles } from '@/hooks/useUserVehicles';
 import { useProfiles } from '@/hooks/useProfiles';
 import { useSubscriptionPlans } from '@/hooks/useSubscriptionPlans';
+import { useUserSubscription } from '@/hooks/useUserSubscription';
 import { supabase } from '@/lib/supabase';
 import { formatDate } from '@/lib/formatters';
 import type { Profile } from '@/types';
@@ -20,274 +21,192 @@ export default function AdminUserDetailPage() {
   const userId = Array.isArray(id) ? id[0] : id || '';
   const router = useRouter();
 
-  // Hooks
+  // local state
+  const [updatingAdmin, setUpdatingAdmin] = useState(false);
   const { profiles, setProfiles, loading: loadingProfiles } = useProfiles();
   const { plans, loading: loadingPlans } = useSubscriptionPlans();
   const { providers, loading: loadingProviders, error: errorProviders } = useUserProviders(userId);
   const { vehicles, loading: loadingVehicles, error: errorVehicles } = useUserVehicles(userId);
+  const { sub: currentSub, setSub: setCurrentSub, loading: loadingSub } = useUserSubscription(userId);
 
-  // Derive profile and plan
-  const profile: Profile | null = useMemo(
-    () => profiles.find(p => p.id === userId) ?? null,
-    [profiles, userId]
-  );
-  const currentPlan = useMemo(
-    () => plans.find(p => p.id === profile?.plan_id) ?? null,
-    [plans, profile]
-  );
+  // Para popular o dropdown com o plano atual
+  const [selectedPlan, setSelectedPlan] = useState<string>('');
+  useEffect(() => {
+    if (currentSub?.plan_id) {
+      setSelectedPlan(currentSub.plan_id);
+    }
+  }, [currentSub]);
 
-  // Local state
   const [updatingPlan, setUpdatingPlan] = useState(false);
-  const [updatingAdmin, setUpdatingAdmin] = useState(false);
 
-  // Global loading
-  const isLoading =
-    loadingProfiles || loadingPlans || loadingProviders || loadingVehicles;
+  const isLoading = loadingProfiles || loadingPlans || loadingProviders || loadingVehicles || loadingSub;
   if (isLoading) return <LoadingState message="Carregando detalhes…" />;
 
-  if (!profile) {
-    return (
-      <div className="max-w-lg mx-auto p-6">
-        <p className="text-center text-red-600">Perfil não encontrado.</p>
-      </div>
-    );
-  }
-  if (errorProviders || errorVehicles) {
-    return (
-      <div className="max-w-lg mx-auto p-6">
-        <p className="text-center text-red-600">
-          Erro: {errorProviders || errorVehicles}
-        </p>
-      </div>
-    );
-  }
+  const profile = profiles.find(p => p.id === userId);
+  if (!profile) return <div className="max-w-lg mx-auto p-6"><p className="text-center text-red-600">Perfil não encontrado.</p></div>;
+  if (errorProviders || errorVehicles) return <div className="max-w-lg mx-auto p-6"><p className="text-center text-red-600">Erro: {errorProviders || errorVehicles}</p></div>;
 
-  // Toggle functions
-  const handlePlanChange = async (newPlan: string) => {
-    setUpdatingPlan(true);
-    const { error } = await supabase
-      .from('profiles')
-      .update({ plan_id: newPlan })
-      .eq('id', userId);
-    if (!error) {
-      setProfiles(prev =>
-        prev.map(p => (p.id === userId ? { ...p, plan_id: newPlan } : p))
-      );
-    }
-    setUpdatingPlan(false);
-  };
-  const togglePlanActive = async () => {
-    if (!profile) return;
-    setUpdatingPlan(true);
-    const { error } = await supabase
-      .from('profiles')
-      .update({ plan_active: !profile.plan_active })
-      .eq('id', userId);
-    if (!error) {
-      setProfiles(prev =>
-        prev.map(p =>
-          p.id === userId ? { ...p, plan_active: !p.plan_active } : p
-        )
-      );
-    }
-    setUpdatingPlan(false);
-  };
   const toggleAdmin = async () => {
-    if (!profile) return;
     setUpdatingAdmin(true);
-    const { error } = await supabase
-      .from('profiles')
-      .update({ is_admin: !profile.is_admin })
-      .eq('id', userId);
+    const { error } = await supabase.from('profiles').update({ is_admin: !profile.is_admin }).eq('id', userId);
     if (!error) {
-      setProfiles(prev =>
-        prev.map(p =>
-          p.id === userId ? { ...p, is_admin: !p.is_admin } : p
-        )
-      );
+      setProfiles(prev => prev.map(p => p.id === userId ? { ...p, is_admin: !p.is_admin } : p));
     }
     setUpdatingAdmin(false);
   };
 
+  const togglePlanActive = async () => {
+    setUpdatingPlan(true);
+    const { error } = await supabase.from('profiles').update({ plan_active: !profile.plan_active }).eq('id', userId);
+    if (!error) {
+      setProfiles(prev => prev.map(p => p.id === userId ? { ...p, plan_active: !p.plan_active } : p));
+    }
+    setUpdatingPlan(false);
+  };
+
+  const handleChangePlan = async () => {
+    if (!selectedPlan) return;
+    setUpdatingPlan(true);
+
+    // cancela assinatura antiga
+    if (currentSub) {
+      await supabase.from('subscriptions').update({ canceled_at: new Date().toISOString() }).eq('id', currentSub.id);
+    }
+
+    // busca dados do plano selecionado
+    const plan = plans.find(p => p.id === selectedPlan)!;
+    const now = new Date();
+    const startedAt = now.toISOString();
+    const expires = new Date(now);
+    if (plan.interval === 'day') expires.setDate(expires.getDate() + plan.interval_count);
+    if (plan.interval === 'month') expires.setMonth(expires.getMonth() + plan.interval_count);
+    if (plan.interval === 'year') expires.setFullYear(expires.getFullYear() + plan.interval_count);
+    const expiresAt = expires.toISOString();
+
+    // insere assinatura nova
+    const { data: newSub, error } = await supabase
+      .from('subscriptions')
+      .insert({ profile_id: userId, plan_id: selectedPlan, started_at: startedAt, expires_at: expiresAt })
+      .select(`id,profile_id,plan_id,started_at,expires_at,canceled_at,subscription_plans(key,name,price,interval,interval_count)`)
+      .single();
+
+    if (!error && newSub) {
+      const arr = (newSub as any).subscription_plans as any[];
+      setCurrentSub({
+        id: newSub.id,
+        profile_id: newSub.profile_id,
+        plan_id: newSub.plan_id,
+        started_at: newSub.started_at,
+        expires_at: newSub.expires_at,
+        canceled_at: newSub.canceled_at,
+        subscription_plan: arr?.[0] ?? { key: '', name: '', price: 0, interval: '', interval_count: 0 }
+      });
+      setProfiles(prev => prev.map(p => p.id === userId ? { ...p, plan_id: selectedPlan } : p));
+    }
+
+    setUpdatingPlan(false);
+  };
+
   return (
     <AdminGuard>
-      <div className="space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-        <BackButton className="mb-2" />
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 text-center sm:text-left">
-          Detalhes do Usuário
-        </h1>
+      <div className="space-y-6 p-6">
+        <BackButton />
+        <h1 className="text-2xl font-bold">Detalhes do Usuário</h1>
 
-        {/* Info & Plan Container */}
-        <div className="flex flex-col space-y-6 md:space-y-0 md:flex-row md:space-x-6">
-          {/* Profile Info Card */}
-          <div className="flex-1 bg-white rounded-2xl shadow-sm hover:shadow-md transition p-4 sm:p-6">
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Perfil */}
+          <div className="flex-1 bg-white p-6 rounded shadow">
             <h2 className="text-lg font-semibold mb-4">Informações</h2>
-            <ul className="space-y-3 text-gray-700 text-sm">
-              <li className="flex justify-between">
-                <span>Nome</span>
-                <span>
-                  {profile.first_name} {profile.last_name}
-                </span>
-              </li>
-              <li className="flex justify-between">
-                <span>Username</span>
-                <span>{profile.username || '—'}</span>
-              </li>
-              <li className="flex justify-between">
-                <span>Email</span>
-                <span>{profile.email}</span>
-              </li>
-              <li className="flex justify-between">
-                <span>Criado em</span>
-                <span>
-                  {profile.created_at
-                    ? formatDate(profile.created_at)
-                    : '—'}
-                </span>
-              </li>
+            <ul className="space-y-2 text-sm">
+              <li className="flex justify-between"><span>Nome:</span><span>{profile.first_name} {profile.last_name}</span></li>
+              <li className="flex justify-between"><span>Username:</span><span>{profile.username || '—'}</span></li>
+              <li className="flex justify-between"><span>Email:</span><span>{profile.email}</span></li>
+              <li className="flex justify-between"><span>Criado em:</span><span>{formatDate(profile.created_at!)}</span></li>
               <li className="flex justify-between items-center">
-                <span>Admin</span>
+                <span>Admin:</span>
                 <button
                   onClick={toggleAdmin}
                   disabled={updatingAdmin}
-                  className={`relative inline-flex items-center h-6 w-12 rounded-full transition-colors ${
-                    profile.is_admin ? 'bg-blue-500' : 'bg-gray-300'
-                  }`}
+                  className={`relative inline-flex h-6 w-12 rounded-full ${profile.is_admin ? 'bg-blue-500' : 'bg-gray-300'}`}
                 >
-                  <span
-                    className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform ${
-                      profile.is_admin
-                        ? 'translate-x-6'
-                        : 'translate-x-0'
-                    }`}
-                  />
+                  <span className={`block w-5 h-5 bg-white rounded-full transform ${profile.is_admin ? 'translate-x-6' : 'translate-x-0'}`} />
                 </button>
               </li>
             </ul>
           </div>
 
-          {/* Plan Card */}
-          <div className="flex-1 bg-white rounded-2xl shadow-sm hover:shadow-md transition p-4 sm:p-6 flex flex-col justify-between">
+          {/* Assinatura */}
+          <div className="flex-1 bg-white p-6 rounded shadow flex flex-col justify-between">
             <div>
-              <h2 className="text-lg font-semibold mb-4">Plano Atual</h2>
-              <div className="space-y-2">
-                <p className="font-medium text-base">
-                  {currentPlan?.name || '—'}
+              <h2 className="text-lg font-semibold mb-4">Assinatura Atual</h2>
+              <div className="space-y-2 text-sm">
+                <p><strong>Plano:</strong> {currentSub?.subscription_plan?.name ?? '—'}</p>
+                <p className="text-xs text-gray-500">Key: {currentSub?.subscription_plan?.key ?? '—'}</p>
+                <p className="text-gray-600">
+                  {currentSub
+                    ? `De ${formatDate(currentSub.started_at)} até ${formatDate(currentSub.expires_at)}`
+                    : 'Nenhuma assinatura ativa'}
                 </p>
-                <p className="text-xs text-gray-500">
-                  {currentPlan?.key || '—'}
-                </p>
-                {currentPlan?.description && (
-                  <p className="text-sm text-gray-600">
-                    {currentPlan.description}
-                  </p>
-                )}
-                {typeof currentPlan?.price === 'number' && (
-                  <p className="text-sm font-semibold">
-                    R$ {currentPlan.price.toFixed(2)}/mês
-                  </p>
-                )}
-              </div>
-              <div className="mt-4 flex items-center justify-between">
-                <label className="text-sm">Ativo</label>
-                <button
-                  onClick={togglePlanActive}
-                  disabled={updatingPlan}
-                  className={`relative inline-flex items-center h-6 w-12 rounded-full transition-colors ${
-                    profile.plan_active ? 'bg-green-500' : 'bg-gray-300'
-                  }`}
-                >
-                  <span
-                    className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform ${
-                      profile.plan_active
-                        ? 'translate-x-6'
-                        : 'translate-x-0'
-                    }`}
-                  />
-                </button>
+                <div className="mt-2 flex justify-between items-center">
+                  <span>Plano ativo:</span>
+                  <button
+                    onClick={togglePlanActive}
+                    disabled={updatingPlan}
+                    className={`relative inline-flex h-6 w-12 rounded-full ${profile.plan_active ? 'bg-green-500' : 'bg-gray-300'}`}
+                  >
+                    <span className={`block w-5 h-5 bg-white rounded-full transform ${profile.plan_active ? 'translate-x-6' : 'translate-x-0'}`} />
+                  </button>
+                </div>
               </div>
             </div>
-            <div className="mt-6">
+
+            <div className="mt-4 space-y-2">
               <select
-                className="block w-full border border-gray-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                value={profile.plan_id}
-                onChange={e => handlePlanChange(e.target.value)}
-                disabled={updatingPlan}
+                value={selectedPlan}
+                onChange={e => setSelectedPlan(e.target.value)}
+                className="w-full border rounded p-2 text-sm"
               >
+                <option value="" disabled>Escolha um plano</option>
                 {plans.map(plan => (
                   <option key={plan.id} value={plan.id}>
-                    {plan.name} ({plan.key})
+                    {plan.name} — {plan.interval_count}×{plan.interval} ({plan.price.toFixed(2)} {plan.currency})
                   </option>
                 ))}
               </select>
-              {updatingPlan && (
-                <p className="mt-2 text-xs text-indigo-600">
-                  Atualizando…
-                </p>
-              )}
+              <button
+                onClick={handleChangePlan}
+                disabled={!selectedPlan || updatingPlan}
+                className="w-full bg-blue-600 text-white py-2 rounded disabled:opacity-50"
+              >
+                {updatingPlan ? 'Alterando…' : 'Alterar plano'}
+              </button>
             </div>
           </div>
         </div>
 
         {/* Providers Section */}
         <section className="space-y-4">
-          <h2 className="text-xl font-semibold text-gray-800">Lojas</h2>
+          <h2 className="text-xl font-semibold">Lojas</h2>
           <div className="space-y-4">
-            {providers.length > 0 ? (
-              providers.map(p => (
-                <Link
-                  key={p.id}
-                  href={`/admin/lojas/${p.id}`}
-                  className="flex items-center bg-white rounded-lg shadow-sm hover:shadow-md transition p-3 sm:p-4"
-                >
-                  <img
-                    src={p.provider_images?.[0]?.image_url ?? '/default-shop.png'}
-                    alt="logo"
-                    className="w-12 h-12 sm:w-14 sm:h-14 rounded mr-3"
-                  />
-                  <div className="flex-1 text-sm sm:text-base">
-                    <p className="font-medium truncate">{p.name}</p>
-                    <p className="mt-1 text-[10px] text-gray-400">
-                      Criado: {p.created_at ? formatDate(p.created_at) : '-'}
-                    </p>
-                  </div>
-                </Link>
-              ))
-            ) : (
-              <p className="text-gray-500">Nenhuma loja encontrada.</p>
-            )}
+            {providers.length > 0 ? providers.map(p => (
+              <Link key={p.id} href={`/admin/lojas/${p.id}`} className="flex items-center bg-white p-4 rounded shadow-sm">
+                <img src={p.provider_images?.[0]?.image_url ?? '/default-shop.png'} alt="" className="w-12 h-12 rounded mr-3" />
+                <p className="font-medium">{p.name}</p>
+              </Link>
+            )) : <p className="text-gray-500">Nenhuma loja encontrada.</p>}
           </div>
         </section>
 
         {/* Vehicles Section */}
         <section className="space-y-4">
-          <h2 className="text-xl font-semibold text-gray-800">Veículos</h2>
+          <h2 className="text-xl font-semibold">Veículos</h2>
           <div className="space-y-4">
-            {vehicles.length > 0 ? (
-              vehicles.map(v => (
-                <div
-                  key={v.id}
-                  className="flex items-center bg-white rounded-lg shadow-sm hover:shadow-md transition p-3 sm:p-4"
-                >
-                  <img
-                    src={v.vehicle_images?.[0]?.image_url ?? '/default-car.png'}
-                    alt="vehicle"
-                    className="w-12 h-12 sm:w-14 sm:h-14 rounded mr-3"
-                  />
-                  <div className="flex-1 text-sm sm:text-base">
-                    <p className="font-medium truncate">
-                      {v.brand} {v.model} ({v.year})
-                    </p>
-                    <p className="truncate">Status: {v.status}</p>
-                    <p className="mt-1 text-[10px] text-gray-400">
-                      Criado: {v.created_at ? formatDate(v.created_at) : '-'}
-                    </p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-gray-500">Nenhum veículo encontrado.</p>
-            )}
+            {vehicles.length > 0 ? vehicles.map(v => (
+              <div key={v.id} className="flex items-center bg-white p-4 rounded shadow-sm">
+                <img src={v.vehicle_images?.[0]?.image_url ?? '/default-car.png'} alt="" className="w-12 h-12 rounded mr-3" />
+                <p className="font-medium">{v.brand} {v.model} ({v.year})</p>
+              </div>
+            )) : <p className="text-gray-500">Nenhum veículo encontrado.</p>}
           </div>
         </section>
       </div>

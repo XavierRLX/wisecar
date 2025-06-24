@@ -121,6 +121,25 @@ export interface SubscriptionPlan {
   interval_count: number;
 }
 
+// hooks/useUserSubscription.ts
+
+export interface Subscription {
+  id: string
+  profile_id: string
+  plan_id: string
+  started_at: string
+  expires_at: string
+  canceled_at: string | null
+  subscription_plans: {
+    key: string
+    name: string
+    price: number
+    interval: string
+    interval_count: number
+  }[]    // ← aqui é um array
+}
+
+
 export interface Profile {
   id: string;
   first_name: string;
