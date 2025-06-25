@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import AuthGuard from "@/components/AuthGuard";
 import LoadingState from "@/components/LoadingState";
-import FipeSelectors from "@/components/forms/FipeSelectors";
+import FipeSelectors from "@/components/formsInpt/FipeSelectors";
 import { 
   fetchMarcas, 
   fetchModelos, 

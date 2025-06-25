@@ -1,6 +1,6 @@
 "use client";
 
-import EditVehicleForm from "@/components/forms/EditVehicleForm";
+import EditVehicleForm from "@/components/formsInpt/EditVehicleForm";
 import AuthGuard from "@/components/AuthGuard";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";

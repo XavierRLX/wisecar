@@ -5,11 +5,11 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Vehicle } from "@/types";
 import { fetchMarcas, fetchModelos, fetchAnos, fetchDetalhesModelo } from "@/lib/fipe";
-import FipeSelectors from "@/components/forms/FipeSelectors";
-import VehicleDataForm from "@/components/forms/VehicleDataForm";
-import SellerForm from "@/components/forms/SellerForm";
-import OptionalsSelect from "@/components/forms/OptionalsSelect";
-import FileUpload from "@/components/forms/FileUpload";
+import FipeSelectors from "@/components/formsInpt/FipeSelectors";
+import VehicleDataForm from "@/components/formsInpt/VehicleDataForm";
+import SellerForm from "@/components/formsInpt/SellerForm";
+import OptionalsSelect from "@/components/formsInpt/OptionalsSelect";
+import FileUpload from "@/components/formsInpt/FileUpload";
 import { uploadVehicleImage } from "@/hooks/useUploadImage";
 
 export interface VehicleFormData {

@@ -20,8 +20,8 @@ import {
   Edit2,
   CheckCircle,
 } from "lucide-react";
-import SellerDetails from "@/components/forms/SellerDetails";
-import OptionalList from "@/components/forms/OptionalList";
+import SellerDetails from "@/components/formsInpt/SellerDetails";
+import OptionalList from "@/components/formsInpt/OptionalList";
 import CustomizeModal from "@/components/CustomizeModal";
 
 export default function VehicleDetailsPage() {
