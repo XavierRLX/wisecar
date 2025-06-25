@@ -85,7 +85,6 @@ export default function VehicleDataForm({
           />
         </div>
       </div>
-
       {/* Linha 3: Observações */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">

@@ -276,8 +276,6 @@ if (insertOptError) {
 }
 }
 
-    
-
     // Atualiza imagens, se necessário
     if (selectedFiles.length > 0) {
       await Promise.all(

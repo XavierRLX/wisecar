@@ -1,4 +1,4 @@
-// components/FipeSelectors.tsx
+//components/FipeSelectors.tsx
 "use client";
 
 import React from "react";

@@ -5,7 +5,6 @@ interface OptionalsSelectProps {
   selectedOptionals: number[];
   onToggleOptional: (id: number) => void;
 }
-
 export default function OptionalsSelect({
   optionals,
   selectedOptionals,

@@ -22,7 +22,7 @@ export default function OptionalList({ vehicleOptionals }: { vehicleOptionals?: 
           ))}
         </div>
       ) : (
-        <p className="text-gray-500">Sem opcionais.</p>
+        <p className="text-gray-500">Sem opcionais</p>
       )}
     </section>
   );

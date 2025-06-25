@@ -53,6 +53,5 @@ export default function SellerDetails({ seller }: Props) {
         </div>
       </div>
     </section>
-
   );
 }

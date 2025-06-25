@@ -18,7 +18,6 @@ export default function FileUpload({
 }: FileUploadProps) {
   return (
     <div>
-      {/* Usa o label customizado se fornecido, caso contrário o texto padrão */}
       <label className="block text-sm font-medium text-gray-700 mb-2">
         {label ?? "Imagens do veículo (máx. 5)"}
       </label>

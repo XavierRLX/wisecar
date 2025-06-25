@@ -109,7 +109,7 @@ export default function SellerForm({
             </label>
             <input
               type="text"
-              name="company"               // <-- alinhado com WizardFormData.company
+              name="company"              
               value={company}
               onChange={onChange}
               placeholder="Ex: AutoCenter"
@@ -122,7 +122,7 @@ export default function SellerForm({
             </label>
             <input
               type="text"
-              name="sellerName"            // <-- alinhado com WizardFormData.sellerName
+              name="sellerName"           
               value={sellerName}
               onChange={onChange}
               placeholder="Ex: João da Silva"
@@ -135,7 +135,7 @@ export default function SellerForm({
             </label>
             <input
               type="text"
-              name="phone"                // <-- alinhado com WizardFormData.phone
+              name="phone"                
               value={phone}
               onChange={onChange}
               placeholder="Ex: (11) 99999-8888"
@@ -148,7 +148,7 @@ export default function SellerForm({
             </label>
             <input
               type="text"
-              name="socialMedia"           // <-- alinhado com WizardFormData.socialMedia
+              name="socialMedia"          
               value={socialMedia}
               onChange={onChange}
               placeholder="Ex: @autocenter"
@@ -161,7 +161,7 @@ export default function SellerForm({
             </label>
             <input
               type="text"
-              name="address"              // <-- alinhado com WizardFormData.address
+              name="address"            
               value={address}
               onChange={onChange}
               placeholder="Ex: Rua Principal, 123, Cidade, País"

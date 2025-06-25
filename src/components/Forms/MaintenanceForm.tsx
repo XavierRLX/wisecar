@@ -340,7 +340,6 @@ export default function MaintenanceForm({
           <PlusCircle className="w-5 h-5" /> Adicionar Documento
         </button>
       </div>
-
       {/* Custo & Peças */}
       <div className="space-y-4">
         <div>
