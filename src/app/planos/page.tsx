@@ -1,4 +1,3 @@
-// app/planos/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -19,13 +18,14 @@ export default function PlansPage() {
   const router = useRouter();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
-  const [category, setCategory] = useState<'seller' | 'other' | 'provider'>('other'); // Usuário pré
+  const [category, setCategory] = useState<'seller' | 'other' | 'provider'>('other');
 
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase
         .from('subscription_plans')
         .select('*')
+        .eq('active', true)
         .order('price', { ascending: true });
       if (!error && data) setPlans(data as SubscriptionPlan[]);
       setLoading(false);
@@ -37,16 +37,13 @@ export default function PlansPage() {
   }
 
   const filteredPlans = plans.filter(p => {
-    // sempre incluir 'full'
     if (p.key === 'full') return true;
-
     switch (category) {
       case 'seller':
         return p.key === 'seller';
       case 'provider':
         return p.key === 'provider';
       case 'other':
-        // usuário = todos que não são seller nem provider (full já retorna acima)
         return p.key !== 'seller' && p.key !== 'provider';
     }
   });

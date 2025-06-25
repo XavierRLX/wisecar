@@ -119,6 +119,7 @@ export interface SubscriptionPlan {
   currency: string;
   interval: string;
   interval_count: number;
+  active: boolean;
 }
 
 // hooks/useUserSubscription.ts

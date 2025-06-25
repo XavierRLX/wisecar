@@ -1,4 +1,3 @@
-// app/admin/planos/new/page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -8,6 +7,7 @@ import BackButton from '@/components/BackButton';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import LoadingState from '@/components/LoadingState';
 import { SubscriptionPlan } from '@/types';
+import { ToggleLeft, ToggleRight } from 'lucide-react';
 
 export default function NewPlanoPage() {
   const supabase = createClientComponentClient();
@@ -18,8 +18,9 @@ export default function NewPlanoPage() {
   const [desc, setDesc] = useState('');
   const [price, setPrice] = useState<string>('');
   const [currency, setCurrency] = useState('BRL');
-  const [interval, setInterval] = useState<'dia' | 'Mês' | 'Ano'>('Mês');
+  const [interval, setInterval] = useState<'day' | 'month' | 'year'>('month');
   const [intervalCount, setIntervalCount] = useState<string>('1');
+  const [active, setActive] = useState<boolean>(true);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -34,7 +35,7 @@ export default function NewPlanoPage() {
     }
 
     setSaving(true);
-    const newPlan: Omit<SubscriptionPlan, 'id'> = {
+    const newPlan: Omit<SubscriptionPlan, 'id'> & { active: boolean } = {
       key: key.trim(),
       name: name.trim(),
       description: desc.trim() || null,
@@ -42,6 +43,7 @@ export default function NewPlanoPage() {
       currency: currency.trim(),
       interval,
       interval_count: parseInt(intervalCount, 10),
+      active,
     };
 
     const { error } = await supabase
@@ -130,7 +132,7 @@ export default function NewPlanoPage() {
               <label className="mb-1 font-medium">Intervalo*</label>
               <select
                 value={interval}
-                onChange={e => setInterval(e.target.value as any)}
+                onChange={e => setInterval(e.target.value as 'day' | 'month' | 'year')}
                 disabled={saving}
                 className="w-full border px-3 py-2 rounded focus:ring sm:text-sm"
               >
@@ -149,6 +151,24 @@ export default function NewPlanoPage() {
                 className="w-full border px-3 py-2 rounded focus:ring sm:text-sm"
               />
             </div>
+          </div>
+
+          {/* Ativo */}
+          <div className="flex items-center space-x-2">
+            <label className="font-medium">Plano ativo:</label>
+            <button
+              type="button"
+              onClick={() => setActive(prev => !prev)}
+              disabled={saving}
+              className="focus:outline-none"
+              aria-label={active ? 'Desativar plano' : 'Ativar plano'}
+            >
+              {active ? (
+                <ToggleRight className="h-6 w-6 text-green-500" />
+              ) : (
+                <ToggleLeft className="h-6 w-6 text-gray-400" />
+              )}
+            </button>
           </div>
 
           <button
