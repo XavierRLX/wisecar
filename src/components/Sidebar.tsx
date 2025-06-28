@@ -14,7 +14,8 @@ import {
   Wrench,
   Cog,
   Tag,
-  Store
+  Store,
+  Share2,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useRouter, usePathname } from "next/navigation";
@@ -94,10 +95,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       `}
     >
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/40"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
       {/* Sidebar */}
       <div className="relative bg-white w-full h-full shadow-xl flex flex-col">
@@ -192,10 +190,17 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               label="Favoritos"
               onClose={onClose}
             />
+            {/* Novo botão para Envios & Compartilhamentos */}
+            <NavItem
+              href="/envios-compartilhamentos"
+              icon={<Share2 className="w-5 h-5" />}
+              label="Envios & Compartilhamentos"
+              onClose={onClose}
+            />
           </div>
 
           <div className="pt-4 border-t border-gray-200 space-y-1">
-          <NavItem
+            <NavItem
               href="/planos"
               icon={<Tag className="w-5 h-5" />}
               label="Planos"
@@ -213,7 +218,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               label="Adicionar Loja"
               onClose={onClose}
             />
-             <NavItem
+            <NavItem
               href="/feed"
               icon={<Rss className="w-5 h-5" />}
               label="Feed"
@@ -226,11 +231,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         <footer className="px-4 py-4 border-t border-gray-200 text-center text-xs text-gray-500">
           <p>All Wheels Experience © 2025</p>
           <div className="mt-2 space-x-2">
-            <Link
-              href="/termos"
-              onClick={onClose}
-              className="hover:underline"
-            >
+            <Link href="/termos" onClick={onClose} className="hover:underline">
               Termos
             </Link>
             <span>·</span>
