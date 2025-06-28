@@ -24,7 +24,6 @@ export default function NewMaintenancePage() {
   const [submitting, setSubmitting] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState("");
 
-  // Carrega veículos do usuário atual
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) {
@@ -46,7 +45,6 @@ export default function NewMaintenancePage() {
     });
   }, [router]);
 
-  // Valores iniciais para o Wizard (automapa campos vazios)
   const initial: MaintenanceValues = {
     vehicleId: "",
     category: "manutencao",
@@ -64,7 +62,6 @@ export default function NewMaintenancePage() {
     docs: [],
   };
 
-  //  → O mesmo handleSubmit que você já tinha adaptado, mas agora recebe MaintenanceValues
   async function handleSubmit(values: MaintenanceValues) {
     const vehicleId = selectedVehicle || values.vehicleId;
     if (!vehicleId) throw new Error("Selecione um veículo");
@@ -84,7 +81,7 @@ export default function NewMaintenancePage() {
         completed_km: +values.completedKm || null,
         provider: values.provider || null,
         notes: values.notes || null,
-        cost: 0, // atualizaremos logo após
+        cost: 0,
       })
       .select("id")
       .single();
@@ -95,7 +92,7 @@ export default function NewMaintenancePage() {
     }
     const recordId = data.id;
 
-    // 2) Insere as partes (manutenção_parts)
+    // 2) Insere as partes
     if (values.parts.length > 0) {
       await supabase
         .from("maintenance_parts")
@@ -105,43 +102,39 @@ export default function NewMaintenancePage() {
             name: p.name,
             brand: p.brand || null,
             purchase_place: p.purchase_place || null,
-            quantity: +p.quantity,
-            price: +p.price,
+            quantity: Number(p.quantity) || 0,
+            price: Number(p.price) || 0,
           }))
         );
     }
 
-    // 3) Atualiza custo total (peças + mão de obra)
+    // 3) Atualiza custo total
     const partsTotal = values.parts.reduce(
-      (sum, p) => sum + (parseFloat(p.price) || 0) * (parseInt(p.quantity) || 0),
+      (sum, p) =>
+        sum + (Number(p.price) || 0) * (Number(p.quantity) || 0),
       0
     );
     await supabase
       .from("maintenance_records")
-      .update({ cost: partsTotal + (parseFloat(values.laborCost) || 0) })
+      .update({
+        cost: partsTotal + (Number(values.laborCost) || 0),
+      })
       .eq("id", recordId);
 
-    // 4) Faz upload e grava documentos (maintenance_docs)
+    // 4) Upload e grava docs
     if (values.docs.length > 0) {
       await Promise.all(
         values.docs.map(async (doc) => {
           const path = `${recordId}/${doc.file!.name}`;
-          // 4.1) Upload para o bucket "maintenance-docs"
-          const { error: uploadErr } = await supabase
-            .storage
+          const { error: uploadErr } = await supabase.storage
             .from("maintenance-docs")
             .upload(path, doc.file!);
           if (uploadErr) throw uploadErr;
 
-          // 4.2) Recupera a URL pública
-          const {
-            data: { publicUrl },
-          } = supabase
-            .storage
+          const { data: { publicUrl } } = supabase.storage
             .from("maintenance-docs")
             .getPublicUrl(path);
 
-          // 4.3) Grava registro em maintenance_docs
           const { error: dbErr } = await supabase
             .from("maintenance_docs")
             .insert({

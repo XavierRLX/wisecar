@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { PlusCircle, Trash2 } from "lucide-react";
 import type { MaintenanceValues, PartForm, DocForm } from "./MaintenanceWizardForm.types";
 
-// Essas props vêm da página “/manutencoes/novo”
 interface MaintenanceWizardFormProps {
   initial: MaintenanceValues;
   vehicles: { id: string; brand: string; model: string }[];
@@ -28,17 +27,10 @@ export default function MaintenanceWizardForm({
 }: MaintenanceWizardFormProps) {
   const router = useRouter();
 
-  // ── 0) DEFINIÇÃO DO ESTADO INTERNO DO WIZARD ──────────────────────────────────
-  // currentStep = 1, 2, 3 ou 4
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
-
-  // versiona todos os campos do MaintenanceValues + os arrays de parts/docs
   const [values, setValues] = useState<MaintenanceValues>(initial);
-  // É importante manter parts e docs separadamente para permitir adição/remoção antes de clicar em “Próximo”
   const [parts, setParts] = useState<PartForm[]>(initial.parts);
   const [docs, setDocs] = useState<DocForm[]>(initial.docs);
-
-  // controles intermediários para “novo item” (peça/doc)
   const [newPart, setNewPart] = useState<PartForm>({
     name: "",
     brand: "",
@@ -47,39 +39,47 @@ export default function MaintenanceWizardForm({
     price: "",
   });
   const [newDoc, setNewDoc] = useState<DocForm>({ title: "", file: null });
-
-  // estado para exibir possíveis erros na tela
   const [error, setError] = useState<string | null>(null);
 
-  // ── 1) CÁLCULO DOS TOTAIS DE PARTES E CUSTO TOTAL (incluindo mão de obra) ─────
+  // 1) Totais recalculados sempre que parts ou laborCost mudam
   const partsTotal = useMemo(
     () =>
       parts.reduce(
-        (sum, p) => sum + (parseFloat(p.price) || 0) * (parseInt(p.quantity) || 0),
+        (sum, p) =>
+          sum + (Number(p.price) || 0) * (Number(p.quantity) || 0),
         0
       ),
     [parts]
   );
   const totalCost = useMemo(
-    () => partsTotal + (parseFloat(values.laborCost) || 0),
+    () => partsTotal + (Number(values.laborCost) || 0),
     [partsTotal, values.laborCost]
   );
 
-  // ── 2) FUNÇÕES AUXILIARES PARA MANIPULAR PARTES ───────────────────────────────
+  // Funções de adicionar/remover peças
   function handleAddPart() {
     if (!newPart.name.trim()) {
       setError("Informe o nome da peça");
       return;
     }
+    const priceNum = Number(newPart.price);
+    const qtyNum = Number(newPart.quantity);
+    if (isNaN(priceNum) || isNaN(qtyNum) || qtyNum <= 0) {
+      setError("Informe quantidade e preço válidos");
+      return;
+    }
     setError(null);
-    setParts((arr) => [...arr, newPart]);
+    setParts((arr) => [
+      ...arr,
+      { ...newPart, price: priceNum.toString(), quantity: qtyNum.toString() },
+    ]);
     setNewPart({ name: "", brand: "", purchase_place: "", quantity: "", price: "" });
   }
   function handleRemovePart(index: number) {
     setParts((arr) => arr.filter((_, i) => i !== index));
   }
 
-  // ── 3) FUNÇÕES AUXILIARES PARA MANIPULAR DOCUMENTOS ──────────────────────────
+  // Funções de adicionar/remover documentos
   function handleAddDoc() {
     if (!newDoc.title.trim() || !newDoc.file) {
       setError("Informe título e selecione o arquivo");
@@ -93,12 +93,11 @@ export default function MaintenanceWizardForm({
     setDocs((arr) => arr.filter((_, i) => i !== index));
   }
 
-  // ── 4) HANDLER PRINCIPAL DE SUBMIT (APENAS NO ÚLTIMO STEP) ─────────────────────
+  // Submissão final
   async function handleFinalSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    // Garante que o veículo esteja selecionado (pode vir de props ou do formulário interno)
     const finalVehicleId = selectedVehicle || values.vehicleId;
     if (!finalVehicleId) {
       setError("Selecione um veículo");
@@ -106,24 +105,23 @@ export default function MaintenanceWizardForm({
     }
 
     try {
-      await onSubmit({ ...values, vehicleId: finalVehicleId, parts, docs });
+      await onSubmit({
+        ...values,
+        vehicleId: finalVehicleId,
+        parts,
+        docs,
+      });
     } catch (err: any) {
       setError(err.message || "Erro ao salvar manutenção");
     }
   }
 
-  // ── 5) HANDLER DE VALIDAÇÃO: determina se pode avançar ao próximo step ─────────
+  // Validações de cada step
   function canProceedToStep2() {
-    // Step 1 exige “vehicleId”
-    // Aqui corrigimos chamando trim() apenas em string
     const vid = selectedVehicle || values.vehicleId || "";
     return vid.trim() !== "";
   }
   function canProceedToStep3() {
-    // Step 2 exige:
-    // - maintenanceName (não vazio)
-    // - status (A fazer | Feito | Cancelado)
-    // - maintenanceType (não vazio)
     return (
       values.maintenanceName.trim() !== "" &&
       values.status.trim() !== "" &&
@@ -131,25 +129,12 @@ export default function MaintenanceWizardForm({
     );
   }
   function canProceedToStep4() {
-    // Step 3 exige:
-    // - Sempre pedir scheduledDate e scheduledKm, mesmo para melhoria?
-    //    Adaptamos: se for “A fazer”, exige ao menos agendar data e km
-    //    Se for “Feito”, exige “completedDate” e “completedKm”
     if (values.status === "A fazer") {
-      return (
-        values.scheduledDate.trim() !== "" &&
-        values.scheduledKm.trim() !== ""
-      );
+      return values.scheduledDate.trim() !== "" && values.scheduledKm.trim() !== "";
     }
-    // “Feito” ou “Cancelado” – para “Feito” exige completedDate e completedKm;
-    // para “Cancelado” aceita sem esses campos.
     if (values.status === "Feito") {
-      return (
-        values.completedDate.trim() !== "" &&
-        values.completedKm.trim() !== ""
-      );
+      return values.completedDate.trim() !== "" && values.completedKm.trim() !== "";
     }
-    // “Cancelado” → pode prosseguir sem datas
     return true;
   }
 
