@@ -122,7 +122,6 @@ export interface SubscriptionPlan {
   active: boolean;
 }
 
-// hooks/useUserSubscription.ts
 
 export interface Subscription {
   id: string

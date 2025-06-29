@@ -1,11 +1,10 @@
 
-//lib
+// lib/vehicleService.ts
+
 import { supabase } from "@/lib/supabase";
 import { uploadVehicleImage } from "@/hooks/useUploadImage";
 import { Vehicle, VehicleStatus } from "@/types";
 
-
-// lib/vehicleService.ts
 export async function fetchVehiclesByUserId(userId: string): Promise<Vehicle[]> {
   const { data, error } = await supabase
     .from("vehicles")
