@@ -1,13 +1,9 @@
+// src/components/ConfirmRequestModal.tsx
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Modal from "./Modal";
-import {
-  createVehicleRequest,
-  respondVehicleRequest,
-  RequestType,
-} from "@/hooks/useVehicleRequests";
+import { useVehicleRequests } from "@/hooks/useVehicleRequests";
 
 interface ConfirmRequestModalProps {
   mode: "share" | "transfer" | "respond";
@@ -26,23 +22,20 @@ export default function ConfirmRequestModal({
   requestId,
   onClose,
 }: ConfirmRequestModalProps) {
+  const { share, transfer, respond } = useVehicleRequests();
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
-  const handle = async (action?: "accepted" | "rejected" | "cancelled") => {
+  const handleConfirm = async (action?: "accepted" | "rejected" | "cancelled") => {
     setLoading(true);
     try {
-      if (mode === "share" || mode === "transfer") {
-        await createVehicleRequest(
-          vehicleId!,
-          toUserId!,
-          mode as RequestType
-        );
-      } else {
-        await respondVehicleRequest(requestId!, action!);
+      if (mode === "share" && vehicleId && toUserId) {
+        await share(vehicleId, toUserId, "share");
+      } else if (mode === "transfer" && vehicleId && toUserId) {
+        await transfer(vehicleId, toUserId, "transfer");
+      } else if (mode === "respond" && requestId && action) {
+        await respond(requestId, action);
       }
       onClose();
-      router.refresh();
     } catch (err: any) {
       alert(err.message);
     } finally {
@@ -50,58 +43,56 @@ export default function ConfirmRequestModal({
     }
   };
 
-  const title =
-    mode === "share"
-      ? "Confirmar Compartilhamento"
-      : mode === "transfer"
-      ? "Confirmar Envio"
-      : "Responder Pedido";
+  // Modo de resposta de pedido (aceitar/recusar)
+  if (mode === "respond") {
+    return (
+      <Modal title="Responder Pedido" onClose={onClose}>
+        <p>Deseja aceitar ou recusar este pedido?</p>
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            onClick={() => handleConfirm("rejected")}
+            disabled={loading}
+            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
+          >
+            Recusar
+          </button>
+          <button
+            onClick={() => handleConfirm("accepted")}
+            disabled={loading}
+            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
+          >
+            {loading ? "Processando..." : "Aceitar"}
+          </button>
+        </div>
+      </Modal>
+    );
+  }
 
-  const question =
-    mode === "share"
-      ? `Compartilhar este veículo com ${toUserEmail}?`
-      : mode === "transfer"
-      ? `Enviar este veículo para ${toUserEmail}?`
-      : "Deseja aceitar ou recusar este pedido?";
+  // Modo de criar novo pedido (compartilhar ou transferir)
+  const title = mode === "share" ? "Confirmar Compartilhamento" : "Confirmar Envio";
+  const actionLabel = mode === "share" ? "Compartilhar" : "Enviar";
 
   return (
     <Modal title={title} onClose={onClose}>
-      <p className="mb-4">{question}</p>
-      <div className="flex justify-end gap-2">
+      <p>
+        Tem certeza que deseja <strong>{actionLabel.toLowerCase()}</strong> este veículo{" "}
+        {toUserEmail ? `para ${toUserEmail}` : ""}?
+      </p>
+      <div className="mt-4 flex justify-end gap-2">
         <button
           onClick={onClose}
           disabled={loading}
-          className="px-4 py-2 border rounded hover:bg-gray-100"
+          className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
         >
           Cancelar
         </button>
-
-        {mode === "respond" ? (
-          <>
-            <button
-              onClick={() => handle("rejected")}
-              disabled={loading}
-              className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-            >
-              {loading ? "…" : "Recusar"}
-            </button>
-            <button
-              onClick={() => handle("accepted")}
-              disabled={loading}
-              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-            >
-              {loading ? "…" : "Aceitar"}
-            </button>
-          </>
-        ) : (
-          <button
-            onClick={() => handle()}
-            disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            {loading ? "…" : "Confirmar"}
-          </button>
-        )}
+        <button
+          onClick={() => handleConfirm()}
+          disabled={loading}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+        >
+          {loading ? `${actionLabel}...` : actionLabel}
+        </button>
       </div>
     </Modal>
   );
