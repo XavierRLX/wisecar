@@ -214,3 +214,18 @@ export interface Provider {
   provider_images?: ProviderImage[];
   services?: Service[];
 }
+
+export interface VehicleRequest {
+  id: string;
+  type: "share" | "transfer";
+  status: "pending" | "accepted" | "rejected" | "cancelled";
+  created_at: string;
+  vehicle: {
+    id: string;
+    brand: string;
+    model: string;
+    image_url?: string;
+  };
+  from_user: string;
+  to_user: string;
+}

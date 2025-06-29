@@ -6,8 +6,8 @@ import {
   fetchVehicleRequests,
   createVehicleRequest,
   respondVehicleRequest,
-  VehicleRequest,
 } from "@/lib/vehicleRequestsService";
+import type { VehicleRequest } from "@/types";
 import { supabase } from "@/lib/supabase";
 
 export function useVehicleRequests() {
@@ -20,10 +20,9 @@ export function useVehicleRequests() {
     setLoading(true);
     setError(null);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Não autenticado");
+
       const all = await fetchVehicleRequests(user.id);
       setSent(all.filter((r) => r.from_user === user.id && r.status === "pending"));
       setReceived(all.filter((r) => r.to_user === user.id && r.status === "pending"));
